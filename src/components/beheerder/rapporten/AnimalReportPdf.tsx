@@ -1,34 +1,53 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import { SPECIES_LABELS, GENDER_LABELS, STATUS_LABELS } from "@/lib/constants";
-import { PHASE_LABELS } from "@/lib/workflow/stepbar";
-import type { Animal } from "@/types";
+import { GENDER_LABELS } from "@/lib/constants";
+import {
+  formatDateBE,
+  sterielLabel,
+  vaccinDisplay,
+  redenOpvangDisplay,
+  jaNee,
+  okBlank,
+} from "@/lib/reports/animal-report-format";
+import type { AnimalReportRow } from "@/lib/queries/reports";
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica" },
-  header: { marginBottom: 20, textAlign: "center" },
-  title: { fontSize: 16, fontFamily: "Helvetica-Bold", marginBottom: 4 },
-  org: { fontSize: 9, color: "#666", marginBottom: 2 },
-  meta: { marginBottom: 12, paddingBottom: 8, borderBottom: "1 solid #ccc" },
-  metaText: { fontSize: 9, color: "#555" },
+  page: { padding: 24, fontSize: 7, fontFamily: "Helvetica" },
+  header: { marginBottom: 12, textAlign: "center" },
+  title: { fontSize: 14, fontFamily: "Helvetica-Bold", marginBottom: 4 },
+  org: { fontSize: 8, color: "#666", marginBottom: 2 },
+  meta: { marginBottom: 10, paddingBottom: 6, borderBottom: "1 solid #ccc" },
+  metaText: { fontSize: 8, color: "#555" },
   table: { marginBottom: 4 },
-  tableHeader: { flexDirection: "row", backgroundColor: "#f3f4f6", borderBottom: "0.5 solid #ccc", paddingVertical: 4, paddingHorizontal: 6 },
-  tableRow: { flexDirection: "row", borderBottom: "0.5 solid #eee", paddingVertical: 3, paddingHorizontal: 6 },
-  headerText: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#374151" },
-  cellText: { fontSize: 8 },
-  colName: { width: "16%" },
-  colSpecies: { width: "10%" },
-  colBreed: { width: "14%" },
-  colGender: { width: "10%" },
-  colStatus: { width: "12%" },
-  colPhase: { width: "12%" },
-  colChip: { width: "14%" },
-  colDate: { width: "12%" },
-  footer: { position: "absolute", bottom: 30, left: 40, right: 40, textAlign: "center", fontSize: 8, color: "#999" },
+  tableHeader: { flexDirection: "row", backgroundColor: "#f3f4f6", borderBottom: "0.5 solid #ccc", paddingVertical: 3, paddingHorizontal: 2 },
+  tableRow: { flexDirection: "row", borderBottom: "0.5 solid #eee", paddingVertical: 2, paddingHorizontal: 2 },
+  headerText: { fontSize: 6, fontFamily: "Helvetica-Bold", color: "#374151" },
+  cellText: { fontSize: 6, color: "#111" },
+  footer: { position: "absolute", bottom: 16, left: 24, right: 24, textAlign: "center", fontSize: 7, color: "#999" },
   empty: { fontSize: 9, color: "#999", fontStyle: "italic", paddingVertical: 8, textAlign: "center" },
 });
 
+// Kolombreedtes (% — som = 100), gealigneerd op het as-is asielrapport.
+const cols = {
+  adoptie: { width: "5%" },
+  reden: { width: "11%" },
+  gedrag: { width: "6%" },
+  naam: { width: "8%" },
+  ras: { width: "9%" },
+  mv: { width: "4%" },
+  steriel: { width: "6%" },
+  geboorte: { width: "7%" },
+  chip: { width: "9%" },
+  nwChip: { width: "4%" },
+  paspoort: { width: "8%" },
+  nwPaspoort: { width: "4%" },
+  vaccin: { width: "7%" },
+  ontworming: { width: "6%" },
+  website: { width: "3%" },
+  adopteer: { width: "3%" },
+} as const;
+
 interface Props {
-  animals: Animal[];
+  animals: AnimalReportRow[];
   filters?: string;
   generatedAt: string;
 }
@@ -54,25 +73,41 @@ export default function AnimalReportPdf({ animals, filters, generatedAt }: Props
         ) : (
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <Text style={[styles.colName, styles.headerText]}>Naam</Text>
-              <Text style={[styles.colSpecies, styles.headerText]}>Soort</Text>
-              <Text style={[styles.colBreed, styles.headerText]}>Ras</Text>
-              <Text style={[styles.colGender, styles.headerText]}>Geslacht</Text>
-              <Text style={[styles.colStatus, styles.headerText]}>Status</Text>
-              <Text style={[styles.colPhase, styles.headerText]}>Fase</Text>
-              <Text style={[styles.colChip, styles.headerText]}>Chipnr</Text>
-              <Text style={[styles.colDate, styles.headerText]}>Intake</Text>
+              <Text style={[cols.adoptie, styles.headerText]}>Ter adoptie</Text>
+              <Text style={[cols.reden, styles.headerText]}>Reden opvang</Text>
+              <Text style={[cols.gedrag, styles.headerText]}>Gedragseval.</Text>
+              <Text style={[cols.naam, styles.headerText]}>Naam</Text>
+              <Text style={[cols.ras, styles.headerText]}>Ras</Text>
+              <Text style={[cols.mv, styles.headerText]}>M/V</Text>
+              <Text style={[cols.steriel, styles.headerText]}>Steriel</Text>
+              <Text style={[cols.geboorte, styles.headerText]}>Geb.datum</Text>
+              <Text style={[cols.chip, styles.headerText]}>Chip</Text>
+              <Text style={[cols.nwChip, styles.headerText]}>Nwe chip</Text>
+              <Text style={[cols.paspoort, styles.headerText]}>Paspoort</Text>
+              <Text style={[cols.nwPaspoort, styles.headerText]}>Nw pasp.</Text>
+              <Text style={[cols.vaccin, styles.headerText]}>Vaccin</Text>
+              <Text style={[cols.ontworming, styles.headerText]}>Ontworming</Text>
+              <Text style={[cols.website, styles.headerText]}>Web</Text>
+              <Text style={[cols.adopteer, styles.headerText]}>Adopt.</Text>
             </View>
             {animals.map((animal) => (
               <View key={animal.id} style={styles.tableRow}>
-                <Text style={[styles.colName, styles.cellText]}>{animal.name}</Text>
-                <Text style={[styles.colSpecies, styles.cellText]}>{SPECIES_LABELS[animal.species] ?? animal.species}</Text>
-                <Text style={[styles.colBreed, styles.cellText]}>{animal.breed ?? "-"}</Text>
-                <Text style={[styles.colGender, styles.cellText]}>{GENDER_LABELS[animal.gender] ?? animal.gender}</Text>
-                <Text style={[styles.colStatus, styles.cellText]}>{STATUS_LABELS[animal.status ?? ""] ?? animal.status}</Text>
-                <Text style={[styles.colPhase, styles.cellText]}>{PHASE_LABELS[animal.workflowPhase ?? ""] ?? animal.workflowPhase ?? "-"}</Text>
-                <Text style={[styles.colChip, styles.cellText]}>{animal.identificationNr ?? "-"}</Text>
-                <Text style={[styles.colDate, styles.cellText]}>{animal.intakeDate ?? "-"}</Text>
+                <Text style={[cols.adoptie, styles.cellText]}>{jaNee(animal.isAvailableForAdoption)}</Text>
+                <Text style={[cols.reden, styles.cellText]}>{redenOpvangDisplay(animal.intakeReason, animal.intakeDate)}</Text>
+                <Text style={[cols.gedrag, styles.cellText]}>{formatDateBE(animal.lastBehaviorDate) || "-"}</Text>
+                <Text style={[cols.naam, styles.cellText]}>{animal.name}</Text>
+                <Text style={[cols.ras, styles.cellText]}>{animal.breed ?? "-"}</Text>
+                <Text style={[cols.mv, styles.cellText]}>{GENDER_LABELS[animal.gender] ?? animal.gender}</Text>
+                <Text style={[cols.steriel, styles.cellText]}>{sterielLabel(animal.isNeutered, animal.neuteredByShelter)}</Text>
+                <Text style={[cols.geboorte, styles.cellText]}>{formatDateBE(animal.dateOfBirth) || "-"}</Text>
+                <Text style={[cols.chip, styles.cellText]}>{animal.identificationNr ?? "-"}</Text>
+                <Text style={[cols.nwChip, styles.cellText]}>{jaNee(animal.isNewChip)}</Text>
+                <Text style={[cols.paspoort, styles.cellText]}>{animal.passportNr ?? "-"}</Text>
+                <Text style={[cols.nwPaspoort, styles.cellText]}>{jaNee(animal.isNewPassport)}</Text>
+                <Text style={[cols.vaccin, styles.cellText]}>{vaccinDisplay(animal.lastVaccinationDate, animal.lastVaccinationByShelter) || "-"}</Text>
+                <Text style={[cols.ontworming, styles.cellText]}>{formatDateBE(animal.lastDewormingDate) || "-"}</Text>
+                <Text style={[cols.website, styles.cellText]}>{okBlank(animal.isOnWebsite)}</Text>
+                <Text style={[cols.adopteer, styles.cellText]}>{okBlank(animal.isAvailableForAdoption)}</Text>
               </View>
             ))}
           </View>

@@ -61,6 +61,17 @@ vi.mock("@/lib/db/schema", () => ({
     notes: "behavior_records.notes",
     createdAt: "behavior_records.created_at",
   },
+  vaccinations: {
+    id: "vaccinations.id",
+    animalId: "vaccinations.animal_id",
+    date: "vaccinations.date",
+    givenByShelter: "vaccinations.given_by_shelter",
+  },
+  dewormings: {
+    id: "dewormings.id",
+    animalId: "dewormings.animal_id",
+    date: "dewormings.date",
+  },
   vetVisits: {
     id: "vet_visits.id",
     animalId: "vet_visits.animal_id",
@@ -160,6 +171,7 @@ vi.mock("drizzle-orm", () => ({
   gte: mockGte,
   lte: mockLte,
   isNotNull: mockIsNotNull,
+  inArray: vi.fn((col: unknown, vals: unknown) => ({ type: "inArray", col, vals })),
   count: vi.fn((col: unknown) => ({ type: "count", col })),
   asc: vi.fn((col: unknown) => ({ type: "asc", col })),
   desc: vi.fn((col: unknown) => ({ type: "desc", col })),
@@ -173,6 +185,18 @@ const mockAnimals = [
   { id: 2, name: "Mimi", species: "kat", breed: "Europees", gender: "poes", status: "beschikbaar", kennelId: 2, workflowPhase: "medisch", intakeDate: "2026-01-10" },
   { id: 3, name: "Buddy", species: "hond", breed: "Herder", gender: "reu", status: "gereserveerd", kennelId: 1, workflowPhase: "adoptie", intakeDate: "2025-11-15" },
 ];
+
+// getAnimalReport verrijkt elk dier met de laatste medische/gedrags-records (R1).
+// In deze gedeelde mock resolven die queries niet naar echte vaccinatie-/ontwormingsrijen,
+// dus de medische velden zijn null — dit is de verwachte verrijkte vorm.
+const withNullMedical = (rows: typeof mockAnimals) =>
+  rows.map((a) => ({
+    ...a,
+    lastBehaviorDate: null,
+    lastVaccinationDate: null,
+    lastVaccinationByShelter: null,
+    lastDewormingDate: null,
+  }));
 
 describe("getAnimalReport", () => {
   beforeEach(() => {
@@ -190,7 +214,7 @@ describe("getAnimalReport", () => {
   it("returns all animals with no filters and default pagination", async () => {
     const result = await getAnimalReport({});
 
-    expect(result.animals).toEqual(mockAnimals);
+    expect(result.animals).toEqual(withNullMedical(mockAnimals));
     expect(mockSelect).toHaveBeenCalled();
     expect(mockFrom).toHaveBeenCalled();
   });
@@ -243,7 +267,7 @@ describe("getAnimalReport", () => {
   it("returns all results when no pagination is provided (for export)", async () => {
     const result = await getAnimalReport({});
 
-    expect(result.animals).toEqual(mockAnimals);
+    expect(result.animals).toEqual(withNullMedical(mockAnimals));
     expect(result.total).toBe(mockAnimals.length);
     // No limit/offset called when no pagination
     expect(mockLimit).not.toHaveBeenCalled();

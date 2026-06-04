@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
-import { animals, behaviorRecords, vetVisits, medications, vetInspectionReports, adoptionContracts, adoptionCandidates, kennels, walks, walkers, animalWorkflowHistory } from "@/lib/db/schema";
-import { eq, and, asc, desc, gte, lte, isNotNull, count, sql } from "drizzle-orm";
+import { animals, behaviorRecords, vaccinations, dewormings, vetVisits, medications, vetInspectionReports, adoptionContracts, adoptionCandidates, kennels, walks, walkers, animalWorkflowHistory } from "@/lib/db/schema";
+import { eq, and, asc, desc, gte, lte, isNotNull, inArray, count, sql } from "drizzle-orm";
 import type { Animal, BehaviorRecord, VetInspectionReport } from "@/types";
+import { latestByAnimalId } from "@/lib/reports/animal-report-format";
 
 export interface AnimalReportFilters {
   species?: string;
@@ -12,9 +13,66 @@ export interface AnimalReportFilters {
   pageSize?: number;
 }
 
+/**
+ * Animal verrijkt met de laatste medische/gedrags-records, voor het R1-rapport
+ * (gealigneerd op het as-is asielrapport). De medische velden komen uit aparte
+ * tabellen (vaccinations/dewormings/behaviorRecords) en worden hier samengevoegd.
+ */
+export type AnimalReportRow = Animal & {
+  lastBehaviorDate: string | null;
+  lastVaccinationDate: string | null;
+  lastVaccinationByShelter: boolean | null;
+  lastDewormingDate: string | null;
+};
+
 export interface AnimalReportResult {
-  animals: Animal[];
+  animals: AnimalReportRow[];
   total: number;
+}
+
+/**
+ * Verrijkt een lijst dieren met hun laatste vaccinatie, ontworming en
+ * gedragsevaluatie. Eén query per tabel (inArray op de dier-ids), daarna in JS
+ * gereduceerd tot het meest recente record per dier.
+ */
+async function enrichWithMedical(rows: Animal[]): Promise<AnimalReportRow[]> {
+  const ids = rows.map((a) => a.id);
+  if (ids.length === 0) {
+    return rows.map((a) => ({
+      ...a,
+      lastBehaviorDate: null,
+      lastVaccinationDate: null,
+      lastVaccinationByShelter: null,
+      lastDewormingDate: null,
+    }));
+  }
+
+  const [vaxRows, dewRows, behRows] = await Promise.all([
+    db
+      .select({ animalId: vaccinations.animalId, date: vaccinations.date, givenByShelter: vaccinations.givenByShelter })
+      .from(vaccinations)
+      .where(inArray(vaccinations.animalId, ids)),
+    db
+      .select({ animalId: dewormings.animalId, date: dewormings.date })
+      .from(dewormings)
+      .where(inArray(dewormings.animalId, ids)),
+    db
+      .select({ animalId: behaviorRecords.animalId, date: behaviorRecords.date })
+      .from(behaviorRecords)
+      .where(inArray(behaviorRecords.animalId, ids)),
+  ]);
+
+  const latestVax = latestByAnimalId(vaxRows);
+  const latestDew = latestByAnimalId(dewRows);
+  const latestBeh = latestByAnimalId(behRows);
+
+  return rows.map((a) => ({
+    ...a,
+    lastBehaviorDate: latestBeh.get(a.id)?.date ?? null,
+    lastVaccinationDate: latestVax.get(a.id)?.date ?? null,
+    lastVaccinationByShelter: latestVax.get(a.id)?.givenByShelter ?? null,
+    lastDewormingDate: latestDew.get(a.id)?.date ?? null,
+  }));
 }
 
 export async function getAnimalReport(
@@ -46,7 +104,7 @@ export async function getAnimalReport(
         .where(whereClause);
 
       return {
-        animals: results as Animal[],
+        animals: await enrichWithMedical(results as Animal[]),
         total: (totalResult as { count: number }[])[0]?.count ?? 0,
       };
     }
@@ -59,7 +117,7 @@ export async function getAnimalReport(
       .orderBy(asc(animals.name));
 
     return {
-      animals: results as Animal[],
+      animals: await enrichWithMedical(results as Animal[]),
       total: results.length,
     };
   } catch (err) {

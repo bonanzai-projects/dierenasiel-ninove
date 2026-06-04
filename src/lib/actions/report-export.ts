@@ -2,24 +2,34 @@
 
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
-import { getAnimalReport, getMedicationReport, getAdoptionContractsReport, getWebsitePublicationReport, getWalkActivityReport, getWalkerAnimalPairingsReport, getWorkflowOverviewReport, type AnimalReportFilters, type MedicationReportFilters, type MedicationReportRow, type AdoptionContractReportFilters, type AdoptionContractReportRow, type WalkActivityReportFilters, type WalkActivityReportRow, type WalkerAnimalPairingsReportFilters, type WalkerAnimalPairingRow, type WorkflowOverviewReportFilters, type WorkflowOverviewReportRow } from "@/lib/queries/reports";
+import { getAnimalReport, getMedicationReport, getAdoptionContractsReport, getWebsitePublicationReport, getWalkActivityReport, getWalkerAnimalPairingsReport, getWorkflowOverviewReport, type AnimalReportFilters, type AnimalReportRow, type MedicationReportFilters, type MedicationReportRow, type AdoptionContractReportFilters, type AdoptionContractReportRow, type WalkActivityReportFilters, type WalkActivityReportRow, type WalkerAnimalPairingsReportFilters, type WalkerAnimalPairingRow, type WorkflowOverviewReportFilters, type WorkflowOverviewReportRow } from "@/lib/queries/reports";
 import { getCampaignReport, type CampaignReportFilters } from "@/lib/queries/stray-cat-campaigns";
 import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_OUTCOME_LABELS, FIV_FELV_STATUS_LABELS } from "@/lib/constants";
-import { speciesLabel, genderLabel, statusLabel, escapeCsvField } from "@/lib/utils";
+import { speciesLabel, genderLabel, escapeCsvField } from "@/lib/utils";
+import { formatDateBE, sterielLabel, vaccinDisplay, redenOpvangDisplay, jaNee, okBlank } from "@/lib/reports/animal-report-format";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
 import type { ActionResult } from "@/types";
 import type { Animal } from "@/types";
 
-function animalToCsvRow(animal: Animal): string {
+// R1-rapport — kolommen gealigneerd op het as-is asielrapport (Sven).
+function animalToCsvRow(animal: AnimalReportRow): string {
   return [
+    escapeCsvField(jaNee(animal.isAvailableForAdoption)),
+    escapeCsvField(redenOpvangDisplay(animal.intakeReason, animal.intakeDate)),
+    escapeCsvField(formatDateBE(animal.lastBehaviorDate)),
     escapeCsvField(animal.name),
-    escapeCsvField(speciesLabel(animal.species)),
     escapeCsvField(animal.breed ?? ""),
     escapeCsvField(genderLabel(animal.gender)),
-    escapeCsvField(statusLabel(animal.status ?? "")),
-    escapeCsvField(animal.workflowPhase ? (PHASE_LABELS[animal.workflowPhase] ?? animal.workflowPhase) : ""),
+    escapeCsvField(sterielLabel(animal.isNeutered, animal.neuteredByShelter)),
+    escapeCsvField(formatDateBE(animal.dateOfBirth)),
     escapeCsvField(animal.identificationNr ?? ""),
-    animal.intakeDate ?? "",
+    escapeCsvField(jaNee(animal.isNewChip)),
+    escapeCsvField(animal.passportNr ?? ""),
+    escapeCsvField(jaNee(animal.isNewPassport)),
+    escapeCsvField(vaccinDisplay(animal.lastVaccinationDate, animal.lastVaccinationByShelter)),
+    escapeCsvField(formatDateBE(animal.lastDewormingDate)),
+    escapeCsvField(okBlank(animal.isOnWebsite)),
+    escapeCsvField(okBlank(animal.isAvailableForAdoption)),
   ].join(",");
 }
 
@@ -51,7 +61,7 @@ export async function exportAnimalReportCsv(
 
   const { animals } = await getAnimalReport(queryFilters);
 
-  const header = "Naam,Soort,Ras,Geslacht,Status,Workflow-fase,Chipnr,Intake datum";
+  const header = "Ter adoptie,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Website,Adopteer";
   const rows = animals.map(animalToCsvRow);
   const csv = [header, ...rows].join("\n");
 

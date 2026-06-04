@@ -37,12 +37,22 @@ const mockAnimals = [
   {
     id: 1, name: "Rex", species: "hond", breed: "Labrador", gender: "reu",
     status: "beschikbaar", workflowPhase: "verblijf", intakeDate: "2025-12-01",
-    identificationNr: "981000000000001", kennelId: 1,
+    intakeReason: "afstand", identificationNr: "981000000000001", kennelId: 1,
+    isAvailableForAdoption: true, isNeutered: true, neuteredByShelter: true,
+    isNewChip: false, passportNr: "BE03005880604", isNewPassport: false,
+    isOnWebsite: true, dateOfBirth: "2020-12-01",
+    lastBehaviorDate: null, lastVaccinationDate: "2026-01-09", lastVaccinationByShelter: true,
+    lastDewormingDate: "2026-04-21",
   },
   {
     id: 2, name: "Mimi", species: "kat", breed: "Europees", gender: "poes",
     status: "gereserveerd", workflowPhase: "medisch", intakeDate: "2026-01-10",
-    identificationNr: null, kennelId: null,
+    intakeReason: null, identificationNr: null, kennelId: null,
+    isAvailableForAdoption: false, isNeutered: false, neuteredByShelter: null,
+    isNewChip: false, passportNr: null, isNewPassport: false,
+    isOnWebsite: false, dateOfBirth: null,
+    lastBehaviorDate: null, lastVaccinationDate: null, lastVaccinationByShelter: null,
+    lastDewormingDate: null,
   },
 ];
 
@@ -77,7 +87,7 @@ describe("exportAnimalReportCsv", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       const lines = result.data.split("\n");
-      expect(lines[0]).toBe("Naam,Soort,Ras,Geslacht,Status,Workflow-fase,Chipnr,Intake datum");
+      expect(lines[0]).toBe("Ter adoptie,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Website,Adopteer");
     }
   });
 
@@ -89,10 +99,12 @@ describe("exportAnimalReportCsv", () => {
       const lines = result.data.split("\n");
       expect(lines).toHaveLength(3); // header + 2 data rows
       expect(lines[1]).toContain("Rex");
-      expect(lines[1]).toContain("Hond");
       expect(lines[1]).toContain("Labrador");
+      // Reden opvang (label + datum), steriel "Ja (asiel)" en vaccin met '*' (door asiel)
+      expect(lines[1]).toContain("Afstand door eigenaar — 01-12-2025");
+      expect(lines[1]).toContain("Ja (asiel)");
+      expect(lines[1]).toContain("09-01-2026 *");
       expect(lines[2]).toContain("Mimi");
-      expect(lines[2]).toContain("Kat");
     }
   });
 
