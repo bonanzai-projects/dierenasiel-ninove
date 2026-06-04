@@ -96,9 +96,12 @@ export default function KennelLayoutManager({
   }
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[280px_1fr_320px]">
-      {/* Linker kolom: blijft vast in beeld terwijl het grondplan in het midden scrollt. */}
-      <div className="order-2 space-y-4 lg:order-1 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
+    // 2-rijen grid op lg: rij 1 = legende/zoek (alleen middenkolom), rij 2 =
+    // grondplan + detailpaneel. Zo lijnen de bovenkant van het grondplan en
+    // van het 'Kennel bezetting'-paneel exact uit (geen magische pixels).
+    <div className="grid items-start gap-4 lg:grid-cols-[280px_1fr_320px] lg:grid-rows-[auto_minmax(0,1fr)]">
+      {/* Linker kolom: blijft vast in beeld; overspant beide rijen. */}
+      <div className="order-3 space-y-4 lg:order-none lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
         <KennelCreateForm defaultLayer={activeLayer} />
         <KennelSidebarList
           kennels={filteredKennels}
@@ -107,7 +110,44 @@ export default function KennelLayoutManager({
           onSelectKennel={setSelectedKennel}
         />
       </div>
-      <div className="order-1 lg:order-2">
+
+      {/* Legende + zoek — rij 1, middenkolom. Houdt rij 2 (grondplan + paneel) uitgelijnd. */}
+      <div className="order-1 flex flex-wrap items-center gap-4 text-sm lg:order-none lg:col-start-2 lg:row-start-1">
+        <div className="flex items-center gap-2">
+          <label htmlFor="kennel-search-animal" className="font-semibold text-[#1b4332]">
+            Zoek:
+          </label>
+          <select
+            id="kennel-search-animal"
+            value={searchValue}
+            onChange={(e) => handleAnimalSearch(e.target.value)}
+            className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+          >
+            <option value="">— Kies dier —</option>
+            {sortedAnimals.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({SPECIES_LABELS[a.species] ?? a.species})
+              </option>
+            ))}
+          </select>
+        </div>
+        <span aria-hidden="true" className="hidden h-5 w-px bg-gray-300 sm:block" />
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-4 w-4 rounded border border-emerald-600 bg-emerald-400/60" />
+          <span>Leeg</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-4 w-4 rounded border border-amber-600 bg-amber-400/60" />
+          <span>Deels bezet</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-4 w-4 rounded border border-red-600 bg-red-400/60" />
+          <span>Vol</span>
+        </div>
+      </div>
+
+      {/* Grondplan — rij 2, middenkolom. */}
+      <div className="order-2 lg:order-none lg:col-start-2 lg:row-start-2">
         {searchMessage && (
           <div
             role="status"
@@ -131,30 +171,11 @@ export default function KennelLayoutManager({
             setSelectedKennel(null);
             setEditingId(null);
           }}
-          searchSlot={
-            <div className="flex items-center gap-2">
-              <label htmlFor="kennel-search-animal" className="text-sm font-semibold text-[#1b4332]">
-                Zoek:
-              </label>
-              <select
-                id="kennel-search-animal"
-                value={searchValue}
-                onChange={(e) => handleAnimalSearch(e.target.value)}
-                className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-              >
-                <option value="">— Kies dier —</option>
-                {sortedAnimals.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({SPECIES_LABELS[a.species] ?? a.species})
-                  </option>
-                ))}
-              </select>
-            </div>
-          }
         />
       </div>
-      {/* Rechter kolom: blijft eveneens vast in beeld. */}
-      <div className="order-3 space-y-4 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto lg:pl-1">
+
+      {/* Rechter kolom: detailpaneel — rij 2 zodat de bovenkant uitlijnt met het grondplan. */}
+      <div className="order-4 space-y-4 lg:order-none lg:col-start-3 lg:row-start-2 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto lg:pl-1">
         {selectedKennel && (
           <KennelDetailPanel
             kennel={selectedKennel}

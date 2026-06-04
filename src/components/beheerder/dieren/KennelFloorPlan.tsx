@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Kennel, Animal } from "@/types";
 import type { KennelWithOccupancy } from "@/lib/queries/kennels";
 
@@ -18,8 +18,6 @@ interface KennelFloorPlanProps {
   activeLayer?: number;
   availableLayers?: number[];
   onLayerChange?: (layer: number) => void;
-  // Story 10.24: extra UI links van de legende op dezelfde regel (zoekfunctie).
-  searchSlot?: ReactNode;
 }
 
 function getOccupancyColor(count: number, capacity: number): string {
@@ -45,7 +43,6 @@ export default function KennelFloorPlan({
   activeLayer,
   availableLayers,
   onLayerChange,
-  searchSlot,
 }: KennelFloorPlanProps) {
   const positioned = occupancy.filter(
     (o) => o.kennel.posX !== null && o.kennel.posY !== null && o.kennel.posW !== null && o.kennel.posH !== null,
@@ -72,25 +69,6 @@ export default function KennelFloorPlan({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4 text-sm">
-        {searchSlot}
-        {searchSlot && (
-          <span aria-hidden="true" className="hidden h-5 w-px bg-gray-300 sm:block" />
-        )}
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-4 w-4 rounded border border-emerald-600 bg-emerald-400/60" />
-          <span>Leeg</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-4 w-4 rounded border border-amber-600 bg-amber-400/60" />
-          <span>Deels bezet</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-4 w-4 rounded border border-red-600 bg-red-400/60" />
-          <span>Vol</span>
-        </div>
-      </div>
-
       <div className="relative w-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
