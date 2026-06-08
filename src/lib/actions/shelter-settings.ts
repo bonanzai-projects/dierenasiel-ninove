@@ -141,3 +141,12 @@ export async function updateWalkingClubThreshold(
 export async function updateWalkDays(days: number[]): Promise<ActionResult> {
   return updateShelterSetting("walk_days", days);
 }
+
+/**
+ * Story 10.27: verzorgerslijst voor het gedragsrapport (Bijlage VIII B).
+ * Lege regels worden weggefilterd vóór validatie.
+ */
+export async function updateCaregivers(names: string[]): Promise<ActionResult> {
+  const cleaned = names.map((n) => n.trim()).filter((n) => n.length > 0);
+  return updateShelterSetting("behavior_caregivers", cleaned);
+}

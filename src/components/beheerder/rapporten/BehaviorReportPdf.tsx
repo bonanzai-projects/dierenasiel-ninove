@@ -1,144 +1,178 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { BEHAVIOR_VERZORGERS_ITEMS, BEHAVIOR_HONDEN_ITEMS } from "@/lib/constants";
-import type { BehaviorRecord, BehaviorChecklist, Animal } from "@/types";
+import { formatDateBE } from "@/lib/reports/animal-report-format";
+import { sortBehaviorRecordsAsc, behaviorAnswer } from "@/lib/reports/behavior-report-format";
+import type { BehaviorRecord, Animal } from "@/types";
+
+// Story 10.27: gealigneerd op de officiële Bijlage VIII B (KB 27/04/2007).
+// Matrix-layout: criteria als rijen, elke evaluatiedatum als kolom. Minimum 5
+// kolommen zoals het officiële formulier (evaluatie ≥ wekelijks, eerste 3 weken).
+const MIN_COLUMNS = 5;
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica" },
-  header: { marginBottom: 20, textAlign: "center" },
-  title: { fontSize: 16, fontFamily: "Helvetica-Bold", marginBottom: 4 },
-  subtitle: { fontSize: 10, fontStyle: "italic", color: "#666", marginBottom: 2 },
-  org: { fontSize: 9, color: "#666", marginBottom: 2 },
-  meta: { marginBottom: 12, paddingBottom: 8, borderBottom: "1 solid #ccc" },
-  metaText: { fontSize: 10 },
-  metaLabel: { fontFamily: "Helvetica-Bold", color: "#555" },
-  recordSection: { marginBottom: 14 },
-  recordTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", marginBottom: 6, color: "#1b4332", borderBottom: "0.5 solid #1b4332", paddingBottom: 3 },
-  sectionLabel: { fontSize: 9, fontFamily: "Helvetica-Bold", color: "#1b4332", marginBottom: 3, marginTop: 6 },
-  table: { marginBottom: 4 },
-  tableHeader: { flexDirection: "row", backgroundColor: "#f3f4f6", borderBottom: "0.5 solid #ccc", paddingVertical: 4, paddingHorizontal: 6 },
-  tableRow: { flexDirection: "row", borderBottom: "0.5 solid #eee", paddingVertical: 3, paddingHorizontal: 6 },
-  headerText: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#374151" },
-  cellText: { fontSize: 8 },
-  colItem: { width: "60%" },
-  colValue: { width: "40%" },
-  notesBlock: { marginTop: 6, padding: 6, backgroundColor: "#f9fafb", borderRadius: 2 },
-  notesText: { fontSize: 9, lineHeight: 1.4 },
+  page: { padding: 36, fontSize: 9, fontFamily: "Helvetica" },
+  legalRef: { fontSize: 9, textAlign: "center", marginBottom: 10 },
+  shelterLine: { fontSize: 10, fontFamily: "Helvetica-Bold" },
+  title: { fontSize: 14, fontFamily: "Helvetica-Bold", textAlign: "center", marginTop: 8 },
+  subtitle: { fontSize: 9, fontStyle: "italic", textAlign: "center", marginBottom: 10 },
+  idBlock: { marginTop: 6, marginBottom: 12 },
+  idRow: { fontSize: 9, marginBottom: 2 },
+  idLabel: { fontFamily: "Helvetica-Bold" },
+  sectionLabel: { fontSize: 10, fontFamily: "Helvetica-Bold", marginTop: 12, marginBottom: 4, textDecoration: "underline" },
+  table: { borderTop: "0.5 solid #000", borderLeft: "0.5 solid #000" },
+  row: { flexDirection: "row" },
+  headerRow: { flexDirection: "row", backgroundColor: "#f3f4f6" },
+  cell: { borderRight: "0.5 solid #000", borderBottom: "0.5 solid #000", paddingVertical: 3, paddingHorizontal: 4, fontSize: 8, justifyContent: "center" },
+  labelCell: { width: "28%" },
+  dateCell: { fontFamily: "Helvetica-Bold", fontSize: 8 },
+  notesBlock: { marginTop: 12 },
+  notesTitle: { fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 3 },
+  notesItem: { fontSize: 8, marginBottom: 2 },
   empty: { fontSize: 9, color: "#999", fontStyle: "italic", paddingVertical: 8, textAlign: "center" },
-  footer: { position: "absolute", bottom: 30, left: 40, right: 40, textAlign: "center", fontSize: 8, color: "#999" },
+  footer: { position: "absolute", bottom: 24, left: 36, right: 36, textAlign: "center", fontSize: 7, color: "#999" },
 });
 
-function formatBool(val: unknown): string {
-  if (val === true) return "Ja";
-  if (val === false) return "Nee";
-  return "—";
-}
-
 interface Props {
-  animal: Pick<Animal, "id" | "name" | "species" | "breed">;
+  animal: Pick<Animal, "id" | "name" | "species" | "breed" | "dossierNr" | "identificationNr" | "intakeDate">;
   records: BehaviorRecord[];
+  caregivers: string[];
   generatedAt: string;
 }
 
-export default function BehaviorReportPdf({ animal, records, generatedAt }: Props) {
+type Column = BehaviorRecord | null;
+
+function buildColumns(records: BehaviorRecord[]): Column[] {
+  const sorted = sortBehaviorRecordsAsc(records);
+  const cols: Column[] = [...sorted];
+  while (cols.length < MIN_COLUMNS) cols.push(null);
+  return cols;
+}
+
+function MatrixSection({
+  title,
+  items,
+  andereKey,
+  columns,
+}: {
+  title: string;
+  items: readonly { key: string; label: string }[];
+  andereKey: string;
+  columns: Column[];
+}) {
+  const dateColWidth = `${72 / columns.length}%`;
+
+  return (
+    <View wrap={false}>
+      <Text style={styles.sectionLabel}>{title}</Text>
+      <View style={styles.table}>
+        {/* Koprij met datums */}
+        <View style={styles.headerRow}>
+          <Text style={[styles.cell, styles.labelCell]}>Datum :</Text>
+          {columns.map((col, i) => (
+            <Text key={i} style={[styles.cell, styles.dateCell, { width: dateColWidth }]}>
+              {col ? formatDateBE(col.date) : ""}
+            </Text>
+          ))}
+        </View>
+        {/* Criteria-rijen */}
+        {items.map((item) => (
+          <View key={item.key} style={styles.row}>
+            <Text style={[styles.cell, styles.labelCell]}>{item.label}</Text>
+            {columns.map((col, i) => (
+              <Text key={i} style={[styles.cell, { width: dateColWidth }]}>
+                {col ? behaviorAnswer(col.checklist as Record<string, unknown>, item.key) : ""}
+              </Text>
+            ))}
+          </View>
+        ))}
+        {/* Andere-rij */}
+        <View style={styles.row}>
+          <Text style={[styles.cell, styles.labelCell]}>Andere :</Text>
+          {columns.map((col, i) => {
+            const val = col ? (col.checklist as Record<string, unknown>)[andereKey] : null;
+            return (
+              <Text key={i} style={[styles.cell, { width: dateColWidth }]}>
+                {typeof val === "string" ? val : ""}
+              </Text>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+export default function BehaviorReportPdf({ animal, records, caregivers, generatedAt }: Props) {
+  const columns = buildColumns(records);
+  const recordsWithNotes = sortBehaviorRecordsAsc(records).filter((r) => r.notes);
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
-          <Text style={styles.title}>Evaluatiefiche van het gedrag in het asiel</Text>
-          <Text style={styles.subtitle}>Bijlage VIII B bij het koninklijk besluit van 27 april 2007</Text>
-        </View>
+        <Text style={styles.legalRef}>Bijlage VIII B bij het koninklijk besluit van 27 april 2007</Text>
 
-        <View style={styles.meta}>
-          <Text style={styles.metaText}>
-            <Text style={styles.metaLabel}>Dier: </Text>
-            {animal.name} ({animal.species}{animal.breed ? ` — ${animal.breed}` : ""})
+        <Text style={styles.shelterLine}>Dierenasiel : Dierenasiel Ninove</Text>
+        <Text style={styles.shelterLine}>
+          Dossiernummer : <Text style={{ fontFamily: "Helvetica" }}>{animal.dossierNr ?? ""}</Text>
+        </Text>
+
+        <Text style={styles.title}>Evaluatiefiche van het gedrag in het asiel.</Text>
+        <Text style={styles.subtitle}>
+          Deze pagina bevat gegevens die zullen meegedeeld worden aan kandidaat-adoptanten
+        </Text>
+
+        <View style={styles.idBlock}>
+          <Text style={styles.idRow}>
+            <Text style={styles.idLabel}>Identificatieteken : </Text>
+            {animal.identificationNr ?? ""}
           </Text>
-          <Text style={styles.metaText}>
-            <Text style={styles.metaLabel}>Gegenereerd op: </Text>
-            {generatedAt}
+          <Text style={styles.idRow}>
+            <Text style={styles.idLabel}>Naam van het dier (facultatief) : </Text>
+            {animal.name}
           </Text>
-          <Text style={styles.metaText}>
-            <Text style={styles.metaLabel}>Aantal fiches: </Text>
-            {records.length}
+          <Text style={styles.idRow}>
+            <Text style={styles.idLabel}>Datum van opname : </Text>
+            {formatDateBE(animal.intakeDate)}
+          </Text>
+          <Text style={styles.idRow}>
+            <Text style={styles.idLabel}>
+              Na(a)m(en) van de perso(o)n(en) (verzorgers) die het dier verzorgen in het asiel :{" "}
+            </Text>
+            {caregivers.join(", ")}
           </Text>
         </View>
 
         {records.length === 0 ? (
-          <Text style={styles.empty}>Geen gedragsfiches gevonden voor dit dier.</Text>
-        ) : (
-          records.map((record, idx) => {
-            const checklist = record.checklist as Record<string, unknown>;
-            return (
-              <View key={record.id} style={styles.recordSection}>
-                <Text style={styles.recordTitle}>
-                  Gedragsfiche {idx + 1} — {record.date}
-                </Text>
+          <Text style={styles.empty}>Geen gedragsfiches geregistreerd voor dit dier.</Text>
+        ) : null}
 
-                {/* Sectie 1: Verzorgers */}
-                <Text style={styles.sectionLabel}>1. Gedrag tegenover de verzorgers</Text>
-                <View style={styles.table}>
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.colItem, styles.headerText]}>Criterium</Text>
-                    <Text style={[styles.colValue, styles.headerText]}>Ja / Nee</Text>
-                  </View>
-                  {BEHAVIOR_VERZORGERS_ITEMS.map((item) => (
-                    <View key={item.key} style={styles.tableRow}>
-                      <Text style={[styles.colItem, styles.cellText]}>{item.label}</Text>
-                      <Text style={[styles.colValue, styles.cellText]}>
-                        {formatBool(checklist[item.key])}
-                      </Text>
-                    </View>
-                  ))}
-                  {typeof checklist.verzorgers_andere === "string" && checklist.verzorgers_andere && (
-                    <View style={styles.tableRow}>
-                      <Text style={[styles.colItem, styles.cellText]}>Andere</Text>
-                      <Text style={[styles.colValue, styles.cellText]}>
-                        {checklist.verzorgers_andere}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+        <MatrixSection
+          title="1. Gedrag tegenover de verzorgers"
+          items={BEHAVIOR_VERZORGERS_ITEMS}
+          andereKey="verzorgers_andere"
+          columns={columns}
+        />
 
-                {/* Sectie 2: Andere honden */}
-                <Text style={styles.sectionLabel}>2. Gedrag tegenover andere honden</Text>
-                <View style={styles.table}>
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.colItem, styles.headerText]}>Criterium</Text>
-                    <Text style={[styles.colValue, styles.headerText]}>Ja / Nee</Text>
-                  </View>
-                  {BEHAVIOR_HONDEN_ITEMS.map((item) => (
-                    <View key={item.key} style={styles.tableRow}>
-                      <Text style={[styles.colItem, styles.cellText]}>{item.label}</Text>
-                      <Text style={[styles.colValue, styles.cellText]}>
-                        {formatBool(checklist[item.key])}
-                      </Text>
-                    </View>
-                  ))}
-                  {typeof checklist.honden_andere === "string" && checklist.honden_andere && (
-                    <View style={styles.tableRow}>
-                      <Text style={[styles.colItem, styles.cellText]}>Andere</Text>
-                      <Text style={[styles.colValue, styles.cellText]}>
-                        {checklist.honden_andere}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+        <MatrixSection
+          title="2. Gedrag tegenover andere honden"
+          items={BEHAVIOR_HONDEN_ITEMS}
+          andereKey="honden_andere"
+          columns={columns}
+        />
 
-                {record.notes && (
-                  <View style={styles.notesBlock}>
-                    <Text style={[styles.notesText, { fontFamily: "Helvetica-Bold" }]}>Opmerkingen:</Text>
-                    <Text style={styles.notesText}>{record.notes}</Text>
-                  </View>
-                )}
-              </View>
-            );
-          })
+        {recordsWithNotes.length > 0 && (
+          <View style={styles.notesBlock}>
+            <Text style={styles.notesTitle}>Opmerkingen</Text>
+            {recordsWithNotes.map((r) => (
+              <Text key={r.id} style={styles.notesItem}>
+                {formatDateBE(r.date)}: {r.notes}
+              </Text>
+            ))}
+          </View>
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Evaluatiefiche gedrag (Bijlage VIII B)
+          Dierenasiel Ninove — Evaluatiefiche gedrag (Bijlage VIII B) — gegenereerd op {generatedAt}
         </Text>
       </Page>
     </Document>

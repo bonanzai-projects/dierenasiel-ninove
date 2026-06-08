@@ -12,6 +12,7 @@ describe("SHELTER_SETTING_KEYS", () => {
     expect(SHELTER_SETTING_KEYS.WORKFLOW_STEPBAR_VISIBLE).toBe("workflow_stepbar_visible");
     expect(SHELTER_SETTING_KEYS.WORKFLOW_AUTO_ACTIONS_ENABLED).toBe("workflow_auto_actions_enabled");
     expect(SHELTER_SETTING_KEYS.WALKING_CLUB_THRESHOLD).toBe("walking_club_threshold");
+    expect(SHELTER_SETTING_KEYS.BEHAVIOR_CAREGIVERS).toBe("behavior_caregivers");
   });
 });
 
@@ -21,6 +22,7 @@ describe("shelterSettingKeySchema", () => {
     expect(shelterSettingKeySchema.safeParse("workflow_stepbar_visible").success).toBe(true);
     expect(shelterSettingKeySchema.safeParse("workflow_auto_actions_enabled").success).toBe(true);
     expect(shelterSettingKeySchema.safeParse("walking_club_threshold").success).toBe(true);
+    expect(shelterSettingKeySchema.safeParse("behavior_caregivers").success).toBe(true);
   });
 
   it("rejects invalid keys", () => {
@@ -89,6 +91,42 @@ describe("shelterSettingValueSchema", () => {
 
     it("rejects string", () => {
       const result = shelterSettingValueSchema("walking_club_threshold", "10");
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("string-array settings (behavior_caregivers)", () => {
+    it("accepts a list of names", () => {
+      const result = shelterSettingValueSchema("behavior_caregivers", ["Sven", "Martine"]);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data).toEqual(["Sven", "Martine"]);
+    });
+
+    it("accepts an empty list", () => {
+      const result = shelterSettingValueSchema("behavior_caregivers", []);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data).toEqual([]);
+    });
+
+    it("trims names", () => {
+      const result = shelterSettingValueSchema("behavior_caregivers", ["  Sven  "]);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data).toEqual(["Sven"]);
+    });
+
+    it("rejects a blank name", () => {
+      const result = shelterSettingValueSchema("behavior_caregivers", ["Sven", "   "]);
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects a non-array value", () => {
+      const result = shelterSettingValueSchema("behavior_caregivers", "Sven");
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects more than 50 names", () => {
+      const many = Array.from({ length: 51 }, (_, i) => `Naam ${i}`);
+      const result = shelterSettingValueSchema("behavior_caregivers", many);
       expect(result.success).toBe(false);
     });
   });

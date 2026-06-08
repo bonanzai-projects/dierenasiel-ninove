@@ -26,7 +26,7 @@ vi.mock("drizzle-orm", () => ({
   inArray: vi.fn((...args: unknown[]) => ({ type: "inArray", args })),
 }));
 
-import { getWalkingClubThreshold, getWorkflowSettings, getShelterSetting } from "./shelter-settings";
+import { getWalkingClubThreshold, getWorkflowSettings, getShelterSetting, getShelterCaregivers } from "./shelter-settings";
 
 describe("getWalkingClubThreshold", () => {
   beforeEach(() => {
@@ -83,6 +83,48 @@ describe("getShelterSetting", () => {
     mockSelectLimit.mockRejectedValue(new Error("DB error"));
     const result = await getShelterSetting("workflow_enabled");
     expect(result).toBeNull();
+  });
+});
+
+describe("getShelterCaregivers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelectWhere.mockReturnValue({ limit: mockSelectLimit });
+    mockSelectFrom.mockReturnValue({ where: mockSelectWhere });
+  });
+
+  it("returns the stored list of names", async () => {
+    mockSelectLimit.mockResolvedValue([
+      { key: "behavior_caregivers", value: ["Sven Vanderrusten", "Martine Van Den Steen"] },
+    ]);
+    const result = await getShelterCaregivers();
+    expect(result).toEqual(["Sven Vanderrusten", "Martine Van Den Steen"]);
+  });
+
+  it("returns empty array when not found", async () => {
+    mockSelectLimit.mockResolvedValue([]);
+    const result = await getShelterCaregivers();
+    expect(result).toEqual([]);
+  });
+
+  it("filters out non-string and blank entries", async () => {
+    mockSelectLimit.mockResolvedValue([
+      { key: "behavior_caregivers", value: ["Sven", "", "  ", 42, "Katrien"] },
+    ]);
+    const result = await getShelterCaregivers();
+    expect(result).toEqual(["Sven", "Katrien"]);
+  });
+
+  it("returns empty array when value is not an array", async () => {
+    mockSelectLimit.mockResolvedValue([{ key: "behavior_caregivers", value: "Sven" }]);
+    const result = await getShelterCaregivers();
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array on DB error", async () => {
+    mockSelectLimit.mockRejectedValue(new Error("DB error"));
+    const result = await getShelterCaregivers();
+    expect(result).toEqual([]);
   });
 });
 

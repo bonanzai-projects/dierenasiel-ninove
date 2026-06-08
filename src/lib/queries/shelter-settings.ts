@@ -78,6 +78,29 @@ export async function getWorkflowSettings(): Promise<WorkflowSettings> {
 }
 
 /**
+ * Story 10.27: namen van de verzorgers die de dieren verzorgen, getoond op het
+ * gedragsrapport (Bijlage VIII B). Default als de setting nog niet bestaat: [].
+ */
+export async function getShelterCaregivers(): Promise<string[]> {
+  try {
+    const results = await db
+      .select()
+      .from(shelterSettings)
+      .where(eq(shelterSettings.key, SHELTER_SETTING_KEYS.BEHAVIOR_CAREGIVERS))
+      .limit(1);
+
+    if (results.length === 0) return [];
+
+    const value = results[0].value;
+    if (!Array.isArray(value)) return [];
+    return value.filter((n): n is string => typeof n === "string" && n.trim().length > 0);
+  } catch (err) {
+    console.error("getShelterCaregivers query failed:", err);
+    return [];
+  }
+}
+
+/**
  * Story 10.13: weekdagen waarop wandelaars mogen boeken.
  * Returns een gesorteerde array van weekdagnummers (0=zondag .. 6=zaterdag).
  * Default als de setting nog niet bestaat: [1, 3, 5, 6] (ma/wo/vr/za).
