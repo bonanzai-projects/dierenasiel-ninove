@@ -87,7 +87,8 @@ describe("exportAnimalReportCsv", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       const lines = result.data.split("\n");
-      expect(lines[0]).toBe("Ter adoptie,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Website,Adopteer");
+      // Story 10.31: kolom "Vlooien" toegevoegd na "Ontworming".
+      expect(lines[0]).toBe("Ter adoptie,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Vlooien,Website,Adopteer");
     }
   });
 

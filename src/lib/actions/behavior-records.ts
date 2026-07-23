@@ -6,7 +6,6 @@ import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { behaviorRecordSchema } from "@/lib/validations/behavior-records";
-import { countBehaviorRecords } from "@/lib/queries/behavior-records";
 import { getAnimalById } from "@/lib/queries/animals";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
@@ -48,15 +47,9 @@ export async function createBehaviorRecord(
     return { success: false, error: "Dier niet gevonden" };
   }
 
-  if (animal.species === "hond") {
-    const currentCount = await countBehaviorRecords(parsed.data.animalId);
-    if (currentCount >= 3) {
-      return {
-        success: false,
-        error: "Honden mogen maximaal 3 gedragsfiches hebben.",
-      };
-    }
-  }
+  // Story 10.28: bewust géén maximum aantal fiches. Bijlage VIII B (KB 27/04/2007)
+  // gaat uit van minstens één evaluatie per week gedurende de eerste drie weken,
+  // dus meer dan 3 fiches is de regel, niet de uitzondering.
 
   const session = await getSession();
 

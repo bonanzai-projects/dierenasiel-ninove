@@ -28,6 +28,7 @@ function animalToCsvRow(animal: AnimalReportRow): string {
     escapeCsvField(jaNee(animal.isNewPassport)),
     escapeCsvField(vaccinDisplay(animal.lastVaccinationDate, animal.lastVaccinationByShelter)),
     escapeCsvField(formatDateBE(animal.lastDewormingDate)),
+    escapeCsvField(formatDateBE(animal.lastFleaTreatmentDate)),
     escapeCsvField(okBlank(animal.isOnWebsite)),
     escapeCsvField(okBlank(animal.isAvailableForAdoption)),
   ].join(",");
@@ -61,7 +62,7 @@ export async function exportAnimalReportCsv(
 
   const { animals } = await getAnimalReport(queryFilters);
 
-  const header = "Ter adoptie,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Website,Adopteer";
+  const header = "Ter adoptie,Reden opvang,Gedragseval.,Naam,Ras,M/V,Steriel,Geb.datum,Chip,Nwe chip,Paspoort,Nw paspoort,Vaccin,Ontworming,Vlooien,Website,Adopteer";
   const rows = animals.map(animalToCsvRow);
   const csv = [header, ...rows].join("\n");
 

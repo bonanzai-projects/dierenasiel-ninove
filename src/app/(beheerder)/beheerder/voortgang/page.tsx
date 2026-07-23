@@ -39,7 +39,7 @@ const EPICS: Epic[] = [
       { id: "2.6", title: "Status Wijzigen en Uitstroom Registreren", status: "done" },
       { id: "2.7", title: "IBN-intake met 60-dagen Deadline", status: "done" },
       { id: "2.8", title: "Verwaarlozing Rapport bij IBN", status: "done" },
-      { id: "2.9", title: "Gedragsfiches Invullen (max 3 per hond)", status: "done" },
+      { id: "2.9", title: "Gedragsfiches Invullen (wekelijks per hond)", status: "done" },
       { id: "2.10", title: "Voedingsplan per Dier", status: "done" },
     ],
   },

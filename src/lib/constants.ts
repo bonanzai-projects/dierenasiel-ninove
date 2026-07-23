@@ -337,6 +337,8 @@ export const INTAKE_REASONS = [
   { value: "afstand", label: "Afstand door eigenaar" },
   { value: "ibn", label: "Inbeslagname (IBN)" },
   { value: "zwerfhond", label: "Vondeling" },
+  // Story 10.30: komt overeen met "tijd opv" in Sven's as-is asielrapport.
+  { value: "tijdelijke_opvang", label: "Tijdelijke opvang" },
 ] as const;
 
 export type IntakeReason = (typeof INTAKE_REASONS)[number]["value"];

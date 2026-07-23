@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import AnimalEditForm from "./AnimalEditForm";
+import { hasUnsavedChanges, resetUnsavedChanges } from "@/lib/forms/unsaved-changes";
 import type { Animal } from "@/types";
 
 vi.mock("@/lib/actions/animals", () => ({
@@ -64,18 +65,20 @@ function getReasonSelect(): HTMLSelectElement {
 }
 
 describe("AnimalEditForm — intake reason dropdown (Story 10.21)", () => {
-  it("toont exact 3 opties (+ placeholder) met de juiste labels", () => {
+  // Story 10.30: "Tijdelijke opvang" toegevoegd als vierde reden.
+  it("toont exact 4 opties (+ placeholder) met de juiste labels", () => {
     render(<AnimalEditForm animal={mockAnimal()} />);
     const select = getReasonSelect();
     const values = Array.from(select.options).map((o) => o.value);
     const labels = Array.from(select.options).map((o) => o.text);
 
-    expect(values).toEqual(["", "afstand", "ibn", "zwerfhond"]);
+    expect(values).toEqual(["", "afstand", "ibn", "zwerfhond", "tijdelijke_opvang"]);
     expect(labels).toEqual([
       "Niet opgegeven",
       "Afstand door eigenaar",
       "Inbeslagname (IBN)",
       "Vondeling",
+      "Tijdelijke opvang",
     ]);
   });
 
@@ -100,8 +103,9 @@ describe("AnimalEditForm — intake reason dropdown (Story 10.21)", () => {
 });
 
 describe("AnimalEditForm — sterilisatie detail (Story 10.23)", () => {
-  function getIsNeuteredCheckbox(): HTMLInputElement {
-    return screen.getByLabelText("Gesteriliseerd / Gecastreerd") as HTMLInputElement;
+  // Story 10.29: checkbox vervangen door radiogroep Ja / Nee / Onbekend.
+  function getNeuteredRadio(label: "Ja" | "Nee" | "Onbekend"): HTMLInputElement {
+    return screen.getByRole("radio", { name: label }) as HTMLInputElement;
   }
 
   it("toont GEEN datum/bron-velden wanneer isNeutered=false", () => {
@@ -116,12 +120,25 @@ describe("AnimalEditForm — sterilisatie detail (Story 10.23)", () => {
     expect(screen.getByLabelText(/Door het asiel/i)).toBeInTheDocument();
   });
 
-  it("toont velden zodra de gebruiker isNeutered aanvinkt", () => {
+  it("toont velden zodra de gebruiker 'Ja' selecteert", () => {
     render(<AnimalEditForm animal={mockAnimal({ isNeutered: false })} />);
     expect(screen.queryByLabelText(/Datum sterilisatie/i)).toBeNull();
-    fireEvent.click(getIsNeuteredCheckbox());
+    fireEvent.click(getNeuteredRadio("Ja"));
     expect(screen.getByLabelText(/Datum sterilisatie/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Door het asiel/i)).toBeInTheDocument();
+  });
+
+  it("selecteert 'Onbekend' wanneer isNeutered null is, zonder detailvelden", () => {
+    render(<AnimalEditForm animal={mockAnimal({ isNeutered: null })} />);
+    expect(getNeuteredRadio("Onbekend").checked).toBe(true);
+    expect(getNeuteredRadio("Ja").checked).toBe(false);
+    expect(getNeuteredRadio("Nee").checked).toBe(false);
+    expect(screen.queryByLabelText(/Datum sterilisatie/i)).toBeNull();
+  });
+
+  it("selecteert 'Nee' wanneer isNeutered expliciet false is", () => {
+    render(<AnimalEditForm animal={mockAnimal({ isNeutered: false })} />);
+    expect(getNeuteredRadio("Nee").checked).toBe(true);
   });
 
   it("pre-fillt datum en door-asiel uit het dier", () => {
@@ -152,5 +169,80 @@ describe("AnimalEditForm — sterilisatie detail (Story 10.23)", () => {
     );
     const byShelterCheckbox = screen.getByLabelText(/Door het asiel/i) as HTMLInputElement;
     expect(byShelterCheckbox.checked).toBe(false);
+  });
+});
+
+// Story 10.33: de balk met niet-opgeslagen wijzigingen.
+describe("AnimalEditForm — niet-opgeslagen wijzigingen (Story 10.33)", () => {
+  beforeEach(() => {
+    resetUnsavedChanges();
+  });
+
+  afterEach(() => {
+    resetUnsavedChanges();
+  });
+
+  const BAR = /Niet-opgeslagen wijzigingen/i;
+
+  it("toont geen balk zolang er niets gewijzigd is", () => {
+    render(<AnimalEditForm animal={mockAnimal()} />);
+    expect(screen.queryByText(BAR)).toBeNull();
+  });
+
+  it("toont de balk zodra een veld wijzigt", () => {
+    render(<AnimalEditForm animal={mockAnimal()} />);
+
+    fireEvent.input(screen.getByLabelText(/^Naam/), { target: { value: "Rexje" } });
+
+    expect(screen.getByText(BAR)).toBeInTheDocument();
+  });
+
+  it("verbergt de balk weer wanneer de wijziging ongedaan gemaakt wordt", () => {
+    render(<AnimalEditForm animal={mockAnimal({ name: "Rex" })} />);
+    const naam = screen.getByLabelText(/^Naam/);
+
+    fireEvent.input(naam, { target: { value: "Rexje" } });
+    expect(screen.getByText(BAR)).toBeInTheDocument();
+
+    fireEvent.input(naam, { target: { value: "Rex" } });
+    expect(screen.queryByText(BAR)).toBeNull();
+  });
+
+  it("meldt de openstaande wijziging aan de gedeelde store (voor de tabwissel)", () => {
+    render(<AnimalEditForm animal={mockAnimal()} />);
+    expect(hasUnsavedChanges()).toBe(false);
+
+    fireEvent.input(screen.getByLabelText(/^Naam/), { target: { value: "Rexje" } });
+
+    expect(hasUnsavedChanges()).toBe(true);
+  });
+
+  // De knoppenbalk bovenaan is verdwenen: opslaan/annuleren staan enkel nog in
+  // de meescrollende balk, die pas verschijnt wanneer er iets te bewaren valt.
+  it("toont geen opslagknop zolang er niets gewijzigd is", () => {
+    render(<AnimalEditForm animal={mockAnimal()} />);
+    expect(screen.queryByRole("button", { name: "Opslaan" })).toBeNull();
+  });
+
+  it("toont precies één opslagknop, in de balk", () => {
+    render(<AnimalEditForm animal={mockAnimal()} />);
+    fireEvent.input(screen.getByLabelText(/^Naam/), { target: { value: "Rexje" } });
+
+    expect(screen.getAllByRole("button", { name: "Opslaan" })).toHaveLength(1);
+  });
+
+  it("toont geen eigen titel — de paginatitel volstaat", () => {
+    render(<AnimalEditForm animal={mockAnimal({ name: "Thor" })} />);
+    expect(screen.queryByText(/Thor bewerken/)).toBeNull();
+  });
+
+  it("merkt ook een aangevinkte checkbox op", () => {
+    render(<AnimalEditForm animal={mockAnimal({ isOnWebsite: false })} />);
+
+    // getByRole i.p.v. getByLabelText: het label omvat zowel het hidden-veld
+    // als de checkbox, dus getByLabelText vindt er twee.
+    fireEvent.click(screen.getByRole("checkbox", { name: /Zichtbaar op website/i }));
+
+    expect(screen.getByText(BAR)).toBeInTheDocument();
   });
 });

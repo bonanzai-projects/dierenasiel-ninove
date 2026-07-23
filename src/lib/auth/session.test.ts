@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSession, verifySession } from "./session";
+import { createSession, verifySession, SESSION_DURATION } from "./session";
 
 // Mock next/headers cookies
 vi.mock("next/headers", () => ({
@@ -73,7 +73,9 @@ describe("verifySession", () => {
     }
   });
 
-  it("creates a token with 7 day expiry", async () => {
+  // De sessieduur verschilt bewust per omgeving: 7 dagen in productie,
+  // 30 dagen lokaal (zie SESSION_DURATION). De test draait niet in productie.
+  it("creates a token that expires after SESSION_DURATION", async () => {
     const now = Math.floor(Date.now() / 1000);
 
     const token = await createSession({
@@ -92,10 +94,16 @@ describe("verifySession", () => {
       Buffer.from(parts[1], "base64url").toString("utf8")
     );
 
-    const expectedExpiry = now + 7 * 24 * 60 * 60; // 7 days from now
+    // exp ligt op SESSION_DURATION vanaf nu (5 seconden speling)
+    expect(claims.exp).toBeGreaterThan(now + SESSION_DURATION - 5);
+    expect(claims.exp).toBeLessThanOrEqual(now + SESSION_DURATION + 5);
+  });
 
-    // exp should be ~7 days from now (within 5 second tolerance)
-    expect(claims.exp).toBeGreaterThan(now + 6 * 24 * 60 * 60);
-    expect(claims.exp).toBeLessThanOrEqual(expectedExpiry + 5);
+  it("gebruikt 30 dagen buiten productie en 7 dagen erin", () => {
+    // Vangnet tegen per ongeluk een lange sessie meedeployen naar productie.
+    const expected = process.env.NODE_ENV === "production"
+      ? 7 * 24 * 60 * 60
+      : 30 * 24 * 60 * 60;
+    expect(SESSION_DURATION).toBe(expected);
   });
 });

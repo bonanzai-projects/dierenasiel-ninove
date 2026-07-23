@@ -16,13 +16,29 @@ export function formatDateBE(value: string | null | undefined): string {
   return `${m[3]}-${m[2]}-${m[1]}`;
 }
 
-/** "Steriel door asiel" — combineert isNeutered + neuteredByShelter. */
+/**
+ * "Steriel door asiel" — combineert isNeutered + neuteredByShelter.
+ * Story 10.29: `null`/`undefined` = onbekend → "??" (zoals in Sven's as-is rapport).
+ */
 export function sterielLabel(
   isNeutered: boolean | null | undefined,
   neuteredByShelter: boolean | null | undefined,
 ): string {
+  if (isNeutered === null || isNeutered === undefined) return "??";
   if (!isNeutered) return "Nee";
   return neuteredByShelter ? "Ja (asiel)" : "Ja";
+}
+
+/**
+ * Radiowaarde uit het intake-/bewerkformulier → tri-state.
+ * "true" → true, "false" → false, al de rest (incl. "onbekend", leeg, ontbrekend) → null.
+ */
+export function parseNeuteredValue(
+  raw: FormDataEntryValue | string | null | undefined,
+): boolean | null {
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  return null;
 }
 
 /** Vaccinatiedatum met '*' indien door het asiel toegediend (zoals Sven's "*in shelter"). */
@@ -74,4 +90,15 @@ export function latestByAnimalId<T extends { animalId: number; date: string }>(
     }
   }
   return map;
+}
+
+/**
+ * Idem, maar enkel over de rijen van één categorie. Story 10.31: ontworming en
+ * vlooienbehandeling delen dezelfde tabel, dus de ontworming-kolom in R1 mag
+ * geen vlooien-datums oppikken (en omgekeerd).
+ */
+export function latestByAnimalIdForCategory<
+  T extends { animalId: number; date: string; category: string | null },
+>(rows: T[], category: string): Map<number, T> {
+  return latestByAnimalId(rows.filter((row) => row.category === category));
 }

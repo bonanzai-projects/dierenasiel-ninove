@@ -38,7 +38,6 @@ export default function BehaviorRecordSection({
   const [editingRecord, setEditingRecord] = useState<BehaviorRecord | null>(null);
 
   const isDog = species === "hond";
-  const maxReached = isDog && recordCount >= 3;
   const showReminder = isWednesdayReminderNeeded(records);
 
   function handleEdit(record: BehaviorRecord) {
@@ -62,10 +61,11 @@ export default function BehaviorRecordSection({
         </div>
       )}
 
-      {/* Max 3 warning for dogs */}
+      {/* Frequentie-hint voor honden (Bijlage VIII B: minstens wekelijks in de eerste 3 weken) */}
       {isDog && (
         <p className="mb-3 text-xs text-gray-500">
-          {recordCount}/3 fiches ingevuld (max. 3 voor honden)
+          {recordCount} {recordCount === 1 ? "fiche" : "fiches"} ingevuld — minstens
+          wekelijks tijdens de eerste 3 weken (Bijlage VIII B)
         </p>
       )}
 
@@ -85,13 +85,11 @@ export default function BehaviorRecordSection({
         <button
           type="button"
           onClick={() => { setEditingRecord(null); setView("form"); }}
-          disabled={maxReached}
           className={`rounded-lg px-4 py-1.5 text-sm font-medium ${
             view === "form" && !editingRecord
               ? "bg-[#1b4332] text-white"
               : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-          } disabled:cursor-not-allowed disabled:opacity-50`}
-          title={maxReached ? "Maximum van 3 fiches bereikt voor honden" : undefined}
+          }`}
         >
           Nieuwe fiche
         </button>

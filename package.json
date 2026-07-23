@@ -16,6 +16,7 @@
     "db:seed-cages": "tsx src/lib/db/backfill/run-seed-cages.ts",
     "db:backfill-campaign-photos": "tsx src/lib/db/backfill/run-backfill-campaign-photos.ts",
     "db:backfill-medical-inspections": "tsx src/lib/db/backfill/run-backfill-medical-inspections.ts",
+    "db:backfill-workflow-phase": "tsx src/lib/db/backfill/run-backfill-workflow-phase.ts",
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",

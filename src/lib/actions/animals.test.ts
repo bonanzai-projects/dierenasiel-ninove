@@ -273,19 +273,17 @@ describe("createAnimalIntake", () => {
     );
   });
 
-  it("returns validation error when IBN intake missing dossierNr", async () => {
+  // Sven-feedback 2026-07-24: dossier-/PV-nummer komen later → registratie mag
+  // niet blokkeren wanneer ze ontbreken.
+  it("registreert een IBN-dier zonder dossier-/PV-nummer", async () => {
     const fd = makeFormData({
       ...validFormData,
       intakeReason: "ibn",
-      pvNr: "PV-2026-001",
     });
 
     const result = await createAnimalIntake(null, fd);
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.fieldErrors?.dossierNr).toBeDefined();
-    }
+    expect(result.success).toBe(true);
   });
 
   it("stores betrokkenInstanties in intakeMetadata for IBN", async () => {
@@ -328,8 +326,21 @@ describe("createAnimalIntake", () => {
     );
   });
 
-  it("saves isNeutered=false with null neuteredDate/neuteredByShelter when omitted", async () => {
+  // Story 10.29: geen keuze meegestuurd = onbekend (null), niet "Nee".
+  it("saves isNeutered=null with null neuteredDate/neuteredByShelter when omitted", async () => {
     await createAnimalIntake(null, makeFormData(validFormData));
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isNeutered: null,
+        neuteredDate: null,
+        neuteredByShelter: null,
+      }),
+    );
+  });
+
+  it("saves isNeutered=false when 'Nee' is explicitly selected", async () => {
+    await createAnimalIntake(null, makeFormData({ ...validFormData, isNeutered: "false" }));
 
     expect(mockValues).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -337,6 +348,14 @@ describe("createAnimalIntake", () => {
         neuteredDate: null,
         neuteredByShelter: null,
       }),
+    );
+  });
+
+  it("saves isNeutered=null when 'Onbekend' is selected", async () => {
+    await createAnimalIntake(null, makeFormData({ ...validFormData, isNeutered: "onbekend" }));
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({ isNeutered: null }),
     );
   });
 });
@@ -558,16 +577,14 @@ describe("updateAnimal", () => {
     );
   });
 
-  it("BUG-REPRO: parses isNeutered correctly when form sends BOTH hidden 'false' AND checkbox 'true' (real browser behavior)", async () => {
-    // Real browser form submission with <input type="hidden" value="false" /> +
-    // <input type="checkbox" value="true" checked /> creates TWO entries for the same name.
-    // formData.get() returns the first ("false"), which previously broke the parsing.
+  // Story 10.29: isNeutered is een radiogroep (één waarde), maar neuteredByShelter
+  // blijft het hidden+checkbox-patroon — dat stuurt WEL twee entries voor dezelfde naam.
+  it("BUG-REPRO: parses neuteredByShelter when form sends BOTH hidden 'false' AND checkbox 'true' (real browser behavior)", async () => {
     const fd = new FormData();
     fd.append("id", "1");
     fd.append("name", "Rex");
     fd.append("gender", "reu");
-    fd.append("isNeutered", "false"); // hidden fallback first
-    fd.append("isNeutered", "true"); // checkbox value when checked
+    fd.append("isNeutered", "true"); // radio: exact één waarde
     fd.append("neuteredDate", "2024-03-15");
     fd.append("neuteredByShelter", "false"); // hidden fallback
     fd.append("neuteredByShelter", "true"); // checkbox value when checked
@@ -579,6 +596,120 @@ describe("updateAnimal", () => {
         isNeutered: true,
         neuteredDate: "2024-03-15",
         neuteredByShelter: true,
+      }),
+    );
+  });
+
+  // BUG-REPRO (2026-07-23): alle vinkjes in het bewerkformulier gebruiken het
+  // hidden+checkbox-patroon, dus een echte browser stuurt TWEE entries met
+  // dezelfde naam. `formData.get()` geeft dan altijd de eerste ("false") terug,
+  // waardoor deze vinkjes nooit aan te zetten waren. Story 10.23 loste dit al op
+  // voor isNeutered; deze vier bleven achter.
+  it.each([
+    ["isOnWebsite"],
+    ["isFeatured"],
+    ["isNewChip"],
+    ["isNewPassport"],
+  ])("persists %s=true when the browser sends hidden 'false' + checkbox 'true'", async (field) => {
+    const fd = new FormData();
+    fd.append("id", "1");
+    fd.append("name", "Rex");
+    fd.append("gender", "reu");
+    fd.append(field, "false"); // hidden fallback first
+    fd.append(field, "true"); // checkbox value when checked
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ [field]: true }),
+    );
+  });
+
+  it.each([
+    ["isOnWebsite"],
+    ["isFeatured"],
+    ["isNewChip"],
+    ["isNewPassport"],
+  ])("persists %s=false when only the hidden fallback is sent", async (field) => {
+    const fd = new FormData();
+    fd.append("id", "1");
+    fd.append("name", "Rex");
+    fd.append("gender", "reu");
+    fd.append(field, "false");
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ [field]: false }),
+    );
+  });
+
+  // Story 10.32: publicatiekanaal-vinkje voor de affiche. Enkel persistentie,
+  // (nog) geen gedrag elders in de applicatie.
+  it("saves isOnPoster when the checkbox is ticked", async () => {
+    const fd = new FormData();
+    fd.append("id", "1");
+    fd.append("name", "Rex");
+    fd.append("gender", "reu");
+    fd.append("isOnPoster", "false"); // hidden fallback
+    fd.append("isOnPoster", "true"); // checkbox
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ isOnPoster: true }),
+    );
+  });
+
+  it("saves isOnPoster=false when the checkbox is unticked", async () => {
+    const fd = new FormData();
+    fd.append("id", "1");
+    fd.append("name", "Rex");
+    fd.append("gender", "reu");
+    fd.append("isOnPoster", "false"); // enkel de hidden fallback
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ isOnPoster: false }),
+    );
+  });
+
+  // Story 10.32: website- en affichetekst staan los van de uitgebreide beschrijving.
+  it("saves websiteDescription and posterDescription separately", async () => {
+    const fd = new FormData();
+    fd.append("id", "1");
+    fd.append("name", "Rex");
+    fd.append("gender", "reu");
+    fd.append("description", "Werktekst");
+    fd.append("websiteDescription", "Site-tekst");
+    fd.append("posterDescription", "Affiche-tekst");
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "Werktekst",
+        websiteDescription: "Site-tekst",
+        posterDescription: "Affiche-tekst",
+      }),
+    );
+  });
+
+  it("saves isNeutered=null and clears the detail fields when 'Onbekend' is selected", async () => {
+    const fd = new FormData();
+    fd.append("id", "1");
+    fd.append("name", "Rex");
+    fd.append("gender", "reu");
+    fd.append("isNeutered", "onbekend");
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isNeutered: null,
+        neuteredDate: null,
+        neuteredByShelter: null,
       }),
     );
   });

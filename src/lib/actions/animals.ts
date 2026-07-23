@@ -7,9 +7,40 @@ import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { animalIntakeSchema, animalUpdateSchema } from "@/lib/validations/animals";
 import { slugify } from "@/lib/utils";
+import { parseNeuteredValue } from "@/lib/reports/animal-report-format";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 import type { Animal } from "@/types";
+
+/**
+ * Leest een vinkje dat met het hidden+checkbox-patroon wordt verstuurd.
+ * Een echte browser stuurt dan twee entries met dezelfde naam (hidden "false"
+ * eerst, checkbox "true" erna); `formData.get()` geeft altijd de eerste terug,
+ * waardoor zo'n vinkje nooit aan lijkt te staan.
+ */
+function isChecked(formData: FormData, name: string): boolean {
+  return formData.getAll(name).includes("true");
+}
+
+/**
+ * Verzamelt de tekstvelden van het intakeformulier als platte strings, zodat ze
+ * bij een validatiefout teruggegeven en opnieuw getoond kunnen worden.
+ * (De gecontroleerde velden — soort, reden, sterilisatie — leven al in React-state.)
+ */
+function collectIntakeValues(formData: FormData): Record<string, string> {
+  const fields = [
+    "name", "breed", "color", "dateOfBirth", "identificationNr", "passportNr",
+    "intakeDate", "description", "shortDescription", "dossierNr", "pvNr",
+    "intakeMetadata.melderNaam", "intakeMetadata.melderLocatie",
+    "intakeMetadata.melderDatum", "intakeMetadata.betrokkenInstanties",
+  ];
+  const values: Record<string, string> = {};
+  for (const field of fields) {
+    const value = formData.get(field);
+    if (typeof value === "string" && value !== "") values[field] = value;
+  }
+  return values;
+}
 
 export async function createAnimalIntake(
   _prevState: ActionResult<Animal> | null,
@@ -34,10 +65,8 @@ export async function createAnimalIntake(
       }
     : undefined;
 
-  // Use getAll().includes for hidden+checkbox patterns: real browser sends
-  // TWO entries (hidden 'false' first, checkbox 'true' second when checked).
-  // get() returns first ('false'); getAll().includes('true') is robust for both.
-  const isNeutered = formData.getAll("isNeutered").includes("true");
+  // Story 10.29: radiogroep Ja/Nee/Onbekend → true/false/null (één waarde per submit).
+  const isNeutered = parseNeuteredValue(formData.get("isNeutered"));
   const raw = {
     name: (formData.get("name") as string) || "",
     species: formData.get("species") as string,
@@ -52,8 +81,8 @@ export async function createAnimalIntake(
     description: (formData.get("description") as string) || undefined,
     shortDescription: (formData.get("shortDescription") as string) || undefined,
     isNeutered,
-    neuteredDate: isNeutered ? (formData.get("neuteredDate") as string) || undefined : undefined,
-    neuteredByShelter: isNeutered ? formData.getAll("neuteredByShelter").includes("true") : undefined,
+    neuteredDate: isNeutered === true ? (formData.get("neuteredDate") as string) || undefined : undefined,
+    neuteredByShelter: isNeutered === true ? formData.getAll("neuteredByShelter").includes("true") : undefined,
     isPickedUpByShelter: isPickedUp,
     dossierNr: (formData.get("dossierNr") as string) || undefined,
     pvNr: (formData.get("pvNr") as string) || undefined,
@@ -65,6 +94,9 @@ export async function createAnimalIntake(
     return {
       success: false,
       fieldErrors: parsed.error.flatten().fieldErrors,
+      // Geef de ingevoerde tekstwaarden terug zodat het formulier ze na een
+      // validatiefout opnieuw kan tonen i.p.v. leeg te lopen.
+      values: collectIntakeValues(formData),
     };
   }
 
@@ -149,9 +181,8 @@ export async function updateAnimal(
     return { success: false, error: permCheck.error };
   }
 
-  // Use getAll().includes for hidden+checkbox patterns: real browser sends
-  // TWO entries (hidden 'false' first, checkbox 'true' second when checked).
-  const isNeuteredFlag = formData.getAll("isNeutered").includes("true");
+  // Story 10.29: radiogroep Ja/Nee/Onbekend → true/false/null.
+  const isNeuteredFlag = parseNeuteredValue(formData.get("isNeutered"));
   const raw = {
     id: formData.get("id"),
     name: (formData.get("name") as string) || "",
@@ -164,17 +195,22 @@ export async function updateAnimal(
     intakeReason: (formData.get("intakeReason") as string) || undefined,
     dossierNr: (formData.get("dossierNr") as string) || undefined,
     isNeutered: isNeuteredFlag,
-    neuteredDate: isNeuteredFlag ? (formData.get("neuteredDate") as string) || undefined : undefined,
-    neuteredByShelter: isNeuteredFlag ? formData.getAll("neuteredByShelter").includes("true") : undefined,
+    neuteredDate: isNeuteredFlag === true ? (formData.get("neuteredDate") as string) || undefined : undefined,
+    neuteredByShelter: isNeuteredFlag === true ? formData.getAll("neuteredByShelter").includes("true") : undefined,
     description: (formData.get("description") as string) || undefined,
+    websiteDescription: (formData.get("websiteDescription") as string) || undefined,
+    posterDescription: (formData.get("posterDescription") as string) || undefined,
     shortDescription: (formData.get("shortDescription") as string) || undefined,
     identificationNr: (formData.get("identificationNr") as string) || undefined,
-    isNewChip: formData.get("isNewChip") === "true",
+    // getAll().includes i.p.v. get(): het hidden+checkbox-patroon stuurt twee
+    // entries met dezelfde naam en get() geeft altijd de eerste ("false") terug.
+    isNewChip: isChecked(formData, "isNewChip"),
     passportNr: (formData.get("passportNr") as string) || undefined,
-    isNewPassport: formData.get("isNewPassport") === "true",
+    isNewPassport: isChecked(formData, "isNewPassport"),
     barcode: (formData.get("barcode") as string) || undefined,
-    isOnWebsite: formData.get("isOnWebsite") === "true",
-    isFeatured: formData.get("isFeatured") === "true",
+    isOnWebsite: isChecked(formData, "isOnWebsite"),
+    isOnPoster: isChecked(formData, "isOnPoster"),
+    isFeatured: isChecked(formData, "isFeatured"),
   };
 
   const parsed = animalUpdateSchema.safeParse(raw);
@@ -204,6 +240,8 @@ export async function updateAnimal(
       dossierNr: parsed.data.dossierNr || sql`null`,
       isNeutered: parsed.data.isNeutered,
       description: parsed.data.description || sql`null`,
+      websiteDescription: parsed.data.websiteDescription || sql`null`,
+      posterDescription: parsed.data.posterDescription || sql`null`,
       shortDescription: parsed.data.shortDescription || sql`null`,
       identificationNr: parsed.data.identificationNr || sql`null`,
       isNewChip: parsed.data.isNewChip,
@@ -211,6 +249,7 @@ export async function updateAnimal(
       isNewPassport: parsed.data.isNewPassport,
       barcode: parsed.data.barcode || sql`null`,
       isOnWebsite: parsed.data.isOnWebsite,
+      isOnPoster: parsed.data.isOnPoster,
       isFeatured: parsed.data.isFeatured,
       updatedAt: new Date(),
     };

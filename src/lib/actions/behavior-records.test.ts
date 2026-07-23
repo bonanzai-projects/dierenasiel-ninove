@@ -175,15 +175,24 @@ describe("createBehaviorRecord", () => {
     }
   });
 
-  it("enforces max 3 records for dogs", async () => {
+  // Story 10.28: de harde limiet van 3 fiches is opgeheven — Bijlage VIII B gaat uit
+  // van minstens wekelijkse evaluatie in de eerste drie weken.
+  it("allows more than 3 records for dogs", async () => {
+    mockGetAnimalById.mockResolvedValue({ id: 1, species: "hond" });
     mockCountBehaviorRecords.mockResolvedValue(3);
 
     const result = await createBehaviorRecord(null, makeFormData(validFormData));
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("3");
-    }
+    expect(result.success).toBe(true);
+  });
+
+  it("allows a long stay with many records for dogs", async () => {
+    mockGetAnimalById.mockResolvedValue({ id: 1, species: "hond" });
+    mockCountBehaviorRecords.mockResolvedValue(12);
+
+    const result = await createBehaviorRecord(null, makeFormData(validFormData));
+
+    expect(result.success).toBe(true);
   });
 
   it("allows more than 3 records for cats", async () => {

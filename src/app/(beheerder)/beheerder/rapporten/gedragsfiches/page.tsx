@@ -5,7 +5,11 @@ import { getAnimalById } from "@/lib/queries/animals";
 import { getShelterCaregivers } from "@/lib/queries/shelter-settings";
 import { BEHAVIOR_VERZORGERS_ITEMS, BEHAVIOR_HONDEN_ITEMS } from "@/lib/constants";
 import { formatDateBE } from "@/lib/reports/animal-report-format";
-import { sortBehaviorRecordsAsc, behaviorAnswer } from "@/lib/reports/behavior-report-format";
+import {
+  sortBehaviorRecordsAsc,
+  behaviorAnswer,
+  buildBehaviorColumns,
+} from "@/lib/reports/behavior-report-format";
 import AnimalSelect from "@/components/beheerder/rapporten/AnimalSelect";
 import type { BehaviorRecord } from "@/types";
 
@@ -14,13 +18,6 @@ import type { BehaviorRecord } from "@/types";
 const MIN_COLUMNS = 5;
 
 type Column = BehaviorRecord | null;
-
-function buildColumns(records: BehaviorRecord[]): Column[] {
-  const sorted = sortBehaviorRecordsAsc(records);
-  const cols: Column[] = [...sorted];
-  while (cols.length < MIN_COLUMNS) cols.push(null);
-  return cols;
-}
 
 function MatrixSection({
   title,
@@ -37,7 +34,7 @@ function MatrixSection({
     <div>
       <p className="mb-2 text-sm font-semibold italic text-[#1b4332]">{title}</p>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-xs">
+        <table className="w-full min-w-[720px] border-collapse text-xs">
           <thead>
             <tr className="bg-gray-50">
               <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold w-1/4">Datum :</th>
@@ -94,7 +91,7 @@ export default async function GedragsfichesRapportPage({ searchParams }: Props) 
     getShelterCaregivers(),
   ]);
 
-  const columns = selectedAnimal ? buildColumns(records) : [];
+  const columns = selectedAnimal ? buildBehaviorColumns(records, MIN_COLUMNS) : [];
   const recordsWithNotes = selectedAnimal ? sortBehaviorRecordsAsc(records).filter((r) => r.notes) : [];
 
   return (

@@ -77,3 +77,64 @@ describe("dewormingSchema", () => {
     }
   });
 });
+
+// Story 10.31: vlooienbehandeling als tweede categorie in dezelfde tabel.
+describe("dewormingSchema — category", () => {
+  it("defaults to 'ontworming' when omitted", () => {
+    const result = dewormingSchema.safeParse(validDeworming);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.category).toBe("ontworming");
+    }
+  });
+
+  it("rejects an unknown category", () => {
+    const result = dewormingSchema.safeParse({ ...validDeworming, category: "vaccinatie" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.category).toBeDefined();
+    }
+  });
+
+  it("accepts a free-text product for category 'vlooien'", () => {
+    const result = dewormingSchema.safeParse({
+      ...validDeworming,
+      category: "vlooien",
+      type: "Frontline spot-on",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty product for category 'vlooien'", () => {
+    const result = dewormingSchema.safeParse({
+      ...validDeworming,
+      category: "vlooien",
+      type: "",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.type).toBeDefined();
+    }
+  });
+
+  it("rejects a product longer than 50 characters for category 'vlooien'", () => {
+    const result = dewormingSchema.safeParse({
+      ...validDeworming,
+      category: "vlooien",
+      type: "x".repeat(51),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("still restricts the type to the known products for category 'ontworming'", () => {
+    const result = dewormingSchema.safeParse({
+      ...validDeworming,
+      category: "ontworming",
+      type: "Frontline spot-on",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.type).toBeDefined();
+    }
+  });
+});

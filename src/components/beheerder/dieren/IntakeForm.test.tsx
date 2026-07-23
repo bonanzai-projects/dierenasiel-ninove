@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import IntakeForm from "./IntakeForm";
 
@@ -7,23 +7,31 @@ vi.mock("@/lib/actions/animals", () => ({
   createAnimalIntake: vi.fn(),
 }));
 
+// jsdom implementeert scrollIntoView niet; de "scroll naar eerste fout"-effect
+// van het formulier roept die aan zodra er een fout is → stubben.
+beforeAll(() => {
+  HTMLElement.prototype.scrollIntoView = vi.fn();
+});
+
 function getReasonSelect(): HTMLSelectElement {
   return screen.getByLabelText("Reden binnenkomst") as HTMLSelectElement;
 }
 
 describe("IntakeForm — intake reason dropdown (Story 10.21)", () => {
-  it("toont exact 3 opties (+ placeholder) met de juiste labels", () => {
+  // Story 10.30: "Tijdelijke opvang" toegevoegd als vierde reden.
+  it("toont exact 4 opties (+ placeholder) met de juiste labels", () => {
     render(<IntakeForm />);
     const select = getReasonSelect();
     const optionValues = Array.from(select.options).map((o) => o.value);
     const optionLabels = Array.from(select.options).map((o) => o.text);
 
-    expect(optionValues).toEqual(["", "afstand", "ibn", "zwerfhond"]);
+    expect(optionValues).toEqual(["", "afstand", "ibn", "zwerfhond", "tijdelijke_opvang"]);
     expect(optionLabels).toEqual([
       "Selecteer reden...",
       "Afstand door eigenaar",
       "Inbeslagname (IBN)",
       "Vondeling",
+      "Tijdelijke opvang",
     ]);
   });
 
@@ -61,13 +69,16 @@ describe("IntakeForm — intake reason dropdown (Story 10.21)", () => {
 });
 
 describe("IntakeForm — sterilisatie detail (Story 10.23)", () => {
-  function getIsNeuteredCheckbox(): HTMLInputElement {
-    return screen.getByLabelText("Gesteriliseerd / Gecastreerd") as HTMLInputElement;
+  // Story 10.29: checkbox vervangen door radiogroep Ja / Nee / Onbekend.
+  function getNeuteredRadio(label: "Ja" | "Nee" | "Onbekend"): HTMLInputElement {
+    return screen.getByRole("radio", { name: label }) as HTMLInputElement;
   }
 
-  it("toont de 'Gesteriliseerd / Gecastreerd'-checkbox standaard uitgevinkt", () => {
+  it("start standaard op 'Onbekend'", () => {
     render(<IntakeForm />);
-    expect(getIsNeuteredCheckbox().checked).toBe(false);
+    expect(getNeuteredRadio("Onbekend").checked).toBe(true);
+    expect(getNeuteredRadio("Ja").checked).toBe(false);
+    expect(getNeuteredRadio("Nee").checked).toBe(false);
   });
 
   it("toont GEEN datum/bron-velden standaard", () => {
@@ -76,19 +87,53 @@ describe("IntakeForm — sterilisatie detail (Story 10.23)", () => {
     expect(screen.queryByLabelText(/Door het asiel uitgevoerd/i)).toBeNull();
   });
 
-  it("toont datum + bron-velden zodra isNeutered wordt aangevinkt", () => {
+  it("toont datum + bron-velden zodra 'Ja' wordt geselecteerd", () => {
     render(<IntakeForm />);
-    fireEvent.click(getIsNeuteredCheckbox());
+    fireEvent.click(getNeuteredRadio("Ja"));
     expect(screen.getByLabelText(/Datum sterilisatie/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Door het asiel uitgevoerd/i)).toBeInTheDocument();
   });
 
-  it("verbergt de velden weer wanneer isNeutered wordt uitgevinkt", () => {
+  it("verbergt de velden weer bij 'Nee' en bij 'Onbekend'", () => {
     render(<IntakeForm />);
-    const checkbox = getIsNeuteredCheckbox();
-    fireEvent.click(checkbox);
+    fireEvent.click(getNeuteredRadio("Ja"));
     expect(screen.getByLabelText(/Datum sterilisatie/i)).toBeInTheDocument();
-    fireEvent.click(checkbox);
+
+    fireEvent.click(getNeuteredRadio("Nee"));
     expect(screen.queryByLabelText(/Datum sterilisatie/i)).toBeNull();
+
+    fireEvent.click(getNeuteredRadio("Ja"));
+    fireEvent.click(getNeuteredRadio("Onbekend"));
+    expect(screen.queryByLabelText(/Datum sterilisatie/i)).toBeNull();
+  });
+});
+
+// Sven-feedback 2026-07-24: bij een validatiefout mochten de reeds ingevulde
+// velden niet leeglopen.
+describe("IntakeForm — behoud van invoer bij een validatiefout (Story 10.34)", () => {
+  it("toont de door de action teruggegeven waarden opnieuw als defaultValue", async () => {
+    const { createAnimalIntake } = await import("@/lib/actions/animals");
+    (createAnimalIntake as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      success: false,
+      fieldErrors: { name: ["Naam is verplicht"] },
+      values: {
+        breed: "Border Collie",
+        color: "Merle bruin",
+        identificationNr: "981100002787934",
+      },
+    });
+
+    render(<IntakeForm />);
+    fireEvent.click(screen.getByRole("button", { name: /Registreren/i }));
+
+    // Na de (mislukte) action tonen de velden hun eerder ingevoerde waarde weer.
+    expect(await screen.findByDisplayValue("Border Collie")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Merle bruin")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("981100002787934")).toBeInTheDocument();
+  });
+
+  it("laat velden leeg wanneer er (nog) geen fout is teruggegeven", () => {
+    render(<IntakeForm />);
+    expect(screen.getByLabelText(/Ras/i)).toHaveValue("");
   });
 });

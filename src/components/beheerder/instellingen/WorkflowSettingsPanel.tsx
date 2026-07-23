@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useTransition, useOptimistic } from "react";
+import { useState, useTransition, useOptimistic, type ReactNode } from "react";
 import { updateShelterSetting } from "@/lib/actions/shelter-settings";
+import InfoButton from "@/components/beheerder/shared/InfoButton";
+import WorkflowInfo from "./WorkflowInfo";
 import type { WorkflowSettings } from "@/lib/validations/shelter-settings";
 
 interface Props {
@@ -55,6 +57,11 @@ export default function WorkflowSettingsPanel({ settings }: Props) {
           checked={optimistic.workflowEnabled}
           disabled={isPending}
           onChange={() => handleToggle("workflow_enabled", optimistic.workflowEnabled)}
+          info={
+            <InfoButton title="Wat doet de workflow?" label="Uitleg over de workflow">
+              <WorkflowInfo />
+            </InfoButton>
+          }
         />
 
         {/* Stepbar toggle */}
@@ -95,19 +102,25 @@ function ToggleRow({
   checked,
   disabled,
   onChange,
+  info,
 }: {
   label: string;
   description: string;
   checked: boolean;
   disabled: boolean;
   onChange: () => void;
+  /** Optionele uitleg-knop naast het label. */
+  info?: ReactNode;
 }) {
   return (
     <div className="flex items-center justify-between rounded-md border border-gray-100 px-4 py-3">
       <div>
-        <p className={`text-sm font-medium ${disabled ? "text-gray-400" : "text-gray-900"}`}>
+        {/* <div> en geen <p>: de uitleg-knop rendert een <dialog>, en dat mag
+            volgens de HTML-regels niet binnen een paragraaf staan. */}
+        <div className={`flex items-center gap-2 text-sm font-medium ${disabled ? "text-gray-400" : "text-gray-900"}`}>
           {label}
-        </p>
+          {info}
+        </div>
         <p className={`text-xs ${disabled ? "text-gray-300" : "text-gray-500"}`}>
           {description}
         </p>

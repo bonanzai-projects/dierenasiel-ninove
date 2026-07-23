@@ -2,6 +2,7 @@
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { type ReactNode, useCallback } from "react";
+import { hasUnsavedChanges } from "@/lib/forms/unsaved-changes";
 
 const TABS = [
   { key: "overzicht", label: "Overzicht" },
@@ -31,6 +32,15 @@ export default function AnimalDetailTabs({
 
   const setTab = useCallback(
     (tab: TabKey) => {
+      // Story 10.33: van tabblad wisselen unmount het bewerkformulier en gooit
+      // niet-opgeslagen invoer weg. Eerst bevestigen.
+      if (hasUnsavedChanges()) {
+        const proceed = window.confirm(
+          "Je hebt niet-opgeslagen wijzigingen. Als je van tabblad wisselt, gaan die verloren.\n\nToch wisselen?",
+        );
+        if (!proceed) return;
+      }
+
       const params = new URLSearchParams(searchParams.toString());
       if (tab === "overzicht") {
         params.delete("tab");
@@ -45,17 +55,18 @@ export default function AnimalDetailTabs({
 
   return (
     <div>
-      {/* Tab bar */}
-      <div className="grid grid-cols-4 rounded-lg bg-gray-200/80 p-1">
+      {/* Tab bar — lichte huisstijl-tint met rand: duidelijk als menustrook
+          herkenbaar, zonder de felheid van een volvlakse donkergroene balk. */}
+      <div className="grid grid-cols-4 gap-1 rounded-lg border border-emerald-200 bg-[#e8f2ec] p-1.5 shadow-sm">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setTab(tab.key)}
-            className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-2.5 text-sm font-medium transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-md px-3 py-2.5 text-sm font-semibold transition-all ${
               currentTab === tab.key
-                ? "bg-white text-[#1b4332] shadow-sm ring-1 ring-gray-200"
-                : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+                ? "bg-white text-[#1b4332] shadow ring-1 ring-emerald-200"
+                : "text-[#2d6a4f] hover:bg-white/60 hover:text-[#1b4332]"
             }`}
           >
             {tab.label}

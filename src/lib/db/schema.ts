@@ -41,7 +41,11 @@ export const animals = pgTable("animals", {
   isNeutered: boolean("is_neutered").default(false),
   neuteredDate: date("neutered_date"),
   neuteredByShelter: boolean("neutered_by_shelter"),
+  // `description` = de uitgebreide werktekst. Story 10.32 splitst wat er
+  // effectief getoond wordt af: leeg = terugval op `description`.
   description: text("description").notNull(),
+  websiteDescription: text("website_description"),
+  posterDescription: text("poster_description"),
   shortDescription: varchar("short_description", { length: 300 }),
   imageUrl: varchar("image_url", { length: 500 }),
   images: text("images").array(),
@@ -56,6 +60,9 @@ export const animals = pgTable("animals", {
   barcode: varchar("barcode", { length: 100 }),
   isAvailableForAdoption: boolean("is_available_for_adoption").default(false),
   isOnWebsite: boolean("is_on_website").default(false),
+  // Story 10.32: publicatiekanaal "affiche". Wordt (voorlopig) enkel bewaard —
+  // er hangt bewust geen logica aan; de affiche-PDF kan voor elk dier gemaakt worden.
+  isOnPoster: boolean("is_on_poster").default(false),
   isInShelter: boolean("is_in_shelter").default(true),
   kennelId: integer("kennel_id").references(() => kennels.id, { onDelete: "set null" }),
   intakeDate: date("intake_date"),
@@ -198,9 +205,12 @@ export const vaccinations = pgTable("vaccinations", {
   index("idx_vaccinations_next_due_date").on(table.nextDueDate),
 ]);
 
+// Story 10.31: deze tabel registreert antiparasitaire behandelingen. `category`
+// onderscheidt ontworming van vlooienbehandeling; bestaande rijen zijn ontworming.
 export const dewormings = pgTable("dewormings", {
   id: serial("id").primaryKey(),
   animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  category: varchar("category", { length: 20 }).default("ontworming").notNull(),
   type: varchar("type", { length: 50 }).notNull(),
   date: date("date").notNull(),
   notes: text("notes"),
@@ -675,6 +685,22 @@ export const surrenderRequests = pgTable("surrender_requests", {
 }, (table) => [
   index("idx_surrender_requests_status").on(table.status),
   index("idx_surrender_requests_created_at").on(table.createdAt),
+]);
+
+// Story 10.32: omgangseigenschappen van een dier (kan met kinderen/katten, zindelijk, ...),
+// gebruikt op de dierdetailpagina en op de affiche voor het bord buiten. Bewust een eigen
+// tabel i.p.v. 10 kolommen op `animals`: de lijst kan groeien of krimpen zonder migratie
+// van de kerntabel, en intake-/bewerkformulieren, R1 en de exports blijven onaangeroerd.
+// NB: niet te verwarren met de kinderen-/tuin-/ervaringsvragen in
+// `adoptionCandidates.questionnaireAnswers` — die gaan over het gezin van de aanvrager.
+export const animalTraits = pgTable("animal_traits", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().unique().references(() => animals.id, { onDelete: "cascade" }),
+  traits: jsonb("traits").$type<Record<string, string>>().notNull().default({}),
+  updatedBy: integer("updated_by").references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_animal_traits_animal_id").on(table.animalId),
 ]);
 
 export const shelterSettings = pgTable("shelter_settings", {

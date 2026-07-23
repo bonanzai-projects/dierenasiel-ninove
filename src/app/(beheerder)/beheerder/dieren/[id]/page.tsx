@@ -35,6 +35,8 @@ import WorkflowStepbar from "@/components/beheerder/dieren/WorkflowStepbar";
 import WorkflowHistorySection from "@/components/beheerder/dieren/WorkflowHistorySection";
 import { getWorkflowHistoryWithUserByAnimalId } from "@/lib/queries/workflow";
 import AnimalDetailTabs from "@/components/beheerder/shared/AnimalDetailTabs";
+import AnimalTraitsSection from "@/components/beheerder/dieren/AnimalTraitsSection";
+import { getAnimalTraits } from "@/lib/queries/animal-traits";
 
 function IbnMetadata({ metadata }: { metadata: unknown }) {
   if (!metadata || typeof metadata !== "object") return null;
@@ -69,7 +71,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings, workflowHistory] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings, workflowHistory, animalTraitsValues] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -88,22 +90,67 @@ export default async function DierDetailPage({ params }: Props) {
     getWalkHistoryByAnimalId(animalId),
     getWorkflowSettings(),
     getWorkflowHistoryWithUserByAnimalId(animalId),
+    getAnimalTraits(animalId),
   ]);
 
   if (!animal) notFound();
 
   return (
     <div className="space-y-4">
+      <h1 className="font-heading text-2xl font-bold text-[#1b4332]">{animal.name}</h1>
+
       {workflowSettings.workflowEnabled && workflowSettings.stepbarVisible && animal.workflowPhase && (
         <WorkflowStepbar
           currentPhase={animal.workflowPhase}
           animalId={animalId}
           animalName={animal.name}
+          animalSpecies={animal.species}
           todos={todosList}
         />
       )}
 
-      <h1 className="font-heading text-2xl font-bold text-[#1b4332]">{animal.name}</h1>
+      {/* Status, Kennel, Adoptie & Uitstroom — snelle acties die meteen opslaan.
+          Boven de tabbladen zodat ze altijd zichtbaar zijn, los van het tabblad. */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
+          <h2 className="text-sm font-bold text-[#1b4332]">Status (handmatig)</h2>
+          <div className="mt-2">
+            <StatusChanger
+              animalId={animalId}
+              currentStatus={animal.status ?? "beschikbaar"}
+            />
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
+          <h2 className="text-sm font-bold text-[#1b4332]">Kennel</h2>
+          <div className="mt-2">
+            <KennelSelector
+              animalId={animalId}
+              currentKennelId={animal.kennelId}
+              kennels={kennelsList}
+            />
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
+          <h2 className="text-sm font-bold text-[#1b4332]">Adoptie</h2>
+          <div className="mt-2">
+            <AdoptionToggle
+              animalId={animalId}
+              isAvailable={animal.isAvailableForAdoption ?? false}
+            />
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
+          <h2 className="text-sm font-bold text-[#1b4332]">Uitstroom</h2>
+          <div className="mt-2">
+            <OuttakeForm
+              animalId={animalId}
+              animalName={animal.name}
+              isInShelter={animal.isInShelter ?? true}
+            />
+          </div>
+        </div>
+      </div>
 
       <AnimalDetailTabs openTodoCount={openTodoCount}>
         {{
@@ -113,48 +160,6 @@ export default async function DierDetailPage({ params }: Props) {
                 animal={animal}
                 key={animal.updatedAt ? new Date(animal.updatedAt).getTime() : animal.id}
               />
-
-              {/* Status, Kennel, Adoptie & Uitstroom */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
-                  <h2 className="text-sm font-bold text-[#1b4332]">Status (handmatig)</h2>
-                  <div className="mt-2">
-                    <StatusChanger
-                      animalId={animalId}
-                      currentStatus={animal.status ?? "beschikbaar"}
-                    />
-                  </div>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
-                  <h2 className="text-sm font-bold text-[#1b4332]">Kennel</h2>
-                  <div className="mt-2">
-                    <KennelSelector
-                      animalId={animalId}
-                      currentKennelId={animal.kennelId}
-                      kennels={kennelsList}
-                    />
-                  </div>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
-                  <h2 className="text-sm font-bold text-[#1b4332]">Adoptie</h2>
-                  <div className="mt-2">
-                    <AdoptionToggle
-                      animalId={animalId}
-                      isAvailable={animal.isAvailableForAdoption ?? false}
-                    />
-                  </div>
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
-                  <h2 className="text-sm font-bold text-[#1b4332]">Uitstroom</h2>
-                  <div className="mt-2">
-                    <OuttakeForm
-                      animalId={animalId}
-                      animalName={animal.name}
-                      isInShelter={animal.isInShelter ?? true}
-                    />
-                  </div>
-                </div>
-              </div>
 
               {/* IBN Info */}
               {animal.intakeReason === "ibn" && (
@@ -212,7 +217,7 @@ export default async function DierDetailPage({ params }: Props) {
                 <SectionCard title="Vaccinaties">
                   <VaccinationSection animalId={animalId} vaccinations={vaccinationsList} />
                 </SectionCard>
-                <SectionCard title="Ontwormingen">
+                <SectionCard title="Ontworming & vlooien">
                   <DewormingSection animalId={animalId} dewormings={dewormingsList} />
                 </SectionCard>
               </div>
@@ -247,6 +252,10 @@ export default async function DierDetailPage({ params }: Props) {
                   <FeedingPlanSection animalId={animalId} plan={feedingPlan} />
                 </SectionCard>
               </div>
+
+              <SectionCard title="Eigenschappen & affiche">
+                <AnimalTraitsSection animalId={animalId} traits={animalTraitsValues} />
+              </SectionCard>
 
               <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
                 <div className="mb-3 flex items-center gap-2">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { animalIntakeSchema, animalUpdateSchema } from "./animals";
+import { animalIntakeSchema, animalUpdateSchema, SHORT_DESCRIPTION_MAX } from "./animals";
 
 const validIntake = {
   name: "Rex",
@@ -86,6 +86,25 @@ describe("animalIntakeSchema", () => {
     }
   });
 
+  // Story 10.30: "tijdelijke_opvang" toegevoegd naast de 3 originele redenen.
+  it("accepts 'tijdelijke_opvang' without requiring the IBN-only fields", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "tijdelijke_opvang",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts 'tijdelijke_opvang' on the update schema too", () => {
+    const result = animalUpdateSchema.safeParse({
+      id: 1,
+      name: "Rex",
+      gender: "reu",
+      intakeReason: "tijdelijke_opvang",
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("accepts the 3 valid intake reasons (Story 10.21: afstand, ibn, zwerfhond)", () => {
     for (const reason of ["afstand", "zwerfhond"]) {
       const result = animalIntakeSchema.safeParse({ ...validIntake, intakeReason: reason });
@@ -152,31 +171,32 @@ describe("animalIntakeSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  // IBN-specific validation
-  it("requires dossierNr when intakeReason is ibn", () => {
+  // IBN-validatie — Sven-feedback 2026-07-24: het asiel krijgt het dossier- en
+  // PV-nummer pas later, dus deze velden mogen de registratie NIET blokkeren.
+  it("aanvaardt IBN-intake zónder dossiernummer (komt later)", () => {
     const result = animalIntakeSchema.safeParse({
       ...validIntake,
       intakeReason: "ibn",
       pvNr: "PV-2026-001",
     });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const errors = result.error.flatten().fieldErrors;
-      expect(errors.dossierNr).toBeDefined();
-    }
+    expect(result.success).toBe(true);
   });
 
-  it("requires pvNr when intakeReason is ibn", () => {
+  it("aanvaardt IBN-intake zónder PV-nummer (komt later)", () => {
     const result = animalIntakeSchema.safeParse({
       ...validIntake,
       intakeReason: "ibn",
       dossierNr: "DWV-2026-12345",
     });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const errors = result.error.flatten().fieldErrors;
-      expect(errors.pvNr).toBeDefined();
-    }
+    expect(result.success).toBe(true);
+  });
+
+  it("aanvaardt IBN-intake met geen van beide nummers ingevuld", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      intakeReason: "ibn",
+    });
+    expect(result.success).toBe(true);
   });
 
   it("accepts valid IBN intake with all required fields", () => {
@@ -224,24 +244,33 @@ describe("animalIntakeSchema", () => {
     }
   });
 
-  it("rejects IBN intake when both dossierNr and pvNr are empty strings", () => {
+  it("aanvaardt IBN-intake met lege dossier-/PV-nummers (worden later ingevuld)", () => {
     const result = animalIntakeSchema.safeParse({
       ...validIntake,
       intakeReason: "ibn",
       dossierNr: "",
       pvNr: "",
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   // Story 10.23: sterilisatie/castratie — datum + door-asiel
+  // Story 10.29: zonder keuze is de status onbekend (null), niet "Nee".
   it("accepts intake without isNeutered/neuteredDate/neuteredByShelter", () => {
     const result = animalIntakeSchema.safeParse(validIntake);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.isNeutered).toBe(false);
+      expect(result.data.isNeutered).toBe(null);
       expect(result.data.neuteredDate).toBeUndefined();
       expect(result.data.neuteredByShelter).toBeUndefined();
+    }
+  });
+
+  it("accepts an explicit null for isNeutered (onbekend)", () => {
+    const result = animalIntakeSchema.safeParse({ ...validIntake, isNeutered: null });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isNeutered).toBe(null);
     }
   });
 
@@ -439,5 +468,52 @@ describe("animalUpdateSchema", () => {
     if (result.success) {
       expect(result.data.neuteredByShelter).toBe(false);
     }
+  });
+});
+
+// Story 10.32: de UI-limiet op de korte beschrijving moet de DB-restrictie
+// (varchar 300) spiegelen — zodat een te lange tekst een nette fout geeft in
+// plaats van een databasecrash, en de lange velden net géén limiet krijgen.
+describe("beschrijving-limieten spiegelen de database", () => {
+  it("SHORT_DESCRIPTION_MAX is 300 (= varchar-lengte in het schema)", () => {
+    expect(SHORT_DESCRIPTION_MAX).toBe(300);
+  });
+
+  it("aanvaardt een korte beschrijving tot exact 300 tekens", () => {
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      shortDescription: "x".repeat(SHORT_DESCRIPTION_MAX),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("weigert een korte beschrijving van meer dan 300 tekens", () => {
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      shortDescription: "x".repeat(SHORT_DESCRIPTION_MAX + 1),
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.shortDescription).toBeDefined();
+    }
+  });
+
+  it("weigert ook bij intake een te lange korte beschrijving", () => {
+    const result = animalIntakeSchema.safeParse({
+      ...validIntake,
+      shortDescription: "x".repeat(SHORT_DESCRIPTION_MAX + 1),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("legt géén lengtelimiet op aan de lange tekstvelden (DB = text)", () => {
+    const heelLang = "y".repeat(10_000);
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      description: heelLang,
+      websiteDescription: heelLang,
+      posterDescription: heelLang,
+    });
+    expect(result.success).toBe(true);
   });
 });

@@ -102,6 +102,48 @@ describe("createDeworming", () => {
     expect(mockInsert).toHaveBeenCalled();
   });
 
+  // Story 10.31: vlooienbehandeling als tweede categorie in dezelfde tabel.
+  function insertedValues() {
+    return mockInsert.mock.results[0].value.values.mock.calls[0][0];
+  }
+
+  it("defaults the category to 'ontworming' when none is submitted", async () => {
+    await createDeworming(null, makeFormData(validFormData));
+    expect(insertedValues()).toEqual(
+      expect.objectContaining({ category: "ontworming", type: "Canicantel" }),
+    );
+  });
+
+  it("creates a flea treatment with a free-text product", async () => {
+    const result = await createDeworming(
+      null,
+      makeFormData({ animalId: "1", category: "vlooien", type: "Frontline spot-on", date: "2026-02-26" }),
+    );
+    expect(result.success).toBe(true);
+    expect(insertedValues()).toEqual(
+      expect.objectContaining({ category: "vlooien", type: "Frontline spot-on" }),
+    );
+  });
+
+  it("rejects a flea treatment without a product", async () => {
+    const result = await createDeworming(
+      null,
+      makeFormData({ animalId: "1", category: "vlooien", type: "", date: "2026-02-26" }),
+    );
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.fieldErrors?.type).toBeDefined();
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown category", async () => {
+    const result = await createDeworming(
+      null,
+      makeFormData({ ...validFormData, category: "vaccinatie" }),
+    );
+    expect(result.success).toBe(false);
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
   it("calls logAudit after success", async () => {
     await createDeworming(null, makeFormData(validFormData));
     expect(mockLogAudit).toHaveBeenCalledWith("create_deworming", "deworming", 1, null, expect.objectContaining({ id: 1 }));

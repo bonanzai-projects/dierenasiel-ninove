@@ -1,11 +1,14 @@
-import type { animals, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients, strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignMedicalInspections, strayCatCampaignPhotos, municipalityLogos, veterinaryDiagnoses, blacklistEntries, cages } from "@/lib/db/schema";
+import type { animals, animalTraits, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients, strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignMedicalInspections, strayCatCampaignPhotos, municipalityLogos, veterinaryDiagnoses, blacklistEntries, cages } from "@/lib/db/schema";
 import type { GuardWarning } from "@/lib/workflow/guards";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 // Standard return type for all Server Actions
+// `values`: de ingevoerde formulierwaarden, teruggegeven bij een fout zodat het
+// formulier ze opnieuw kan tonen (React 19 reset uncontrolled velden na een
+// action, dus zonder dit lopen ze leeg — zie IntakeForm, Sven-feedback 2026-07-24).
 export type ActionResult<T = void> =
   | { success: true; data: T; message?: string }
-  | { success: false; error?: string; fieldErrors?: Record<string, string[]>; warning?: string };
+  | { success: false; error?: string; fieldErrors?: Record<string, string[]>; warning?: string; values?: Record<string, string> };
 
 // Backoffice roles — derived from BACKOFFICE_ROLES constant (single source of truth)
 export type BackofficeRole = (typeof BACKOFFICE_ROLES)[number];
@@ -39,6 +42,8 @@ export type NewVaccination = typeof vaccinations.$inferInsert;
 
 export type Deworming = typeof dewormings.$inferSelect;
 export type NewDeworming = typeof dewormings.$inferInsert;
+
+export type AnimalTraitsRecord = typeof animalTraits.$inferSelect;
 
 export type VetVisit = typeof vetVisits.$inferSelect;
 export type NewVetVisit = typeof vetVisits.$inferInsert;

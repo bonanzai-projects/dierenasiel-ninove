@@ -7,8 +7,28 @@ const SECRET = new TextEncoder().encode(
 
 const SESSION_COOKIE = "session";
 const GUEST_COOKIE = "guest-mode";
-export const SESSION_DURATION = 7 * 24 * 60 * 60; // 7 days in seconds
-const REFRESH_THRESHOLD = 24 * 60 * 60; // Refresh if < 1 day remaining
+
+/**
+ * Sessieduur. In productie bewust kort (7 dagen): een backoffice-sessie die
+ * blijft leven op een gedeeld of verloren toestel is een reëel risico.
+ * Lokaal (dev) is dat risico er niet en is telkens opnieuw inloggen enkel
+ * hinderlijk tijdens het testen → 30 dagen.
+ */
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+export const SESSION_DURATION = IS_PRODUCTION
+  ? 7 * 24 * 60 * 60 // 7 dagen
+  : 30 * 24 * 60 * 60; // 30 dagen
+
+/**
+ * Schuivend venster: het token wordt vernieuwd zodra er minder dan deze tijd
+ * rest. In productie pas op de laatste dag; lokaal zodra de sessie een dag oud
+ * is, zodat elke werkdag de volle 30 dagen weer ingaat en je in de praktijk
+ * ingelogd blijft zolang je het project minstens maandelijks opent.
+ */
+const REFRESH_THRESHOLD = IS_PRODUCTION
+  ? 24 * 60 * 60
+  : SESSION_DURATION - 24 * 60 * 60;
 
 export interface SessionPayload {
   userId: number;
@@ -49,7 +69,7 @@ export async function setSessionCookie(token: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: SESSION_DURATION, // 7 days
+    maxAge: SESSION_DURATION,
     path: "/",
   });
 }

@@ -1,13 +1,23 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { BEHAVIOR_VERZORGERS_ITEMS, BEHAVIOR_HONDEN_ITEMS } from "@/lib/constants";
 import { formatDateBE } from "@/lib/reports/animal-report-format";
-import { sortBehaviorRecordsAsc, behaviorAnswer } from "@/lib/reports/behavior-report-format";
+import {
+  sortBehaviorRecordsAsc,
+  behaviorAnswer,
+  buildBehaviorColumns,
+  chunkBehaviorColumns,
+} from "@/lib/reports/behavior-report-format";
 import type { BehaviorRecord, Animal } from "@/types";
 
 // Story 10.27: gealigneerd op de officiële Bijlage VIII B (KB 27/04/2007).
 // Matrix-layout: criteria als rijen, elke evaluatiedatum als kolom. Minimum 5
 // kolommen zoals het officiële formulier (evaluatie ≥ wekelijks, eerste 3 weken).
 const MIN_COLUMNS = 5;
+
+// Story 10.28: de invoerlimiet van 3 fiches is opgeheven, dus een langverblijver kan
+// veel evaluaties hebben. Meer dan 10 kolommen naast elkaar wordt onleesbaar smal →
+// de matrix wordt dan over meerdere blokken verdeeld (criteria-rijen herhaald).
+const MAX_COLUMNS_PER_BLOCK = 10;
 
 const styles = StyleSheet.create({
   page: { padding: 36, fontSize: 9, fontFamily: "Helvetica" },
@@ -41,14 +51,35 @@ interface Props {
 
 type Column = BehaviorRecord | null;
 
-function buildColumns(records: BehaviorRecord[]): Column[] {
-  const sorted = sortBehaviorRecordsAsc(records);
-  const cols: Column[] = [...sorted];
-  while (cols.length < MIN_COLUMNS) cols.push(null);
-  return cols;
+function MatrixSection({
+  title,
+  items,
+  andereKey,
+  columns,
+}: {
+  title: string;
+  items: readonly { key: string; label: string }[];
+  andereKey: string;
+  columns: Column[];
+}) {
+  const blocks = chunkBehaviorColumns(columns, MAX_COLUMNS_PER_BLOCK);
+
+  return (
+    <>
+      {blocks.map((block, blockIndex) => (
+        <MatrixBlock
+          key={blockIndex}
+          title={blockIndex === 0 ? title : `${title} (vervolg)`}
+          items={items}
+          andereKey={andereKey}
+          columns={block}
+        />
+      ))}
+    </>
+  );
 }
 
-function MatrixSection({
+function MatrixBlock({
   title,
   items,
   andereKey,
@@ -103,7 +134,7 @@ function MatrixSection({
 }
 
 export default function BehaviorReportPdf({ animal, records, caregivers, generatedAt }: Props) {
-  const columns = buildColumns(records);
+  const columns = buildBehaviorColumns(records, MIN_COLUMNS);
   const recordsWithNotes = sortBehaviorRecordsAsc(records).filter((r) => r.notes);
 
   return (

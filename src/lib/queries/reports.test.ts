@@ -71,6 +71,7 @@ vi.mock("@/lib/db/schema", () => ({
     id: "dewormings.id",
     animalId: "dewormings.animal_id",
     date: "dewormings.date",
+    category: "dewormings.category",
   },
   vetVisits: {
     id: "vet_visits.id",
@@ -196,6 +197,7 @@ const withNullMedical = (rows: typeof mockAnimals) =>
     lastVaccinationDate: null,
     lastVaccinationByShelter: null,
     lastDewormingDate: null,
+    lastFleaTreatmentDate: null,
   }));
 
 describe("getAnimalReport", () => {

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { sortBehaviorRecordsAsc, behaviorAnswer } from "./behavior-report-format";
+import {
+  sortBehaviorRecordsAsc,
+  behaviorAnswer,
+  buildBehaviorColumns,
+  chunkBehaviorColumns,
+} from "./behavior-report-format";
 
 describe("sortBehaviorRecordsAsc", () => {
   it("sorts records ascending by date (oldest first)", () => {
@@ -63,5 +68,67 @@ describe("behaviorAnswer", () => {
   it("returns '' when checklist is null/undefined", () => {
     expect(behaviorAnswer(null, "verzorgers_algemeenAgressief")).toBe("");
     expect(behaviorAnswer(undefined, "verzorgers_algemeenAgressief")).toBe("");
+  });
+});
+
+describe("buildBehaviorColumns", () => {
+  it("sorts records ascending and pads to the minimum column count", () => {
+    const records = [
+      { id: 2, date: "2026-02-10" },
+      { id: 1, date: "2026-01-15" },
+    ];
+    const columns = buildBehaviorColumns(records, 5);
+    expect(columns).toHaveLength(5);
+    expect(columns[0]?.id).toBe(1);
+    expect(columns[1]?.id).toBe(2);
+    expect(columns.slice(2)).toEqual([null, null, null]);
+  });
+
+  it("returns only null columns for an empty record list (blanco formulier)", () => {
+    expect(buildBehaviorColumns([], 5)).toEqual([null, null, null, null, null]);
+  });
+
+  it("does not pad when there are more records than the minimum", () => {
+    const records = Array.from({ length: 7 }, (_, i) => ({
+      id: i + 1,
+      date: `2026-01-0${i + 1}`,
+    }));
+    const columns = buildBehaviorColumns(records, 5);
+    expect(columns).toHaveLength(7);
+    expect(columns.every((c) => c !== null)).toBe(true);
+  });
+
+  it("does not mutate the input array", () => {
+    const records = [
+      { id: 2, date: "2026-02-10" },
+      { id: 1, date: "2026-01-15" },
+    ];
+    const copy = [...records];
+    buildBehaviorColumns(records, 5);
+    expect(records).toEqual(copy);
+  });
+});
+
+describe("chunkBehaviorColumns", () => {
+  it("returns a single block when the columns fit", () => {
+    const columns = buildBehaviorColumns([], 5);
+    const blocks = chunkBehaviorColumns(columns, 10);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toHaveLength(5);
+  });
+
+  it("splits into blocks of at most maxPerBlock columns", () => {
+    const records = Array.from({ length: 23 }, (_, i) => ({
+      id: i + 1,
+      date: `2026-01-${String(i + 1).padStart(2, "0")}`,
+    }));
+    const blocks = chunkBehaviorColumns(buildBehaviorColumns(records, 5), 10);
+    expect(blocks.map((b) => b.length)).toEqual([10, 10, 3]);
+    expect(blocks[0][0]?.id).toBe(1);
+    expect(blocks[2][2]?.id).toBe(23);
+  });
+
+  it("always returns at least one block, even for no columns", () => {
+    expect(chunkBehaviorColumns([], 10)).toEqual([[]]);
   });
 });

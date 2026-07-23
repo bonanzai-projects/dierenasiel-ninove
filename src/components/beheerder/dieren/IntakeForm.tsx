@@ -3,6 +3,7 @@
 import { useActionState, useState, useRef, useEffect } from "react";
 import { createAnimalIntake } from "@/lib/actions/animals";
 import { INTAKE_REASONS } from "@/lib/constants";
+import NeuteredRadioGroup, { type NeuteredChoice } from "./NeuteredRadioGroup";
 
 const SPECIES_OPTIONS = [
   { value: "hond", label: "Hond" },
@@ -43,7 +44,10 @@ export default function IntakeForm() {
   const [species, setSpecies] = useState("");
   const [intakeReason, setIntakeReason] = useState("");
   const [isPickedUp, setIsPickedUp] = useState(false);
-  const [isNeutered, setIsNeutered] = useState(false);
+  // Story 10.29: nieuwe intake start op "onbekend" — bij vondelingen/IBN weet
+  // het asiel de sterilisatiestatus doorgaans nog niet.
+  const [neuteredChoice, setNeuteredChoice] = useState<NeuteredChoice>("onbekend");
+  const isNeutered = neuteredChoice === "true";
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -52,12 +56,31 @@ export default function IntakeForm() {
       setSpecies("");
       setIntakeReason("");
       setIsPickedUp(false);
-      setIsNeutered(false);
+      setNeuteredChoice("onbekend");
     }
   }, [state]);
 
   const fieldErrors = state && !state.success ? state.fieldErrors : undefined;
   const globalError = state && !state.success ? state.error : undefined;
+  // Na een validatiefout geeft de action de ingevoerde waarden terug; React 19
+  // reset uncontrolled velden na een action, dus we voeden ze terug als
+  // defaultValue zodat de invoer niet verloren gaat (Sven-feedback 2026-07-24).
+  const submitted = state && !state.success ? state.values : undefined;
+  const keep = (field: string) => submitted?.[field] ?? undefined;
+
+  // React 19 reset uncontrolled velden na een action. Enkel op defaultValue
+  // vertrouwen is timing-gevoelig, dus we zetten de teruggegeven waarden ná de
+  // reset deterministisch terug in de DOM-velden (Sven-feedback 2026-07-24).
+  useEffect(() => {
+    if (!submitted || !formRef.current) return;
+    const form = formRef.current;
+    for (const [name, value] of Object.entries(submitted)) {
+      const field = form.elements.namedItem(name);
+      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
+        field.value = value;
+      }
+    }
+  }, [submitted]);
 
   // Scroll to first field with error after server action returns errors
   useEffect(() => {
@@ -113,6 +136,7 @@ export default function IntakeForm() {
               type="text"
               id="name"
               name="name"
+              defaultValue={keep("name")}
               aria-invalid={hasError(fieldErrors, "name") || undefined}
               className={fieldClass("name")}
               placeholder="Bijv. Rex"
@@ -175,6 +199,7 @@ export default function IntakeForm() {
               type="text"
               id="breed"
               name="breed"
+              defaultValue={keep("breed")}
               aria-invalid={hasError(fieldErrors, "breed") || undefined}
               className={fieldClass("breed")}
               placeholder="Bijv. Mechelse Herder"
@@ -191,6 +216,7 @@ export default function IntakeForm() {
               type="text"
               id="color"
               name="color"
+              defaultValue={keep("color")}
               aria-invalid={hasError(fieldErrors, "color") || undefined}
               className={fieldClass("color")}
               placeholder="Bijv. bruin"
@@ -207,6 +233,7 @@ export default function IntakeForm() {
               type="date"
               id="dateOfBirth"
               name="dateOfBirth"
+              defaultValue={keep("dateOfBirth")}
               aria-invalid={hasError(fieldErrors, "dateOfBirth") || undefined}
               className={fieldClass("dateOfBirth")}
             />
@@ -231,6 +258,7 @@ export default function IntakeForm() {
               type="text"
               id="identificationNr"
               name="identificationNr"
+              defaultValue={keep("identificationNr")}
               aria-invalid={hasError(fieldErrors, "identificationNr") || undefined}
               className={fieldClass("identificationNr")}
               placeholder="Bijv. 981100004567890"
@@ -247,6 +275,7 @@ export default function IntakeForm() {
               type="text"
               id="passportNr"
               name="passportNr"
+              defaultValue={keep("passportNr")}
               aria-invalid={hasError(fieldErrors, "passportNr") || undefined}
               className={fieldClass("passportNr")}
               placeholder="Bijv. BE-123456"
@@ -272,7 +301,7 @@ export default function IntakeForm() {
               type="date"
               id="intakeDate"
               name="intakeDate"
-              defaultValue={today}
+              defaultValue={keep("intakeDate") ?? today}
               aria-invalid={hasError(fieldErrors, "intakeDate") || undefined}
               className={fieldClass("intakeDate")}
             />
@@ -321,6 +350,7 @@ export default function IntakeForm() {
                   type="text"
                   id="dossierNr"
                   name="dossierNr"
+                  defaultValue={keep("dossierNr")}
                   aria-invalid={hasError(fieldErrors, "dossierNr") || undefined}
                   className={fieldClass("dossierNr")}
                   placeholder="Bijv. DWV-2026-12345"
@@ -335,6 +365,7 @@ export default function IntakeForm() {
                   type="text"
                   id="pvNr"
                   name="pvNr"
+                  defaultValue={keep("pvNr")}
                   aria-invalid={hasError(fieldErrors, "pvNr") || undefined}
                   className={fieldClass("pvNr")}
                   placeholder="Bijv. PV-2026-001"
@@ -377,6 +408,7 @@ export default function IntakeForm() {
                   type="text"
                   id="intakeMetadata.melderNaam"
                   name="intakeMetadata.melderNaam"
+                  defaultValue={keep("intakeMetadata.melderNaam")}
                   aria-invalid={hasError(fieldErrors, "intakeMetadata.melderNaam") || undefined}
                   className={fieldClass("intakeMetadata.melderNaam")}
                   placeholder="Naam van de persoon die gemeld heeft"
@@ -391,6 +423,7 @@ export default function IntakeForm() {
                   type="date"
                   id="intakeMetadata.melderDatum"
                   name="intakeMetadata.melderDatum"
+                  defaultValue={keep("intakeMetadata.melderDatum")}
                   aria-invalid={hasError(fieldErrors, "intakeMetadata.melderDatum") || undefined}
                   className={fieldClass("intakeMetadata.melderDatum")}
                 />
@@ -404,6 +437,7 @@ export default function IntakeForm() {
                   type="text"
                   id="intakeMetadata.melderLocatie"
                   name="intakeMetadata.melderLocatie"
+                  defaultValue={keep("intakeMetadata.melderLocatie")}
                   aria-invalid={hasError(fieldErrors, "intakeMetadata.melderLocatie") || undefined}
                   className={fieldClass("intakeMetadata.melderLocatie")}
                   placeholder="Adres of locatie waar het dier is opgehaald"
@@ -419,6 +453,7 @@ export default function IntakeForm() {
                     type="text"
                     id="intakeMetadata.betrokkenInstanties"
                     name="intakeMetadata.betrokkenInstanties"
+                  defaultValue={keep("intakeMetadata.betrokkenInstanties")}
                     aria-invalid={hasError(fieldErrors, "intakeMetadata.betrokkenInstanties") || undefined}
                     className={fieldClass("intakeMetadata.betrokkenInstanties")}
                     placeholder="Bijv. Politiezone Ninove, Dierenwelzijn Vlaanderen"
@@ -437,21 +472,7 @@ export default function IntakeForm() {
           Sterilisatie / Castratie
         </h2>
 
-        <div className="mt-4 flex items-center gap-2">
-          <input type="hidden" name="isNeutered" value="false" />
-          <input
-            type="checkbox"
-            id="isNeutered"
-            name="isNeutered"
-            value="true"
-            checked={isNeutered}
-            onChange={(e) => setIsNeutered(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-          />
-          <label htmlFor="isNeutered" className="text-sm text-gray-700">
-            Gesteriliseerd / Gecastreerd
-          </label>
-        </div>
+        <NeuteredRadioGroup value={neuteredChoice} onChange={setNeuteredChoice} />
 
         {isNeutered && (
           <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -502,6 +523,7 @@ export default function IntakeForm() {
               type="text"
               id="shortDescription"
               name="shortDescription"
+              defaultValue={keep("shortDescription")}
               maxLength={300}
               aria-invalid={hasError(fieldErrors, "shortDescription") || undefined}
               className={fieldClass("shortDescription")}
@@ -517,6 +539,7 @@ export default function IntakeForm() {
             <textarea
               id="description"
               name="description"
+              defaultValue={keep("description")}
               rows={4}
               aria-invalid={hasError(fieldErrors, "description") || undefined}
               className={fieldClass("description")}

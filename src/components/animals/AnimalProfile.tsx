@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Animal } from "@/types";
 import { calculateAge, speciesLabel, genderLabel, statusLabel, formatDate } from "@/lib/utils";
+import { resolveWebsiteDescription } from "@/lib/animals/animal-descriptions";
 
 export default function AnimalProfile({ animal }: { animal: Animal }) {
   const allImages = [
@@ -103,7 +104,8 @@ export default function AnimalProfile({ animal }: { animal: Animal }) {
                 { label: "Ras", value: animal.breed || "Onbekend" },
                 { label: "Geslacht", value: genderLabel(animal.gender) },
                 { label: "Leeftijd", value: calculateAge(animal.dateOfBirth) },
-                { label: "Gecastreerd/Gesteriliseerd", value: animal.isNeutered ? "Ja" : "Nee" },
+                // Story 10.29: null = onbekend (nog niet vastgesteld), niet "Nee".
+                { label: "Gecastreerd/Gesteriliseerd", value: animal.isNeutered == null ? "Onbekend" : animal.isNeutered ? "Ja" : "Nee" },
                 { label: "Status", value: statusLabel(animal.status || "beschikbaar") },
               ].map((item) => (
                 <div key={item.label} className="bg-gray-100 p-4 rounded-xl">
@@ -121,7 +123,8 @@ export default function AnimalProfile({ animal }: { animal: Animal }) {
                 Over {animal.name}
               </h3>
               <div className="text-text-light leading-relaxed whitespace-pre-line">
-                {animal.description}
+                {/* Story 10.32: eigen websitetekst, met terugval op de uitgebreide beschrijving. */}
+                {resolveWebsiteDescription(animal.websiteDescription, animal.description)}
               </div>
             </div>
 

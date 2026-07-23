@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+/**
+ * Maximum lengte van de korte beschrijving. Spiegelt de DB-restrictie
+ * `varchar(300)` op `animals.short_description`. Één bron voor validatie én de
+ * `maxLength` in het formulier, zodat ze niet uit elkaar kunnen lopen.
+ * De lange beschrijvingen zijn `text` in de DB → géén lengtelimiet.
+ */
+export const SHORT_DESCRIPTION_MAX = 300;
+
+const shortDescriptionField = z
+  .string()
+  .max(SHORT_DESCRIPTION_MAX, `Korte beschrijving mag max. ${SHORT_DESCRIPTION_MAX} tekens zijn`)
+  .optional();
+
 export const animalIntakeSchema = z.object({
   name: z.string().min(1, "Naam is verplicht"),
   species: z.enum(["hond", "kat", "ander"], { message: "Kies een soort" }),
@@ -10,10 +23,11 @@ export const animalIntakeSchema = z.object({
   identificationNr: z.string().optional(),
   passportNr: z.string().optional(),
   intakeDate: z.string().min(1, "Intake datum is verplicht"),
-  intakeReason: z.enum(["afstand", "ibn", "zwerfhond"]).optional(),
+  intakeReason: z.enum(["afstand", "ibn", "zwerfhond", "tijdelijke_opvang"]).optional(),
   description: z.string().optional(),
-  shortDescription: z.string().optional(),
-  isNeutered: z.boolean().optional().default(false),
+  shortDescription: shortDescriptionField,
+  // Story 10.29: tri-state — true/false/null (= onbekend, "??" in R1).
+  isNeutered: z.boolean().nullable().optional().default(null),
   neuteredDate: z.string().optional(),
   neuteredByShelter: z.boolean().optional(),
   isPickedUpByShelter: z.boolean().optional().default(false),
@@ -27,24 +41,10 @@ export const animalIntakeSchema = z.object({
       betrokkenInstanties: z.string().optional(),
     })
     .optional(),
-}).superRefine((data, ctx) => {
-  if (data.intakeReason === "ibn") {
-    if (!data.dossierNr) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Dossiernummer Dierenwelzijn Vlaanderen is verplicht bij IBN",
-        path: ["dossierNr"],
-      });
-    }
-    if (!data.pvNr) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "PV-nummer politie is verplicht bij IBN",
-        path: ["pvNr"],
-      });
-    }
-  }
 });
+// NB: dossiernummer (Dierenwelzijn Vlaanderen) en PV-nummer (politie) zijn bij
+// een inbeslagname NIET verplicht bij registratie — het asiel ontvangt die pas
+// later. Ze blijven dus optioneel (Sven-feedback 2026-07-24).
 
 export type AnimalIntakeInput = z.infer<typeof animalIntakeSchema>;
 
@@ -58,21 +58,26 @@ export const animalUpdateSchema = z.object({
   dateOfBirth: z.string().optional(),
   intakeDate: z.string().optional(),
   intakeReason: z
-    .enum(["afstand", "ibn", "zwerfhond"])
+    .enum(["afstand", "ibn", "zwerfhond", "tijdelijke_opvang"])
     .optional()
     .or(z.literal("")),
   dossierNr: z.string().optional(),
-  isNeutered: z.boolean().optional().default(false),
+  // Story 10.29: tri-state — true/false/null (= onbekend, "??" in R1).
+  isNeutered: z.boolean().nullable().optional().default(null),
   neuteredDate: z.string().optional().or(z.literal("")),
   neuteredByShelter: z.boolean().optional(),
   description: z.string().optional(),
-  shortDescription: z.string().optional(),
+  // Story 10.32: eigen tekst voor website en affiche; leeg = terugval op description.
+  websiteDescription: z.string().optional(),
+  posterDescription: z.string().optional(),
+  shortDescription: shortDescriptionField,
   identificationNr: z.string().optional(),
   isNewChip: z.boolean().optional().default(false),
   passportNr: z.string().optional(),
   isNewPassport: z.boolean().optional().default(false),
   barcode: z.string().optional(),
   isOnWebsite: z.boolean().optional().default(false),
+  isOnPoster: z.boolean().optional().default(false),
   isFeatured: z.boolean().optional().default(false),
 });
 

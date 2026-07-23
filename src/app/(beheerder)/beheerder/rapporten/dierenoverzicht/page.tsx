@@ -85,6 +85,7 @@ export default async function DierenoverzichtRapportPage({ searchParams }: Props
                 "Nw paspoort",
                 "Vaccin",
                 "Ontworming",
+                "Vlooien",
                 "Website",
                 "Adopteer",
               ].map((h) => (
@@ -100,7 +101,7 @@ export default async function DierenoverzichtRapportPage({ searchParams }: Props
           <tbody className="divide-y divide-gray-100 bg-white">
             {animals.length === 0 ? (
               <tr>
-                <td colSpan={16} className="px-4 py-8 text-center text-sm text-gray-500">
+                <td colSpan={17} className="px-4 py-8 text-center text-sm text-gray-500">
                   Geen dieren gevonden met de opgegeven filters.
                 </td>
               </tr>
@@ -129,6 +130,7 @@ export default async function DierenoverzichtRapportPage({ searchParams }: Props
                     {vaccinDisplay(animal.lastVaccinationDate, animal.lastVaccinationByShelter) || "—"}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-600">{formatDateBE(animal.lastDewormingDate) || "—"}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-600">{formatDateBE(animal.lastFleaTreatmentDate) || "—"}</td>
                   <td className="px-3 py-2 text-sm text-gray-600">{okBlank(animal.isOnWebsite)}</td>
                   <td className="px-3 py-2 text-sm text-gray-600">{okBlank(animal.isAvailableForAdoption)}</td>
                 </tr>

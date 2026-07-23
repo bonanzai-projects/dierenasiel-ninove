@@ -29,19 +29,20 @@ const styles = StyleSheet.create({
 // Kolombreedtes (% — som = 100), gealigneerd op het as-is asielrapport.
 const cols = {
   adoptie: { width: "5%" },
-  reden: { width: "11%" },
+  reden: { width: "10%" },
   gedrag: { width: "6%" },
   naam: { width: "8%" },
-  ras: { width: "9%" },
+  ras: { width: "8%" },
   mv: { width: "4%" },
   steriel: { width: "6%" },
   geboorte: { width: "7%" },
-  chip: { width: "9%" },
+  chip: { width: "8%" },
   nwChip: { width: "4%" },
   paspoort: { width: "8%" },
   nwPaspoort: { width: "4%" },
-  vaccin: { width: "7%" },
-  ontworming: { width: "6%" },
+  vaccin: { width: "6%" },
+  ontworming: { width: "5%" },
+  vlooien: { width: "5%" },
   website: { width: "3%" },
   adopteer: { width: "3%" },
 } as const;
@@ -86,7 +87,8 @@ export default function AnimalReportPdf({ animals, filters, generatedAt }: Props
               <Text style={[cols.paspoort, styles.headerText]}>Paspoort</Text>
               <Text style={[cols.nwPaspoort, styles.headerText]}>Nw pasp.</Text>
               <Text style={[cols.vaccin, styles.headerText]}>Vaccin</Text>
-              <Text style={[cols.ontworming, styles.headerText]}>Ontworming</Text>
+              <Text style={[cols.ontworming, styles.headerText]}>Ontw.</Text>
+              <Text style={[cols.vlooien, styles.headerText]}>Vlooien</Text>
               <Text style={[cols.website, styles.headerText]}>Web</Text>
               <Text style={[cols.adopteer, styles.headerText]}>Adopt.</Text>
             </View>
@@ -106,6 +108,7 @@ export default function AnimalReportPdf({ animals, filters, generatedAt }: Props
                 <Text style={[cols.nwPaspoort, styles.cellText]}>{jaNee(animal.isNewPassport)}</Text>
                 <Text style={[cols.vaccin, styles.cellText]}>{vaccinDisplay(animal.lastVaccinationDate, animal.lastVaccinationByShelter) || "-"}</Text>
                 <Text style={[cols.ontworming, styles.cellText]}>{formatDateBE(animal.lastDewormingDate) || "-"}</Text>
+                <Text style={[cols.vlooien, styles.cellText]}>{formatDateBE(animal.lastFleaTreatmentDate) || "-"}</Text>
                 <Text style={[cols.website, styles.cellText]}>{okBlank(animal.isOnWebsite)}</Text>
                 <Text style={[cols.adopteer, styles.cellText]}>{okBlank(animal.isAvailableForAdoption)}</Text>
               </View>

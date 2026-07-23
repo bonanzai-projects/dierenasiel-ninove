@@ -59,4 +59,20 @@ describe("BehaviorReportPdf", () => {
     expect(buffer.length).toBeGreaterThan(0);
     expect(buffer.toString("latin1", 0, 5)).toBe("%PDF-");
   });
+
+  // Story 10.28: zonder de max-3-limiet kan een langverblijver veel evaluaties
+  // hebben — de matrix wordt dan over meerdere blokken verdeeld.
+  // Ruimere timeout: het renderen van meerdere matrix-blokken duurt onder
+  // parallelle test-load meer dan de standaard 5s.
+  it("renders a long stay with more records than fit in one matrix block", async () => {
+    const many: BehaviorRecord[] = Array.from({ length: 14 }, (_, i) => ({
+      ...records[0],
+      id: i + 1,
+      date: `2026-01-${String(i + 1).padStart(2, "0")}`,
+    })) as BehaviorRecord[];
+
+    const buffer = await render(many, ["Sven Vanderrusten"]);
+    expect(buffer.length).toBeGreaterThan(0);
+    expect(buffer.toString("latin1", 0, 5)).toBe("%PDF-");
+  }, 30000);
 });

@@ -21,6 +21,8 @@ export async function createDeworming(
 
   const raw = {
     animalId: formData.get("animalId"),
+    // Story 10.31: ontbrekende categorie = ontworming (schema-default).
+    category: (formData.get("category") as string) || undefined,
     type: (formData.get("type") as string) || "",
     date: (formData.get("date") as string) || "",
     notes: (formData.get("notes") as string) || undefined,
@@ -41,7 +43,8 @@ export async function createDeworming(
       .insert(dewormings)
       .values({
         animalId: parsed.data.animalId,
-        type: parsed.data.type,
+        category: parsed.data.category,
+        type: parsed.data.type.trim(),
         date: parsed.data.date,
         notes: parsed.data.notes || null,
       })

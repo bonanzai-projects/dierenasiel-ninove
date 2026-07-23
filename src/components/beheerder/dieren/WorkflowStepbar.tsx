@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { WORKFLOW_PHASES } from "@/lib/workflow/phases";
 import { getPhaseStatus, PHASE_LABELS, groupOpenTodosByPhase } from "@/lib/workflow/stepbar";
+import { getEntryCriteria } from "@/lib/workflow/entry-criteria";
+import { getPhaseDescription } from "@/lib/workflow/phase-descriptions";
 import { transitionAnimalPhase } from "@/lib/actions/workflow";
 import type { AnimalTodo } from "@/types";
 import type { GuardWarning } from "@/lib/workflow/guards";
@@ -18,6 +20,8 @@ interface WorkflowStepbarProps {
   currentPhase: string;
   animalId: number;
   animalName: string;
+  /** Bepaalt de soort-specifieke toegangsvoorwaarden (katten hebben er extra). */
+  animalSpecies: string;
   todos: AnimalTodo[];
 }
 
@@ -25,6 +29,7 @@ export default function WorkflowStepbar({
   currentPhase,
   animalId,
   animalName,
+  animalSpecies,
   todos,
 }: WorkflowStepbarProps) {
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
@@ -87,9 +92,10 @@ export default function WorkflowStepbar({
             const openCount = todosByPhase[phase]?.length ?? 0;
             const isSelected = selectedPhase === phase;
             const isClickable = status !== "future";
+            const criteria = getEntryCriteria(phase, animalSpecies);
 
             return (
-              <li key={phase} className="flex flex-1 items-center">
+              <li key={phase} className="group relative flex flex-1 items-center">
                 {/* Connector line (before this step, except first) */}
                 {index > 0 && (
                   <div
@@ -154,6 +160,31 @@ export default function WorkflowStepbar({
                     </span>
                   )}
                 </button>
+
+                {/* Toegangsvoorwaarden bij hover én toetsenbordfocus. */}
+                <div
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-56 -translate-x-1/2 rounded-md bg-gray-900 px-3 py-2 text-left text-[11px] leading-snug text-white shadow-lg group-hover:block group-focus-within:block"
+                >
+                  <p className="font-semibold">{label}</p>
+                  <p className="mt-0.5 text-gray-200">{getPhaseDescription(phase)}</p>
+
+                  <p className="mt-2 border-t border-white/15 pt-1.5 font-semibold">
+                    Om in &laquo;{label}&raquo; te geraken
+                  </p>
+                  {criteria.length === 0 ? (
+                    <p className="mt-0.5 text-gray-300">
+                      Geen voorwaarden — je kan deze stap altijd zetten.
+                    </p>
+                  ) : (
+                    <ul className="mt-0.5 list-disc space-y-0.5 pl-4 text-gray-100">
+                      {criteria.map((criterium) => (
+                        <li key={criterium}>{criterium}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                </div>
 
                 {/* Connector line (after this step, except last) */}
                 {index < WORKFLOW_PHASES.length - 1 && (

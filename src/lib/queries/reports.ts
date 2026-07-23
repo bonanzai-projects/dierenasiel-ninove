@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { animals, behaviorRecords, vaccinations, dewormings, vetVisits, medications, vetInspectionReports, adoptionContracts, adoptionCandidates, kennels, walks, walkers, animalWorkflowHistory } from "@/lib/db/schema";
 import { eq, and, asc, desc, gte, lte, isNotNull, inArray, count, sql } from "drizzle-orm";
 import type { Animal, BehaviorRecord, VetInspectionReport } from "@/types";
-import { latestByAnimalId } from "@/lib/reports/animal-report-format";
+import { latestByAnimalId, latestByAnimalIdForCategory } from "@/lib/reports/animal-report-format";
 
 export interface AnimalReportFilters {
   species?: string;
@@ -23,6 +23,7 @@ export type AnimalReportRow = Animal & {
   lastVaccinationDate: string | null;
   lastVaccinationByShelter: boolean | null;
   lastDewormingDate: string | null;
+  lastFleaTreatmentDate: string | null;
 };
 
 export interface AnimalReportResult {
@@ -44,6 +45,7 @@ async function enrichWithMedical(rows: Animal[]): Promise<AnimalReportRow[]> {
       lastVaccinationDate: null,
       lastVaccinationByShelter: null,
       lastDewormingDate: null,
+      lastFleaTreatmentDate: null,
     }));
   }
 
@@ -53,7 +55,7 @@ async function enrichWithMedical(rows: Animal[]): Promise<AnimalReportRow[]> {
       .from(vaccinations)
       .where(inArray(vaccinations.animalId, ids)),
     db
-      .select({ animalId: dewormings.animalId, date: dewormings.date })
+      .select({ animalId: dewormings.animalId, date: dewormings.date, category: dewormings.category })
       .from(dewormings)
       .where(inArray(dewormings.animalId, ids)),
     db
@@ -63,7 +65,9 @@ async function enrichWithMedical(rows: Animal[]): Promise<AnimalReportRow[]> {
   ]);
 
   const latestVax = latestByAnimalId(vaxRows);
-  const latestDew = latestByAnimalId(dewRows);
+  // Story 10.31: ontworming en vlooienbehandeling delen de tabel `dewormings`.
+  const latestDew = latestByAnimalIdForCategory(dewRows, "ontworming");
+  const latestFlea = latestByAnimalIdForCategory(dewRows, "vlooien");
   const latestBeh = latestByAnimalId(behRows);
 
   return rows.map((a) => ({
@@ -72,6 +76,7 @@ async function enrichWithMedical(rows: Animal[]): Promise<AnimalReportRow[]> {
     lastVaccinationDate: latestVax.get(a.id)?.date ?? null,
     lastVaccinationByShelter: latestVax.get(a.id)?.givenByShelter ?? null,
     lastDewormingDate: latestDew.get(a.id)?.date ?? null,
+    lastFleaTreatmentDate: latestFlea.get(a.id)?.date ?? null,
   }));
 }
 
