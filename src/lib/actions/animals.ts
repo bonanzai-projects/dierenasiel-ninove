@@ -31,7 +31,7 @@ function isChecked(formData: FormData, name: string): boolean {
 function collectIntakeValues(formData: FormData): Record<string, string> {
   const fields = [
     "name", "breed", "color", "dateOfBirth", "identificationNr", "passportNr",
-    "intakeDate", "description", "shortDescription", "dossierNr", "pvNr",
+    "intakeDate", "description", "shortDescription", "dossierNr", "pvNr", "ibnReason",
     "intakeMetadata.melderNaam", "intakeMetadata.melderLocatie",
     "intakeMetadata.melderDatum", "intakeMetadata.betrokkenInstanties",
   ];
@@ -41,6 +41,30 @@ function collectIntakeValues(formData: FormData): Record<string, string> {
     if (typeof value === "string" && value !== "") values[field] = value;
   }
   return values;
+}
+
+/** De vier melder-/herkomstvelden die als één jsonb-object bewaard worden. */
+const MELDER_FIELDS = [
+  "intakeMetadata.melderNaam",
+  "intakeMetadata.melderLocatie",
+  "intakeMetadata.melderDatum",
+  "intakeMetadata.betrokkenInstanties",
+] as const;
+
+/**
+ * Bouwt het intakeMetadata-object uit de losse formuliervelden. Geeft `undefined`
+ * terug wanneer geen enkel melder-veld aanwezig of ingevuld is, zodat de aanroeper
+ * kan beslissen om de bestaande waarde ongemoeid te laten i.p.v. te overschrijven.
+ */
+function collectMelderMetadata(formData: FormData) {
+  if (!MELDER_FIELDS.some((f) => formData.has(f))) return undefined;
+  const meta = {
+    melderNaam: (formData.get("intakeMetadata.melderNaam") as string) || undefined,
+    melderLocatie: (formData.get("intakeMetadata.melderLocatie") as string) || undefined,
+    melderDatum: (formData.get("intakeMetadata.melderDatum") as string) || undefined,
+    betrokkenInstanties: (formData.get("intakeMetadata.betrokkenInstanties") as string) || undefined,
+  };
+  return Object.values(meta).some(Boolean) ? meta : undefined;
 }
 
 export async function createAnimalIntake(
@@ -90,6 +114,7 @@ export async function createAnimalIntake(
     isPickedUpByShelter: isPickedUp,
     dossierNr: (formData.get("dossierNr") as string) || undefined,
     pvNr: (formData.get("pvNr") as string) || undefined,
+    ibnReason: (formData.get("ibnReason") as string) || undefined,
     intakeMetadata,
   };
 
@@ -138,6 +163,7 @@ export async function createAnimalIntake(
         intakeMetadata: parsed.data.intakeMetadata || null,
         dossierNr: parsed.data.dossierNr || null,
         pvNr: parsed.data.pvNr || null,
+        ibnReason: parsed.data.ibnReason || null,
         ibnDecisionDeadline,
         workflowPhase: "intake",
         status: "beschikbaar",
@@ -198,6 +224,9 @@ export async function updateAnimal(
     intakeDate: (formData.get("intakeDate") as string) || undefined,
     intakeReason: (formData.get("intakeReason") as string) || undefined,
     dossierNr: (formData.get("dossierNr") as string) || undefined,
+    pvNr: (formData.get("pvNr") as string) || undefined,
+    ibnReason: (formData.get("ibnReason") as string) || undefined,
+    intakeMetadata: collectMelderMetadata(formData),
     isNeutered: isNeuteredFlag,
     neuteredDate: isNeuteredFlag === true ? (formData.get("neuteredDate") as string) || undefined : undefined,
     neuteredByShelter: isNeuteredFlag === true ? formData.getAll("neuteredByShelter").includes("true") : undefined,
@@ -241,7 +270,6 @@ export async function updateAnimal(
       dateOfBirth: parsed.data.dateOfBirth || sql`null`,
       intakeDate: parsed.data.intakeDate || sql`null`,
       intakeReason: parsed.data.intakeReason || sql`null`,
-      dossierNr: parsed.data.dossierNr || sql`null`,
       isNeutered: parsed.data.isNeutered,
       description: parsed.data.description || sql`null`,
       websiteDescription: parsed.data.websiteDescription || sql`null`,
@@ -267,6 +295,17 @@ export async function updateAnimal(
       baseSet.neuteredDate = null;
       baseSet.neuteredByShelter = null;
     }
+
+    // Story 10.36: IBN-/herkomstvelden alleen schrijven wanneer hun sectie in het
+    // formulier stond (formData.has). Zo wist een dier zonder die sectie (bv. een
+    // afstand) niet per ongeluk zijn dossier-/melderdata. Aanwezig maar leeg = wissen.
+    if (formData.has("dossierNr")) baseSet.dossierNr = parsed.data.dossierNr || null;
+    if (formData.has("pvNr")) baseSet.pvNr = parsed.data.pvNr || null;
+    if (formData.has("ibnReason")) baseSet.ibnReason = parsed.data.ibnReason || null;
+    if (MELDER_FIELDS.some((f) => formData.has(f))) {
+      baseSet.intakeMetadata = parsed.data.intakeMetadata ?? null;
+    }
+
     const [updated] = await db
       .update(animals)
       .set(baseSet)

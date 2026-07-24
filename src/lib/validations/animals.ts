@@ -33,6 +33,8 @@ export const animalIntakeSchema = z.object({
   isPickedUpByShelter: z.boolean().optional().default(false),
   dossierNr: z.string().optional(),
   pvNr: z.string().optional(),
+  // Reden van inbeslagname — waarom het dier in beslag genomen is.
+  ibnReason: z.string().optional(),
   intakeMetadata: z
     .object({
       melderNaam: z.string().optional(),
@@ -62,6 +64,17 @@ export const animalUpdateSchema = z.object({
     .optional()
     .or(z.literal("")),
   dossierNr: z.string().optional(),
+  // Story 10.36: IBN-velden ook bewerkbaar op de fiche (Sven-feedback 2026-07-24).
+  pvNr: z.string().optional(),
+  ibnReason: z.string().optional(),
+  intakeMetadata: z
+    .object({
+      melderNaam: z.string().optional(),
+      melderLocatie: z.string().optional(),
+      melderDatum: z.string().optional(),
+      betrokkenInstanties: z.string().optional(),
+    })
+    .optional(),
   // Story 10.29: tri-state — true/false/null (= onbekend, "??" in R1).
   isNeutered: z.boolean().nullable().optional().default(null),
   neuteredDate: z.string().optional().or(z.literal("")),

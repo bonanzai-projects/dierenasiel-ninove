@@ -72,6 +72,9 @@ export const animals = pgTable("animals", {
   adoptedDate: date("adopted_date"),
   dossierNr: varchar("dossier_nr", { length: 100 }),
   pvNr: varchar("pv_nr", { length: 100 }),
+  // Reden van inbeslagname (waarom het dier in beslag genomen is) — vrij tekst,
+  // los van intakeReason "ibn" dat enkel het type intake vastlegt (Sven 2026-07-24).
+  ibnReason: text("ibn_reason"),
   ibnDecisionDeadline: date("ibn_decision_deadline"),
   workflowPhase: varchar("workflow_phase", { length: 50 }),
   outtakeDate: date("outtake_date"),

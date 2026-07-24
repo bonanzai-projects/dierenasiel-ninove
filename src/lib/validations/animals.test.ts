@@ -368,6 +368,27 @@ describe("animalUpdateSchema", () => {
     }
   });
 
+  // Story 10.36: IBN-velden ook bewerkbaar op de fiche.
+  it("accepts pvNr, ibnReason en intakeMetadata op de fiche", () => {
+    const result = animalUpdateSchema.safeParse({
+      ...validUpdate,
+      intakeReason: "ibn",
+      dossierNr: "DWV-1",
+      pvNr: "PV-9",
+      ibnReason: "Verwaarlozing",
+      intakeMetadata: {
+        melderNaam: "Politie Ninove",
+        betrokkenInstanties: "PZ Ninove",
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ibnReason).toBe("Verwaarlozing");
+      expect(result.data.pvNr).toBe("PV-9");
+      expect(result.data.intakeMetadata?.melderNaam).toBe("Politie Ninove");
+    }
+  });
+
   it("accepts boolean toggles isOnWebsite and isFeatured", () => {
     const result = animalUpdateSchema.safeParse({
       ...validUpdate,

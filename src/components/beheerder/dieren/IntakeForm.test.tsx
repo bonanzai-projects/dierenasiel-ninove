@@ -53,9 +53,11 @@ describe("IntakeForm — intake reason dropdown (Story 10.21)", () => {
 
     fireEvent.change(select, { target: { value: "ibn" } });
 
-    // Na keuze: dossierNr + pvNr verschijnen
+    // Na keuze: dossierNr + pvNr + reden van inbeslagname verschijnen
     expect(screen.getByLabelText(/Dossiernummer/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/PV-nummer/i)).toBeInTheDocument();
+    // Story 10.36: vrij tekstveld "Reden van inbeslagname".
+    expect(screen.getByLabelText(/Reden van inbeslagname/i)).toBeInTheDocument();
   });
 
   it("toont GEEN IBN-conditional sectie wanneer 'afstand' geselecteerd is", () => {

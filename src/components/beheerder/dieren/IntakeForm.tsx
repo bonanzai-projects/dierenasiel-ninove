@@ -380,6 +380,21 @@ export default function IntakeForm() {
                 <FieldError errors={fieldErrors?.pvNr} />
               </div>
             </div>
+            <div className="mt-3" {...(hasError(fieldErrors, "ibnReason") ? { "data-field-error": true } : {})}>
+              <label htmlFor="ibnReason" className={labelClass("ibnReason")}>
+                Reden van inbeslagname
+              </label>
+              <textarea
+                id="ibnReason"
+                name="ibnReason"
+                defaultValue={keep("ibnReason")}
+                rows={2}
+                aria-invalid={hasError(fieldErrors, "ibnReason") || undefined}
+                className={fieldClass("ibnReason")}
+                placeholder="Waarom is het dier in beslag genomen? Bijv. verwaarlozing, gerechtelijk bevel..."
+              />
+              <FieldError errors={fieldErrors?.ibnReason} />
+            </div>
           </div>
         )}
 

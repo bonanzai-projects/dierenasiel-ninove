@@ -243,6 +243,23 @@ describe("createAnimalIntake", () => {
     );
   });
 
+  // Story 10.36: vrij tekstveld "reden van inbeslagname" opslaan bij intake.
+  it("stores ibnReason for an IBN intake", async () => {
+    const fd = makeFormData({
+      ...validFormData,
+      intakeReason: "ibn",
+      ibnReason: "Verwaarlozing — dier zonder water aangetroffen",
+    });
+
+    await createAnimalIntake(null, fd);
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ibnReason: "Verwaarlozing — dier zonder water aangetroffen",
+      }),
+    );
+  });
+
   it("returns field error on duplicate slug (unique constraint)", async () => {
     mockReturning.mockRejectedValue(Object.assign(new Error("unique violation"), { code: "23505" }));
 
@@ -735,6 +752,68 @@ describe("updateAnimal", () => {
         isNeutered: null,
         neuteredDate: null,
         neuteredByShelter: null,
+      }),
+    );
+  });
+
+  // Story 10.36: IBN-velden bewerkbaar op de fiche.
+  it("saves ibnReason, pvNr and melder-metadata when the IBN section is submitted", async () => {
+    const fd = makeFormData({
+      id: "1",
+      name: "Rex",
+      gender: "mannelijk",
+      intakeReason: "ibn",
+      dossierNr: "DWV-1",
+      pvNr: "PV-9",
+      ibnReason: "Verwaarlozing",
+      "intakeMetadata.melderNaam": "Politie Ninove",
+      "intakeMetadata.betrokkenInstanties": "PZ Ninove",
+    });
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dossierNr: "DWV-1",
+        pvNr: "PV-9",
+        ibnReason: "Verwaarlozing",
+        intakeMetadata: expect.objectContaining({
+          melderNaam: "Politie Ninove",
+          betrokkenInstanties: "PZ Ninove",
+        }),
+      }),
+    );
+  });
+
+  it("laat de IBN-kolommen ongemoeid wanneer hun sectie niet in het formulier stond", async () => {
+    // updateFormData bevat geen dossierNr/pvNr/ibnReason/melder-velden.
+    await updateAnimal(null, makeFormData(updateFormData));
+
+    const setArg = mockUpdateSet.mock.calls[0][0] as Record<string, unknown>;
+    expect(setArg).not.toHaveProperty("dossierNr");
+    expect(setArg).not.toHaveProperty("pvNr");
+    expect(setArg).not.toHaveProperty("ibnReason");
+    expect(setArg).not.toHaveProperty("intakeMetadata");
+  });
+
+  it("wist een IBN-veld dat aanwezig maar leeg is", async () => {
+    const fd = makeFormData({
+      id: "1",
+      name: "Rex",
+      gender: "mannelijk",
+      intakeReason: "ibn",
+      dossierNr: "",
+      pvNr: "",
+      ibnReason: "",
+    });
+
+    await updateAnimal(null, fd);
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dossierNr: null,
+        pvNr: null,
+        ibnReason: null,
       }),
     );
   });

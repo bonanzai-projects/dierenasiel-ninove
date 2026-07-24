@@ -38,19 +38,6 @@ import AnimalDetailTabs from "@/components/beheerder/shared/AnimalDetailTabs";
 import AnimalTraitsSection from "@/components/beheerder/dieren/AnimalTraitsSection";
 import { getAnimalTraits } from "@/lib/queries/animal-traits";
 
-function IbnMetadata({ metadata }: { metadata: unknown }) {
-  if (!metadata || typeof metadata !== "object") return null;
-  const meta = metadata as Record<string, string>;
-  return (
-    <div className="mt-4 border-t border-red-200 pt-4">
-      <p className="text-xs font-medium text-gray-500">Betrokken instanties</p>
-      <p className="mt-1 text-sm text-gray-800">
-        {meta.betrokkenInstanties || "Niet opgegeven"}
-      </p>
-    </div>
-  );
-}
-
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
@@ -161,42 +148,12 @@ export default async function DierDetailPage({ params }: Props) {
                 key={animal.updatedAt ? new Date(animal.updatedAt).getTime() : animal.id}
               />
 
-              {/* IBN Info */}
+              {/* IBN — het verwaarlozing-rapport (wettelijk verplicht bij IBN).
+                  De IBN-velden zelf (reden, dossier, PV, betrokken instanties)
+                  zijn bewerkbaar in het formulier hierboven (story 10.36). */}
               {animal.intakeReason === "ibn" && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                  <h3 className="text-sm font-bold text-red-700">Inbeslagname (IBN)</h3>
-                  <div className="mt-3 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Dossiernummer DWV</p>
-                      <p className="mt-1 text-sm font-semibold text-gray-800">
-                        {animal.dossierNr || "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">PV-nummer politie</p>
-                      <p className="mt-1 text-sm font-semibold text-gray-800">
-                        {animal.pvNr || "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Intake datum</p>
-                      <p className="mt-1 text-sm font-semibold text-gray-800">
-                        {animal.intakeDate || "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500">Beslissingsdeadline (60d)</p>
-                      <p className={`mt-1 text-sm font-semibold ${
-                        animal.ibnDecisionDeadline &&
-                        new Date(animal.ibnDecisionDeadline) <= new Date()
-                          ? "text-red-700"
-                          : "text-gray-800"
-                      }`}>
-                        {animal.ibnDecisionDeadline || "—"}
-                      </p>
-                    </div>
-                  </div>
-                  <IbnMetadata metadata={animal.intakeMetadata} />
+                  <h3 className="text-sm font-bold text-red-700">Inbeslagname — verwaarlozing-rapport</h3>
                   <NeglectReportSection animalId={animalId} report={neglectReport} />
                 </div>
               )}

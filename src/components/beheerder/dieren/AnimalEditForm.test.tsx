@@ -172,6 +172,72 @@ describe("AnimalEditForm — sterilisatie detail (Story 10.23)", () => {
   });
 });
 
+// Story 10.36: IBN-velden bewerkbaar op de fiche + herkomst/melder gelijkgetrokken.
+describe("AnimalEditForm — IBN-velden op de fiche (Story 10.36)", () => {
+  it("toont GEEN IBN-sectie bij een niet-IBN dier", () => {
+    render(<AnimalEditForm animal={mockAnimal({ intakeReason: "afstand" })} />);
+    expect(screen.queryByLabelText(/Reden van inbeslagname/i)).toBeNull();
+    expect(screen.queryByLabelText(/Dossiernummer DWV/i)).toBeNull();
+    expect(screen.queryByLabelText(/PV-nummer/i)).toBeNull();
+  });
+
+  it("toont de bewerkbare IBN-velden bij een IBN-dier", () => {
+    render(
+      <AnimalEditForm
+        animal={mockAnimal({
+          intakeReason: "ibn",
+          dossierNr: "DWV-2026-1",
+          pvNr: "PV-2026-9",
+          ibnReason: "Verwaarlozing",
+        })}
+      />,
+    );
+    expect((screen.getByLabelText(/Reden van inbeslagname/i) as HTMLTextAreaElement).value).toBe("Verwaarlozing");
+    expect((screen.getByLabelText(/Dossiernummer DWV/i) as HTMLInputElement).value).toBe("DWV-2026-1");
+    expect((screen.getByLabelText(/PV-nummer/i) as HTMLInputElement).value).toBe("PV-2026-9");
+  });
+
+  it("verschijnt zodra de gebruiker 'Inbeslagname' kiest in de dropdown", () => {
+    render(<AnimalEditForm animal={mockAnimal({ intakeReason: "afstand" })} />);
+    expect(screen.queryByLabelText(/Reden van inbeslagname/i)).toBeNull();
+
+    fireEvent.change(getReasonSelect(), { target: { value: "ibn" } });
+
+    expect(screen.getByLabelText(/Reden van inbeslagname/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Dossiernummer DWV/i)).toBeInTheDocument();
+  });
+
+  it("verbergt de 'Dossiernummer Shelter'-benaming volledig (was tegenstrijdig)", () => {
+    render(<AnimalEditForm animal={mockAnimal({ intakeReason: "ibn" })} />);
+    expect(screen.queryByLabelText(/Dossiernummer Shelter/i)).toBeNull();
+  });
+});
+
+describe("AnimalEditForm — herkomst/melder (Story 10.35/10.36)", () => {
+  it("toont de melder-velden bij een vondeling", () => {
+    render(
+      <AnimalEditForm
+        animal={mockAnimal({
+          intakeReason: "zwerfhond",
+          intakeMetadata: { melderNaam: "Marie", melderLocatie: "Dorpstraat 1" },
+        })}
+      />,
+    );
+    expect((screen.getByLabelText(/Naam melder/i) as HTMLInputElement).value).toBe("Marie");
+    expect((screen.getByLabelText(/Adres \/ vindplaats/i) as HTMLInputElement).value).toBe("Dorpstraat 1");
+  });
+
+  it("toont GEEN melder-velden bij een afstand zonder ophaling", () => {
+    render(<AnimalEditForm animal={mockAnimal({ intakeReason: "afstand", isPickedUpByShelter: false })} />);
+    expect(screen.queryByLabelText(/Naam melder/i)).toBeNull();
+  });
+
+  it("toont de melder-velden wanneer het dier door het asiel is opgehaald", () => {
+    render(<AnimalEditForm animal={mockAnimal({ intakeReason: "afstand", isPickedUpByShelter: true })} />);
+    expect(screen.getByLabelText(/Naam melder/i)).toBeInTheDocument();
+  });
+});
+
 // Story 10.33: de balk met niet-opgeslagen wijzigingen.
 describe("AnimalEditForm — niet-opgeslagen wijzigingen (Story 10.33)", () => {
   beforeEach(() => {

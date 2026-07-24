@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState, type RefObject } from "rea
 import { useRouter } from "next/navigation";
 import { updateAnimal } from "@/lib/actions/animals";
 import { INTAKE_REASONS } from "@/lib/constants";
+import { shouldCollectMelderDetails } from "@/lib/animals/intake-melder";
 import NeuteredRadioGroup, { type NeuteredChoice } from "./NeuteredRadioGroup";
 import AutoGrowTextarea, { autoGrow } from "@/components/beheerder/shared/AutoGrowTextarea";
 import { SHORT_DESCRIPTION_MAX } from "@/lib/validations/animals";
@@ -148,6 +149,14 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
     animal.isNeutered === true ? "true" : animal.isNeutered === false ? "false" : "onbekend",
   );
   const isNeutered = neuteredChoice === "true";
+  // Story 10.36: reden intake gecontroleerd zodat de IBN-/melder-secties
+  // meelopen met de keuze in de dropdown.
+  const [intakeReason, setIntakeReason] = useState(animal.intakeReason ?? "");
+  const meta = (animal.intakeMetadata ?? {}) as Record<string, string>;
+  const showMelderDetails = shouldCollectMelderDetails({
+    intakeReason,
+    isPickedUpByShelter: animal.isPickedUpByShelter ?? false,
+  });
   // Bron voor de kopieerknoppen bij de website- en affichetekst (story 10.32).
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
@@ -343,7 +352,8 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
             <select
               id="intakeReason"
               name="intakeReason"
-              defaultValue={animal.intakeReason ?? ""}
+              value={intakeReason}
+              onChange={(e) => setIntakeReason(e.target.value)}
               className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
             >
               <option value="">Niet opgegeven</option>
@@ -353,20 +363,6 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label htmlFor="dossierNr" className="block text-xs font-medium text-gray-600">
-              Dossiernummer Shelter
-            </label>
-            <input
-              type="text"
-              id="dossierNr"
-              name="dossierNr"
-              defaultValue={animal.dossierNr ?? ""}
-              className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-              placeholder="Cijfercode"
-            />
           </div>
         </div>
 
@@ -479,6 +475,131 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
           </div>
         )}
       </div>
+
+      {/* Inbeslagname (IBN) — bewerkbaar op de fiche (story 10.36). Verschijnt
+          zodra "Inbeslagname" als reden gekozen is. Staat de sectie niet in het
+          formulier, dan laat de action deze kolommen ongemoeid (formData.has). */}
+      {intakeReason === "ibn" && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-red-700">Inbeslagname (IBN)</h2>
+
+          <div className="mt-3">
+            <label htmlFor="ibnReason" className="block text-xs font-medium text-gray-600">
+              Reden van inbeslagname
+            </label>
+            <AutoGrowTextarea
+              id="ibnReason"
+              name="ibnReason"
+              rows={2}
+              defaultValue={animal.ibnReason ?? ""}
+              placeholder="Waarom is het dier in beslag genomen? Bijv. verwaarlozing, gerechtelijk bevel..."
+              className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="dossierNr" className="block text-xs font-medium text-gray-600">
+                Dossiernummer DWV
+              </label>
+              <input
+                type="text"
+                id="dossierNr"
+                name="dossierNr"
+                defaultValue={animal.dossierNr ?? ""}
+                className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                placeholder="Bijv. DWV-2026-12345"
+              />
+            </div>
+            <div>
+              <label htmlFor="pvNr" className="block text-xs font-medium text-gray-600">
+                PV-nummer politie
+              </label>
+              <input
+                type="text"
+                id="pvNr"
+                name="pvNr"
+                defaultValue={animal.pvNr ?? ""}
+                className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                placeholder="Bijv. PV-2026-001"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="intakeMetadata.betrokkenInstanties" className="block text-xs font-medium text-gray-600">
+                Betrokken instanties
+              </label>
+              <input
+                type="text"
+                id="intakeMetadata.betrokkenInstanties"
+                name="intakeMetadata.betrokkenInstanties"
+                defaultValue={meta.betrokkenInstanties ?? ""}
+                className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                placeholder="Bijv. Politiezone Ninove, Dierenwelzijn Vlaanderen"
+              />
+            </div>
+          </div>
+
+          <p className="mt-3 text-xs text-gray-500">
+            Beslissingsdeadline (60 dagen):{" "}
+            <span className={`font-semibold ${
+              animal.ibnDecisionDeadline && new Date(animal.ibnDecisionDeadline) <= new Date()
+                ? "text-red-700"
+                : "text-gray-800"
+            }`}>
+              {animal.ibnDecisionDeadline || "—"}
+            </span>{" "}
+            <span className="text-gray-400">(automatisch berekend bij intake)</span>
+          </p>
+        </div>
+      )}
+
+      {/* Herkomst / melding — naam en adres van wie het dier meldde of bracht.
+          Zichtbaar bij ophaling, IBN of vondeling (story 10.35/10.36). */}
+      {showMelderDetails && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-amber-800">Herkomst / melding</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="intakeMetadata.melderNaam" className="block text-xs font-medium text-gray-600">
+                Naam melder / brenger
+              </label>
+              <input
+                type="text"
+                id="intakeMetadata.melderNaam"
+                name="intakeMetadata.melderNaam"
+                defaultValue={meta.melderNaam ?? ""}
+                className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                placeholder="Naam van wie gemeld of gebracht heeft"
+              />
+            </div>
+            <div>
+              <label htmlFor="intakeMetadata.melderDatum" className="block text-xs font-medium text-gray-600">
+                Datum melding
+              </label>
+              <input
+                type="date"
+                id="intakeMetadata.melderDatum"
+                name="intakeMetadata.melderDatum"
+                defaultValue={meta.melderDatum ?? ""}
+                className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="intakeMetadata.melderLocatie" className="block text-xs font-medium text-gray-600">
+                Adres / vindplaats
+              </label>
+              <input
+                type="text"
+                id="intakeMetadata.melderLocatie"
+                name="intakeMetadata.melderLocatie"
+                defaultValue={meta.melderLocatie ?? ""}
+                className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                placeholder="Adres of plaats waar het dier gevonden of gebracht is"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Beschrijving + publicatiekanalen */}
       <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
