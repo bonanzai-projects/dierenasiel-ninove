@@ -68,6 +68,42 @@ describe("IntakeForm — intake reason dropdown (Story 10.21)", () => {
   });
 });
 
+// Sven-feedback 2026-07-24: bij een vondeling moeten adres + naam melder/brenger
+// ingevuld kunnen worden, ook als iemand het dier komt brengen (geen ophaling).
+describe("IntakeForm — melder-velden bij een vondeling (Story 10.35)", () => {
+  it("toont de melder-velden zodra 'Vondeling' gekozen is, zonder ophaal-vinkje", () => {
+    render(<IntakeForm />);
+    const select = getReasonSelect();
+
+    // Standaard niet zichtbaar
+    expect(screen.queryByLabelText(/Naam melder/i)).toBeNull();
+    expect(screen.queryByLabelText(/Adres \/ vindplaats/i)).toBeNull();
+
+    fireEvent.change(select, { target: { value: "zwerfhond" } });
+
+    // Nu zichtbaar zonder dat "opgehaald door het asiel" aangevinkt is
+    expect(
+      (screen.getByRole("checkbox", { name: /Opgehaald door het asiel/i }) as HTMLInputElement).checked,
+    ).toBe(false);
+    expect(screen.getByLabelText(/Naam melder/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Adres \/ vindplaats/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Datum melding/i)).toBeInTheDocument();
+  });
+
+  it("toont GEEN 'betrokken instanties' bij een vondeling (dat is IBN-only)", () => {
+    render(<IntakeForm />);
+    fireEvent.change(getReasonSelect(), { target: { value: "zwerfhond" } });
+    expect(screen.queryByLabelText(/Betrokken instanties/i)).toBeNull();
+  });
+
+  it("toont de melder-velden niet bij 'afstand' zonder ophaling", () => {
+    render(<IntakeForm />);
+    fireEvent.change(getReasonSelect(), { target: { value: "afstand" } });
+    expect(screen.queryByLabelText(/Naam melder/i)).toBeNull();
+    expect(screen.queryByLabelText(/Adres \/ vindplaats/i)).toBeNull();
+  });
+});
+
 describe("IntakeForm — sterilisatie detail (Story 10.23)", () => {
   // Story 10.29: checkbox vervangen door radiogroep Ja / Nee / Onbekend.
   function getNeuteredRadio(label: "Ja" | "Nee" | "Onbekend"): HTMLInputElement {

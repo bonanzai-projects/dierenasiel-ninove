@@ -3,6 +3,7 @@
 import { useActionState, useState, useRef, useEffect } from "react";
 import { createAnimalIntake } from "@/lib/actions/animals";
 import { INTAKE_REASONS } from "@/lib/constants";
+import { shouldCollectMelderDetails } from "@/lib/animals/intake-melder";
 import NeuteredRadioGroup, { type NeuteredChoice } from "./NeuteredRadioGroup";
 
 const SPECIES_OPTIONS = [
@@ -101,6 +102,12 @@ export default function IntakeForm() {
   }
 
   const today = new Date().toISOString().split("T")[0];
+  // Melder-velden verschijnen bij ophaling, IBN of vondeling (ook wanneer
+  // iemand het dier zelf komt brengen) — Sven-feedback 2026-07-24.
+  const showMelderDetails = shouldCollectMelderDetails({
+    intakeReason,
+    isPickedUpByShelter: isPickedUp,
+  });
 
   return (
     <form ref={formRef} action={formAction} noValidate className="space-y-8">
@@ -393,8 +400,8 @@ export default function IntakeForm() {
           </label>
         </div>
 
-        {/* Melder details - shown when isPickedUp or IBN */}
-        {(isPickedUp || intakeReason === "ibn") && (
+        {/* Melder details - bij ophaling, IBN of vondeling */}
+        {showMelderDetails && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
             <h3 className="text-sm font-semibold text-amber-800">
               Melding details
@@ -402,7 +409,7 @@ export default function IntakeForm() {
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <div {...(hasError(fieldErrors, "intakeMetadata.melderNaam") ? { "data-field-error": true } : {})}>
                 <label htmlFor="intakeMetadata.melderNaam" className={labelClass("intakeMetadata.melderNaam")}>
-                  Naam melder
+                  Naam melder / brenger
                 </label>
                 <input
                   type="text"
@@ -411,7 +418,7 @@ export default function IntakeForm() {
                   defaultValue={keep("intakeMetadata.melderNaam")}
                   aria-invalid={hasError(fieldErrors, "intakeMetadata.melderNaam") || undefined}
                   className={fieldClass("intakeMetadata.melderNaam")}
-                  placeholder="Naam van de persoon die gemeld heeft"
+                  placeholder="Naam van wie gemeld of gebracht heeft"
                 />
                 <FieldError errors={fieldErrors?.["intakeMetadata.melderNaam"]} />
               </div>
@@ -431,7 +438,7 @@ export default function IntakeForm() {
               </div>
               <div className="sm:col-span-2" {...(hasError(fieldErrors, "intakeMetadata.melderLocatie") ? { "data-field-error": true } : {})}>
                 <label htmlFor="intakeMetadata.melderLocatie" className={labelClass("intakeMetadata.melderLocatie")}>
-                  Locatie ophaling
+                  Adres / vindplaats
                 </label>
                 <input
                   type="text"
@@ -440,7 +447,7 @@ export default function IntakeForm() {
                   defaultValue={keep("intakeMetadata.melderLocatie")}
                   aria-invalid={hasError(fieldErrors, "intakeMetadata.melderLocatie") || undefined}
                   className={fieldClass("intakeMetadata.melderLocatie")}
-                  placeholder="Adres of locatie waar het dier is opgehaald"
+                  placeholder="Adres of plaats waar het dier gevonden of gebracht is"
                 />
                 <FieldError errors={fieldErrors?.["intakeMetadata.melderLocatie"]} />
               </div>

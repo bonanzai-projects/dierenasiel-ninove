@@ -218,6 +218,31 @@ describe("createAnimalIntake", () => {
     );
   });
 
+  // Sven-feedback 2026-07-24: bij een vondeling moeten adres + naam melder
+  // bewaard worden, ook als iemand het dier komt brengen (geen ophaling).
+  it("stores intake_metadata for a vondeling without shelter pickup", async () => {
+    const fd = makeFormData({
+      ...validFormData,
+      intakeReason: "zwerfhond",
+      "intakeMetadata.melderNaam": "Marie Peeters",
+      "intakeMetadata.melderLocatie": "Geraardsbergsestraat 4, Ninove",
+      "intakeMetadata.melderDatum": "2026-07-24",
+    });
+
+    await createAnimalIntake(null, fd);
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isPickedUpByShelter: false,
+        intakeMetadata: expect.objectContaining({
+          melderNaam: "Marie Peeters",
+          melderLocatie: "Geraardsbergsestraat 4, Ninove",
+          melderDatum: "2026-07-24",
+        }),
+      }),
+    );
+  });
+
   it("returns field error on duplicate slug (unique constraint)", async () => {
     mockReturning.mockRejectedValue(Object.assign(new Error("unique violation"), { code: "23505" }));
 

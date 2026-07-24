@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { animalIntakeSchema, animalUpdateSchema } from "@/lib/validations/animals";
 import { slugify } from "@/lib/utils";
 import { parseNeuteredValue } from "@/lib/reports/animal-report-format";
+import { shouldCollectMelderDetails } from "@/lib/animals/intake-melder";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 import type { Animal } from "@/types";
@@ -54,8 +55,11 @@ export async function createAnimalIntake(
   const isPickedUp = formData.get("isPickedUpByShelter") === "true";
   const intakeReason = (formData.get("intakeReason") as string) || undefined;
 
-  // Build intakeMetadata when shelter pickup or IBN
-  const hasMetadata = isPickedUp || intakeReason === "ibn";
+  // Build intakeMetadata bij ophaling, IBN of vondeling (Sven-feedback 2026-07-24).
+  const hasMetadata = shouldCollectMelderDetails({
+    intakeReason,
+    isPickedUpByShelter: isPickedUp,
+  });
   const intakeMetadata = hasMetadata
     ? {
         melderNaam: (formData.get("intakeMetadata.melderNaam") as string) || undefined,
