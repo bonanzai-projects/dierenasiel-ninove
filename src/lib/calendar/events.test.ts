@@ -3,6 +3,9 @@ import {
   ymd,
   buildMonthGrid,
   expandEventDates,
+  addDays,
+  startOfWeekMonday,
+  buildWeek,
   addMonths,
   monthTitle,
   groupEventsByDate,
@@ -81,6 +84,35 @@ describe("expandEventDates", () => {
 
   it("geeft een lege lijst bij geen overlap", () => {
     expect(expandEventDates("2026-08-01", "2026-08-03", wStart, wEnd)).toEqual([]);
+  });
+});
+
+describe("addDays", () => {
+  it("telt dagen op en trekt af, over maandgrenzen", () => {
+    expect(addDays("2026-07-15", 3)).toBe("2026-07-18");
+    expect(addDays("2026-07-01", -1)).toBe("2026-06-30");
+    expect(addDays("2026-07-31", 1)).toBe("2026-08-01");
+  });
+});
+
+describe("startOfWeekMonday", () => {
+  it("geeft de maandag van de week", () => {
+    // 2026-07-15 is een woensdag → maandag = 13 juli
+    expect(startOfWeekMonday("2026-07-15")).toBe("2026-07-13");
+    // een maandag geeft zichzelf
+    expect(startOfWeekMonday("2026-07-13")).toBe("2026-07-13");
+    // een zondag hoort bij de week die op maandag begon
+    expect(startOfWeekMonday("2026-07-19")).toBe("2026-07-13");
+  });
+});
+
+describe("buildWeek", () => {
+  it("geeft 7 dagen van maandag tot zondag", () => {
+    const week = buildWeek("2026-07-15", "2026-07-15");
+    expect(week).toHaveLength(7);
+    expect(week[0].date).toBe("2026-07-13");
+    expect(week[6].date).toBe("2026-07-19");
+    expect(week.find((c) => c.isToday)?.date).toBe("2026-07-15");
   });
 });
 

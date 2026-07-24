@@ -13,78 +13,86 @@ const events: CalendarEvent[] = [
   { id: "walk-1", category: "wandelingen", date: "2026-07-15", time: "10:00", title: "Wandeling: Bella", href: "/beheerder/dieren/2" },
 ];
 
-function renderView() {
-  render(<CalendarView year={2026} month={7} todayStr="2026-07-15" events={events} />);
+function renderMonth() {
+  render(<CalendarView view="maand" refDate="2026-07-15" todayStr="2026-07-15" events={events} />);
 }
 
-describe("CalendarView", () => {
+describe("CalendarView — maandweergave", () => {
   it("toont de maandtitel en de weekdagkoppen (maandag eerst)", () => {
-    renderView();
+    renderMonth();
     expect(screen.getByText("Juli 2026")).toBeInTheDocument();
     expect(screen.getByText("Ma")).toBeInTheDocument();
     expect(screen.getByText("Zo")).toBeInTheDocument();
   });
 
   it("toont de events uit de bronnen", () => {
-    renderView();
+    renderMonth();
     expect(screen.getAllByText("Kennismaking: Rex").length).toBeGreaterThan(0);
     expect(screen.getAllByText("10:00 Wandeling: Bella").length).toBeGreaterThan(0);
   });
 
   it("verbergt een categorie wanneer je de filter uitzet", () => {
-    renderView();
+    renderMonth();
     expect(screen.getAllByText("Kennismaking: Rex").length).toBeGreaterThan(0);
-
     fireEvent.click(screen.getByRole("button", { name: /Adopties/i }));
-
     expect(screen.queryByText("Kennismaking: Rex")).toBeNull();
-    // De wandeling blijft wel zichtbaar.
     expect(screen.getAllByText("10:00 Wandeling: Bella").length).toBeGreaterThan(0);
   });
 
-  it("markeert de dag van vandaag in het rooster", () => {
-    renderView();
-    // 15 komt in het rooster voor als vandaag-cel.
-    expect(screen.getByText("15")).toBeInTheDocument();
-  });
-
   it("linkt de vorige/volgende maand-navigatie correct", () => {
-    renderView();
-    expect(screen.getByLabelText("Vorige maand")).toHaveAttribute("href", "/beheerder/kalender?y=2026&m=6");
-    expect(screen.getByLabelText("Volgende maand")).toHaveAttribute("href", "/beheerder/kalender?y=2026&m=8");
+    renderMonth();
+    expect(screen.getByLabelText("Vorige")).toHaveAttribute("href", "/beheerder/kalender?view=maand&d=2026-06-01");
+    expect(screen.getByLabelText("Volgende")).toHaveAttribute("href", "/beheerder/kalender?view=maand&d=2026-08-01");
   });
 });
 
-// Story 12.3: klikken op een dag opent het dag-detailpaneel.
 describe("CalendarView — dag-detail (Story 12.3)", () => {
   it("opent een dialoog met de items van de aangeklikte dag", () => {
-    renderView();
+    renderMonth();
     expect(screen.queryByRole("dialog")).toBeNull();
-
     fireEvent.click(screen.getByLabelText("Bekijk 2026-07-15"));
-
-    const dialog = screen.getByRole("dialog");
-    expect(dialog).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Woensdag 15 juli 2026")).toBeInTheDocument();
-    // Beide events van die dag staan in het paneel.
     expect(screen.getAllByText("Kennismaking: Rex").length).toBeGreaterThan(0);
   });
 
-  it("toont 'geen items' voor een lege dag en een prefill-link naar nieuw item", () => {
-    renderView();
-    fireEvent.click(screen.getByLabelText("Bekijk 2026-07-20"));
-    expect(screen.getByText(/Geen items op deze dag/i)).toBeInTheDocument();
-    expect(screen.getByText(/Nieuw item op deze dag/i)).toHaveAttribute(
-      "href",
-      "/beheerder/kalender/nieuw?date=2026-07-20",
-    );
-  });
-
   it("sluit het paneel via de sluitknop", () => {
-    renderView();
+    renderMonth();
     fireEvent.click(screen.getByLabelText("Bekijk 2026-07-15"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Sluiten"));
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+// Story 12.6: week- en dagweergave.
+describe("CalendarView — week/dag-weergave (Story 12.6)", () => {
+  it("toont een view-switcher met Maand/Week/Dag", () => {
+    renderMonth();
+    expect(screen.getByRole("link", { name: "Maand" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("link", { name: "Week" })).toHaveAttribute("href", "/beheerder/kalender?view=week&d=2026-07-15");
+    expect(screen.getByRole("link", { name: "Dag" })).toHaveAttribute("href", "/beheerder/kalender?view=dag&d=2026-07-15");
+  });
+
+  it("weekweergave toont 7 dagkoppen die naar de dagweergave linken en de events", () => {
+    render(<CalendarView view="week" refDate="2026-07-15" todayStr="2026-07-15" events={events} />);
+    // Navigatie verschuift een week.
+    expect(screen.getByLabelText("Vorige")).toHaveAttribute("href", "/beheerder/kalender?view=week&d=2026-07-08");
+    expect(screen.getByLabelText("Volgende")).toHaveAttribute("href", "/beheerder/kalender?view=week&d=2026-07-22");
+    // De woensdag-events staan in de week (pill met tijd).
+    expect(screen.getAllByText("14:00 Kennismaking: Rex").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("10:00 Wandeling: Bella").length).toBeGreaterThan(0);
+  });
+
+  it("dagweergave toont de agenda van één dag met een prefill-link", () => {
+    render(<CalendarView view="dag" refDate="2026-07-15" todayStr="2026-07-15" events={events} />);
+    expect(screen.getByText("Woensdag 15 juli 2026")).toBeInTheDocument();
+    expect(screen.getByLabelText("Vorige")).toHaveAttribute("href", "/beheerder/kalender?view=dag&d=2026-07-14");
+    expect(screen.getByText(/Nieuw item op deze dag/i)).toHaveAttribute("href", "/beheerder/kalender/nieuw?date=2026-07-15");
+  });
+
+  it("dagweergave op een lege dag toont 'geen items'", () => {
+    render(<CalendarView view="dag" refDate="2026-07-20" todayStr="2026-07-15" events={events} />);
+    expect(screen.getByText(/Geen items op deze dag/i)).toBeInTheDocument();
   });
 });

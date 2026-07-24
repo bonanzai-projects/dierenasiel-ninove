@@ -93,6 +93,35 @@ export function expandEventDates(
   return out;
 }
 
+/** Verschuift een YYYY-MM-DD met `n` dagen (mag negatief). */
+export function addDays(dateStr: string, n: number): string {
+  const d = new Date(Date.parse(`${dateStr}T00:00:00Z`) + n * DAY_MS);
+  return ymd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+}
+
+/** Maandag van de week waarin `dateStr` valt (YYYY-MM-DD). */
+export function startOfWeekMonday(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  const mon0 = (d.getUTCDay() + 6) % 7; // ma=0 … zo=6
+  return addDays(dateStr, -mon0);
+}
+
+/** 7 dagcellen (ma–zo) van de week waarin `refDate` valt. */
+export function buildWeek(refDate: string, todayStr?: string): CalendarDayCell[] {
+  const start = startOfWeekMonday(refDate);
+  const cells: CalendarDayCell[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = addDays(start, i);
+    cells.push({
+      date,
+      day: Number(date.slice(8, 10)),
+      inCurrentMonth: true,
+      isToday: !!todayStr && date === todayStr,
+    });
+  }
+  return cells;
+}
+
 /** Verschuift {year, month} met `delta` maanden (delta mag negatief zijn). */
 export function addMonths(
   year: number,

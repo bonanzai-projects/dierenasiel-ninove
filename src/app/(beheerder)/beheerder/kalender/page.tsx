@@ -1,10 +1,10 @@
 import Link from "next/link";
-import CalendarView from "@/components/beheerder/kalender/CalendarView";
+import CalendarView, { type CalendarViewMode } from "@/components/beheerder/kalender/CalendarView";
 import { getCalendarEvents } from "@/lib/queries/calendar";
-import { buildMonthGrid } from "@/lib/calendar/events";
+import { buildMonthGrid, startOfWeekMonday, addDays } from "@/lib/calendar/events";
 
 interface PageProps {
-  searchParams: Promise<{ y?: string; m?: string }>;
+  searchParams: Promise<{ view?: string; d?: string; y?: string; m?: string }>;
 }
 
 /** Belgische datum van vandaag als YYYY-MM-DD. */
@@ -13,23 +13,41 @@ function belgianToday(): string {
 }
 
 export default async function KalenderPage({ searchParams }: PageProps) {
-  const { y, m } = await searchParams;
+  const { view: viewParam, d, y, m } = await searchParams;
   const todayStr = belgianToday();
 
-  // Standaard de huidige maand; anders wat in de URL staat (met validatie).
-  let year = Number(y);
-  let month = Number(m);
-  if (!Number.isInteger(year) || year < 1970 || year > 3000) {
-    year = Number(todayStr.slice(0, 4));
-  }
-  if (!Number.isInteger(month) || month < 1 || month > 12) {
-    month = Number(todayStr.slice(5, 7));
+  const view: CalendarViewMode = viewParam === "week" || viewParam === "dag" ? viewParam : "maand";
+
+  // Referentiedatum: ?d= (gevalideerd), anders oude ?y=&m= (naar 1e van de maand),
+  // anders vandaag.
+  let refDate = todayStr;
+  if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    refDate = d;
+  } else if (y && m) {
+    const yy = Number(y);
+    const mm = Number(m);
+    if (Number.isInteger(yy) && Number.isInteger(mm) && mm >= 1 && mm <= 12) {
+      refDate = `${yy}-${String(mm).padStart(2, "0")}-01`;
+    }
   }
 
-  // Venster = het zichtbare maandrooster (6 weken).
-  const grid = buildMonthGrid(year, month);
-  const start = grid[0].date;
-  const end = grid[grid.length - 1].date;
+  // Venster = de zichtbare periode van de gekozen view.
+  let start: string;
+  let end: string;
+  if (view === "maand") {
+    const year = Number(refDate.slice(0, 4));
+    const month = Number(refDate.slice(5, 7));
+    const grid = buildMonthGrid(year, month);
+    start = grid[0].date;
+    end = grid[grid.length - 1].date;
+  } else if (view === "week") {
+    start = startOfWeekMonday(refDate);
+    end = addDays(start, 6);
+  } else {
+    start = refDate;
+    end = refDate;
+  }
+
   const events = await getCalendarEvents({ start, end });
 
   return (
@@ -49,7 +67,7 @@ export default async function KalenderPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      <CalendarView year={year} month={month} todayStr={todayStr} events={events} />
+      <CalendarView view={view} refDate={refDate} todayStr={todayStr} events={events} />
     </div>
   );
 }
