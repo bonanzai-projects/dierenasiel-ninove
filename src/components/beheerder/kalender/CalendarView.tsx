@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   CALENDAR_CATEGORIES,
@@ -44,6 +44,19 @@ function shortDayLabel(dateStr: string): string {
   }).format(d);
 }
 
+/** "maandag 14 juli 2026" voor de dag-detailkop. */
+function fullDayLabel(dateStr: string): string {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  const s = new Intl.DateTimeFormat("nl-BE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(d);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function EventPill({ e }: { e: CalendarEvent }) {
   const cat = CALENDAR_CATEGORY_MAP[e.category];
   const label = `${e.time ? `${e.time} ` : ""}${e.title}`;
@@ -56,7 +69,11 @@ function EventPill({ e }: { e: CalendarEvent }) {
     </span>
   );
   return e.href ? (
-    <Link href={e.href} className="block hover:opacity-80">
+    <Link
+      href={e.href}
+      className="block hover:opacity-80"
+      onClick={(ev) => ev.stopPropagation()}
+    >
       {inner}
     </Link>
   ) : (
@@ -64,10 +81,101 @@ function EventPill({ e }: { e: CalendarEvent }) {
   );
 }
 
+/** Dag-detail: paneel met alle events van één dag (Story 12.3). */
+function DayDetail({
+  date,
+  events,
+  onClose,
+}: {
+  date: string;
+  events: CalendarEvent[];
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Items op ${fullDayLabel(date)}`}
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl bg-white p-4 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-heading text-base font-bold text-[#1b4332]">{fullDayLabel(date)}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Sluiten"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
+          >
+            ✕
+          </button>
+        </div>
+
+        {events.length === 0 ? (
+          <p className="text-sm text-gray-500">Geen items op deze dag.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {events.map((e) => {
+              const cat = CALENDAR_CATEGORY_MAP[e.category];
+              const row = (
+                <div className="flex items-start gap-2 rounded-md border border-gray-100 p-2">
+                  <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${cat.dot}`} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-gray-800">
+                      {e.time ? <span className="text-gray-500">{e.time} · </span> : null}
+                      {e.title}
+                    </p>
+                    <p className="text-[11px] text-gray-400">{cat.label}</p>
+                  </div>
+                </div>
+              );
+              return (
+                <li key={e.id}>
+                  {e.href ? (
+                    <Link href={e.href} className="block hover:bg-gray-50">
+                      {row}
+                    </Link>
+                  ) : (
+                    row
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div className="mt-4 flex justify-end">
+          <Link
+            href={`/beheerder/kalender/nieuw?date=${date}`}
+            className="rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
+          >
+            + Nieuw item op deze dag
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CalendarView({ year, month, todayStr, events }: CalendarViewProps) {
   const [active, setActive] = useState<Set<CalendarCategoryKey>>(
     () => new Set(CALENDAR_CATEGORY_KEYS),
   );
+  // Story 12.3: geselecteerde dag voor het detailpaneel.
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setSelectedDate(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedDate]);
 
   function toggle(key: CalendarCategoryKey) {
     setActive((prev) => {
@@ -164,7 +272,17 @@ export default function CalendarView({ year, month, todayStr, events }: Calendar
             return (
               <div
                 key={cell.date}
-                className={`min-h-[92px] border-b border-r border-gray-100 p-1 ${
+                role="button"
+                tabIndex={0}
+                aria-label={`Bekijk ${cell.date}`}
+                onClick={() => setSelectedDate(cell.date)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedDate(cell.date);
+                  }
+                }}
+                className={`min-h-[92px] cursor-pointer border-b border-r border-gray-100 p-1 hover:bg-emerald-50/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400 ${
                   cell.inCurrentMonth ? (weekend ? "bg-gray-50/40" : "bg-white") : "bg-gray-50/70"
                 }`}
               >
@@ -231,6 +349,14 @@ export default function CalendarView({ year, month, todayStr, events }: Calendar
           </ul>
         )}
       </div>
+
+      {selectedDate && (
+        <DayDetail
+          date={selectedDate}
+          events={sortDayEvents(byDate[selectedDate] ?? [])}
+          onClose={() => setSelectedDate(null)}
+        />
+      )}
     </div>
   );
 }

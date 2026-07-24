@@ -15,6 +15,8 @@ interface CalendarEventFormProps {
   mode: "create" | "edit";
   event?: CalendarEventRow;
   animals: AnimalOption[];
+  /** Voorvulling van de datum bij aanmaken (bv. vanuit de dag-detail). */
+  initialDate?: string;
 }
 
 const INPUT = "mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500";
@@ -25,7 +27,7 @@ function FieldError({ errors }: { errors?: string[] }) {
   return <p className="mt-1 text-sm text-red-600">{errors[0]}</p>;
 }
 
-export default function CalendarEventForm({ mode, event, animals }: CalendarEventFormProps) {
+export default function CalendarEventForm({ mode, event, animals, initialDate }: CalendarEventFormProps) {
   const router = useRouter();
   const action = mode === "create" ? createCalendarEvent : updateCalendarEvent;
   const [state, formAction, isPending] = useActionState(action, null);
@@ -90,7 +92,7 @@ export default function CalendarEventForm({ mode, event, animals }: CalendarEven
             <label htmlFor="date" className={LABEL}>
               Datum <span className="text-red-500">*</span>
             </label>
-            <input type="date" id="date" name="date" defaultValue={event?.date ?? ""} className={INPUT} />
+            <input type="date" id="date" name="date" defaultValue={event?.date ?? initialDate ?? ""} className={INPUT} />
             <FieldError errors={fieldErrors?.date} />
           </div>
 

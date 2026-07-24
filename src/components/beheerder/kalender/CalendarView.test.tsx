@@ -54,3 +54,37 @@ describe("CalendarView", () => {
     expect(screen.getByLabelText("Volgende maand")).toHaveAttribute("href", "/beheerder/kalender?y=2026&m=8");
   });
 });
+
+// Story 12.3: klikken op een dag opent het dag-detailpaneel.
+describe("CalendarView — dag-detail (Story 12.3)", () => {
+  it("opent een dialoog met de items van de aangeklikte dag", () => {
+    renderView();
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(screen.getByLabelText("Bekijk 2026-07-15"));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByText("Woensdag 15 juli 2026")).toBeInTheDocument();
+    // Beide events van die dag staan in het paneel.
+    expect(screen.getAllByText("Kennismaking: Rex").length).toBeGreaterThan(0);
+  });
+
+  it("toont 'geen items' voor een lege dag en een prefill-link naar nieuw item", () => {
+    renderView();
+    fireEvent.click(screen.getByLabelText("Bekijk 2026-07-20"));
+    expect(screen.getByText(/Geen items op deze dag/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nieuw item op deze dag/i)).toHaveAttribute(
+      "href",
+      "/beheerder/kalender/nieuw?date=2026-07-20",
+    );
+  });
+
+  it("sluit het paneel via de sluitknop", () => {
+    renderView();
+    fireEvent.click(screen.getByLabelText("Bekijk 2026-07-15"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Sluiten"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
