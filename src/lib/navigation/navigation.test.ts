@@ -3,8 +3,8 @@ import { BEHEERDER_NAV_ITEMS, getVisibleNavItems } from "./index";
 import { isNavItemActive } from "./active";
 
 describe("BEHEERDER_NAV_ITEMS", () => {
-  it("has exactly 13 navigation items", () => {
-    expect(BEHEERDER_NAV_ITEMS).toHaveLength(13);
+  it("has exactly 14 navigation items", () => {
+    expect(BEHEERDER_NAV_ITEMS).toHaveLength(14);
   });
 
   it("each item has label, href, icon, and requiredPermission", () => {
@@ -29,6 +29,7 @@ describe("BEHEERDER_NAV_ITEMS", () => {
     const labels = BEHEERDER_NAV_ITEMS.map((item) => item.label);
     expect(labels).toEqual([
       "Dashboard",
+      "Kalender",
       "Zwerfkatten",
       "Dieren",
       "Medisch",
@@ -46,9 +47,16 @@ describe("BEHEERDER_NAV_ITEMS", () => {
 });
 
 describe("getVisibleNavItems", () => {
-  it("shows all 13 items for beheerder", () => {
+  it("shows all 14 items for beheerder", () => {
     const items = getVisibleNavItems("beheerder");
-    expect(items).toHaveLength(13);
+    expect(items).toHaveLength(14);
+  });
+
+  it("shows the shared Kalender to every role (null permission)", () => {
+    // Kalender is een gedeelde teamkalender: iedereen met backoffice-toegang ziet hem.
+    for (const role of ["beheerder", "medewerker", "dierenarts", "adoptieconsulent", "unknown-role"]) {
+      expect(getVisibleNavItems(role).map((i) => i.label)).toContain("Kalender");
+    }
   });
 
   it("shows correct items for medewerker", () => {
@@ -131,10 +139,9 @@ describe("getVisibleNavItems", () => {
     expect(labels).not.toContain("Zwerfkatten");
   });
 
-  it("returns only Dashboard for unknown role", () => {
+  it("returns only the permission-free items (Dashboard + Kalender) for unknown role", () => {
     const items = getVisibleNavItems("unknown-role");
-    expect(items).toHaveLength(1);
-    expect(items[0].label).toBe("Dashboard");
+    expect(items.map((i) => i.label)).toEqual(["Dashboard", "Kalender"]);
   });
 });
 

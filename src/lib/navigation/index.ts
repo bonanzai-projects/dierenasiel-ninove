@@ -10,6 +10,7 @@ export type NavItem = {
 
 export const BEHEERDER_NAV_ITEMS: readonly NavItem[] = [
   { label: "Dashboard", href: "/beheerder", icon: "📊", requiredPermission: null },
+  { label: "Kalender", href: "/beheerder/kalender", icon: "📅", requiredPermission: null },
   { label: "Zwerfkatten", href: "/beheerder/dieren/zwerfkattenbeleid", icon: "🐈", requiredPermission: "stray_cat:read" },
   { label: "Dieren", href: "/beheerder/dieren", icon: "🐾", requiredPermission: "animal:read" },
   { label: "Medisch", href: "/beheerder/medisch", icon: "🏥", requiredPermission: "medical:read" },
