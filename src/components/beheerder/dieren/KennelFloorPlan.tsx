@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Kennel, Animal } from "@/types";
 import type { KennelWithOccupancy } from "@/lib/queries/kennels";
+import { resolveKennelTilePhotos } from "@/lib/kennels/tile-photos";
 
 interface KennelFloorPlanProps {
   occupancy: KennelWithOccupancy[];
@@ -141,8 +142,9 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlight
   const h = num(kennel.posH)!;
   const colorClasses = getOccupancyColor(count, kennel.capacity);
 
-  // Foto's van dieren in dit hok — voor de carrousel.
-  const photos = animals.filter((a) => a.imageUrl);
+  // Foto's van dieren in dit hok — voor de carrousel. Hoofdfoto met terugval op
+  // de eerste geüploade foto zodat ook honden zonder gemarkeerde hoofdfoto tonen.
+  const photos = resolveKennelTilePhotos(animals);
   const [photoIndex, setPhotoIndex] = useState(0);
 
   // Story 10.19+: bij meerdere dieren in 1 hok → cycle elke 3.5s tussen foto's.
@@ -194,7 +196,7 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlight
               key={photo.id}
               className="absolute inset-0 transition-transform duration-700 ease-in-out"
               style={{
-                backgroundImage: `url(${photo.imageUrl})`,
+                backgroundImage: `url(${photo.url})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 transform: `translateX(${(idx - photoIndex) * 100}%)`,
