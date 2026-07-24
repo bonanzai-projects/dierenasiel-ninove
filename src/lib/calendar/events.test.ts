@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   ymd,
   buildMonthGrid,
+  expandEventDates,
   addMonths,
   monthTitle,
   groupEventsByDate,
@@ -48,6 +49,38 @@ describe("buildMonthGrid", () => {
     expect(inMonth).toHaveLength(28);
     expect(inMonth[0].date).toBe("2026-02-01");
     expect(inMonth[27].date).toBe("2026-02-28");
+  });
+});
+
+describe("expandEventDates", () => {
+  const wStart = "2026-07-01";
+  const wEnd = "2026-07-31";
+
+  it("geeft één dag bij een event zonder einddatum", () => {
+    expect(expandEventDates("2026-07-10", null, wStart, wEnd)).toEqual(["2026-07-10"]);
+  });
+
+  it("geeft elke dag van een meerdaags event", () => {
+    expect(expandEventDates("2026-07-10", "2026-07-12", wStart, wEnd)).toEqual([
+      "2026-07-10",
+      "2026-07-11",
+      "2026-07-12",
+    ]);
+  });
+
+  it("knipt op het venster (event begint vóór de maand)", () => {
+    expect(expandEventDates("2026-06-29", "2026-07-02", wStart, wEnd)).toEqual([
+      "2026-07-01",
+      "2026-07-02",
+    ]);
+  });
+
+  it("negeert een einddatum vóór de begindatum", () => {
+    expect(expandEventDates("2026-07-10", "2026-07-05", wStart, wEnd)).toEqual(["2026-07-10"]);
+  });
+
+  it("geeft een lege lijst bij geen overlap", () => {
+    expect(expandEventDates("2026-08-01", "2026-08-03", wStart, wEnd)).toEqual([]);
   });
 });
 

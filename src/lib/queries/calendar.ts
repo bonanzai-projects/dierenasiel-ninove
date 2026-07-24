@@ -10,8 +10,9 @@ import {
   animalTodos,
   calendarEvents,
 } from "@/lib/db/schema";
-import { and, gte, lte, eq, isNotNull } from "drizzle-orm";
+import { and, gte, lte, eq, isNotNull, sql } from "drizzle-orm";
 import type { CalendarEvent } from "@/lib/calendar/events";
+import { expandEventDates } from "@/lib/calendar/events";
 import type { CalendarCategoryKey } from "@/lib/calendar/categories";
 
 interface Range {
@@ -293,26 +294,38 @@ export async function getCalendarEvents({ start, end }: Range): Promise<Calendar
   }
 
   // — Handmatige kalender-items (fase 2: evenement/stage/afstand/afspraak) —
+  // Meerdaagse items (met einddatum) tonen op elke dag die ze beslaan; daarom
+  // filteren we op overlap met het venster i.p.v. enkel de begindatum.
   try {
     const rows = await db
       .select({
         id: calendarEvents.id,
         category: calendarEvents.category,
         date: calendarEvents.date,
+        endDate: calendarEvents.endDate,
         startTime: calendarEvents.startTime,
         title: calendarEvents.title,
       })
       .from(calendarEvents)
-      .where(and(gte(calendarEvents.date, start), lte(calendarEvents.date, end)));
+      .where(
+        and(
+          lte(calendarEvents.date, end),
+          gte(sql`coalesce(${calendarEvents.endDate}, ${calendarEvents.date})`, start),
+        ),
+      );
     for (const r of rows) {
-      events.push({
-        id: `event-${r.id}`,
-        category: r.category as CalendarCategoryKey,
-        date: r.date,
-        time: r.startTime,
-        title: r.title,
-        href: `/beheerder/kalender/${r.id}`,
-      });
+      const days = expandEventDates(r.date, r.endDate, start, end);
+      for (const day of days) {
+        events.push({
+          id: `event-${r.id}-${day}`,
+          category: r.category as CalendarCategoryKey,
+          date: day,
+          // Beginuur enkel op de eerste dag tonen (op vervolgdagen is het misleidend).
+          time: day === r.date ? r.startTime : null,
+          title: r.title,
+          href: `/beheerder/kalender/${r.id}`,
+        });
+      }
     }
   } catch (err) {
     console.error("calendar: manual events failed", err);

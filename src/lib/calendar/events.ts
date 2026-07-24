@@ -67,6 +67,32 @@ export function buildMonthGrid(
   return cells;
 }
 
+/**
+ * Geeft elke dag (YYYY-MM-DD) die een event beslaat, geknipt op [windowStart,
+ * windowEnd]. Zonder (geldige) einddatum is dat enkel de begindag. Voor een
+ * meerdaags event zo dat het op elke betrokken dag in het rooster verschijnt.
+ */
+export function expandEventDates(
+  date: string,
+  endDate: string | null | undefined,
+  windowStart: string,
+  windowEnd: string,
+): string[] {
+  const end = endDate && endDate >= date ? endDate : date;
+  const from = date > windowStart ? date : windowStart;
+  const to = end < windowEnd ? end : windowEnd;
+  if (from > to) return [];
+  const out: string[] = [];
+  let ms = Date.parse(`${from}T00:00:00Z`);
+  const toMs = Date.parse(`${to}T00:00:00Z`);
+  while (ms <= toMs) {
+    const d = new Date(ms);
+    out.push(ymd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()));
+    ms += DAY_MS;
+  }
+  return out;
+}
+
 /** Verschuift {year, month} met `delta` maanden (delta mag negatief zijn). */
 export function addMonths(
   year: number,
