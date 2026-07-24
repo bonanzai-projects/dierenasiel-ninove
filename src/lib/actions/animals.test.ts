@@ -419,7 +419,7 @@ const existingAnimal = {
 const updateFormData = {
   id: "1",
   name: "Rex Updated",
-  gender: "mannelijk",
+  gender: "reu",
   breed: "Border Collie",
   color: "zwart-wit",
   isOnWebsite: "true",
@@ -761,7 +761,7 @@ describe("updateAnimal", () => {
     const fd = makeFormData({
       id: "1",
       name: "Rex",
-      gender: "mannelijk",
+      gender: "reu",
       intakeReason: "ibn",
       dossierNr: "DWV-1",
       pvNr: "PV-9",
@@ -800,7 +800,7 @@ describe("updateAnimal", () => {
     const fd = makeFormData({
       id: "1",
       name: "Rex",
-      gender: "mannelijk",
+      gender: "reu",
       intakeReason: "ibn",
       dossierNr: "",
       pvNr: "",

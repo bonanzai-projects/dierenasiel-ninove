@@ -254,6 +254,33 @@ export const REPORT_CATEGORIES = ["Dierenbeheer", "Medisch", "Adoptie", "Publica
 // Shared label maps — single source of truth for Dutch display labels
 export const SPECIES_LABELS: Record<string, string> = { hond: "Hond", kat: "Kat", konijn: "Konijn", cavia: "Cavia", ezel: "Ezel", kip: "Kip", hangbuikvarken: "Hangbuikvarken" };
 export const GENDER_LABELS: Record<string, string> = { reu: "Reu", teef: "Teef", mannetje: "Mannetje", vrouwtje: "Vrouwtje", kater: "Kater", poes: "Poes" };
+
+/**
+ * Geslachtsopties per soort — één bron van waarheid voor zowel het intake- als
+ * het bewerkformulier, zodat het geslacht op de fiche exact overeenkomt met wat
+ * bij de intake ingegeven werd (Sven-feedback 2026-07-25). De waarden zijn
+ * dezelfde die overal gebruikt worden (seed, publieke site, rapporten,
+ * `GENDER_LABELS`). "ander" dekt alle overige soorten.
+ */
+export const GENDER_OPTIONS_BY_SPECIES: Record<string, { value: string; label: string }[]> = {
+  hond: [
+    { value: "reu", label: GENDER_LABELS.reu },
+    { value: "teef", label: GENDER_LABELS.teef },
+  ],
+  kat: [
+    { value: "kater", label: GENDER_LABELS.kater },
+    { value: "poes", label: GENDER_LABELS.poes },
+  ],
+  ander: [
+    { value: "mannetje", label: GENDER_LABELS.mannetje },
+    { value: "vrouwtje", label: GENDER_LABELS.vrouwtje },
+  ],
+};
+
+/** Geeft de geslachtsopties voor een soort; valt terug op "ander" voor overige soorten. */
+export function genderOptionsForSpecies(species: string | null | undefined) {
+  return GENDER_OPTIONS_BY_SPECIES[species ?? ""] ?? GENDER_OPTIONS_BY_SPECIES.ander;
+}
 export const STATUS_LABELS: Record<string, string> = { beschikbaar: "Beschikbaar", gereserveerd: "Gereserveerd", geadopteerd: "Geadopteerd", in_behandeling: "In behandeling" };
 export const BEHAVIOR_VERZORGERS_ITEMS = [
   { key: "verzorgers_algemeenAgressief", label: "Algemeen agressief" },

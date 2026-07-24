@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { updateAnimal } from "@/lib/actions/animals";
-import { INTAKE_REASONS } from "@/lib/constants";
+import { INTAKE_REASONS, GENDER_LABELS, genderOptionsForSpecies } from "@/lib/constants";
 import { shouldCollectMelderDetails } from "@/lib/animals/intake-melder";
 import NeuteredRadioGroup, { type NeuteredChoice } from "./NeuteredRadioGroup";
 import AutoGrowTextarea, { autoGrow } from "@/components/beheerder/shared/AutoGrowTextarea";
@@ -157,6 +157,11 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
     intakeReason,
     isPickedUpByShelter: animal.isPickedUpByShelter ?? false,
   });
+  // Story 10.37: geslachtsopties per soort — identiek aan het intakeformulier.
+  // Een bestaande (legacy) waarde die niet in de lijst zit tonen we als extra
+  // optie, zodat ze niet stil verdwijnt.
+  const genderOptions = genderOptionsForSpecies(animal.species);
+  const genderInList = genderOptions.some((o) => o.value === animal.gender);
   // Bron voor de kopieerknoppen bij de website- en affichetekst (story 10.32).
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
@@ -284,9 +289,16 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               className={`mt-0.5 block w-full rounded-md border ${fieldErrors?.gender ? "border-red-500" : "border-gray-300"} px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500`}
             >
               <option value="">Selecteer...</option>
-              <option value="mannelijk">&#9794; Mannelijk</option>
-              <option value="vrouwelijk">&#9792; Vrouwelijk</option>
-              <option value="onbekend">Onbekend</option>
+              {genderOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+              {animal.gender && !genderInList && (
+                <option value={animal.gender}>
+                  {GENDER_LABELS[animal.gender] ?? animal.gender}
+                </option>
+              )}
             </select>
             <FieldError errors={fieldErrors?.gender} />
           </div>

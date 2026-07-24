@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useRef, useEffect } from "react";
 import { createAnimalIntake } from "@/lib/actions/animals";
-import { INTAKE_REASONS } from "@/lib/constants";
+import { INTAKE_REASONS, GENDER_OPTIONS_BY_SPECIES } from "@/lib/constants";
 import { shouldCollectMelderDetails } from "@/lib/animals/intake-melder";
 import NeuteredRadioGroup, { type NeuteredChoice } from "./NeuteredRadioGroup";
 
@@ -11,21 +11,6 @@ const SPECIES_OPTIONS = [
   { value: "kat", label: "Kat" },
   { value: "ander", label: "Ander" },
 ];
-
-const GENDER_OPTIONS: Record<string, { value: string; label: string }[]> = {
-  hond: [
-    { value: "reu", label: "Reu" },
-    { value: "teef", label: "Teef" },
-  ],
-  kat: [
-    { value: "kater", label: "Kater" },
-    { value: "poes", label: "Poes" },
-  ],
-  ander: [
-    { value: "mannetje", label: "Mannetje" },
-    { value: "vrouwtje", label: "Vrouwtje" },
-  ],
-};
 
 function FieldError({ errors }: { errors?: string[] }) {
   if (!errors?.length) return null;
@@ -188,7 +173,7 @@ export default function IntakeForm() {
             >
               <option value="">Selecteer geslacht...</option>
               {species &&
-                GENDER_OPTIONS[species]?.map((opt) => (
+                GENDER_OPTIONS_BY_SPECIES[species]?.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>

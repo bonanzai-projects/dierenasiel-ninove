@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INTAKE_REASONS, getIntakeReasonLabel } from "./constants";
+import { INTAKE_REASONS, getIntakeReasonLabel, genderOptionsForSpecies, GENDER_LABELS } from "./constants";
 
 describe("INTAKE_REASONS", () => {
   // Story 10.30: "Tijdelijke opvang" toegevoegd — komt overeen met "tijd opv"
@@ -41,5 +41,26 @@ describe("getIntakeReasonLabel", () => {
 
   it("retourneert '—' voor een onbekende waarde", () => {
     expect(getIntakeReasonLabel("onbekend")).toBe("—");
+  });
+});
+
+// Story 10.37: één bron voor de geslachtsopties, gedeeld door intake + fiche.
+describe("genderOptionsForSpecies", () => {
+  it("geeft reu/teef voor een hond", () => {
+    expect(genderOptionsForSpecies("hond").map((o) => o.value)).toEqual(["reu", "teef"]);
+  });
+
+  it("geeft kater/poes voor een kat", () => {
+    expect(genderOptionsForSpecies("kat").map((o) => o.value)).toEqual(["kater", "poes"]);
+  });
+
+  it("valt terug op mannetje/vrouwtje voor overige of onbekende soorten", () => {
+    expect(genderOptionsForSpecies("ander").map((o) => o.value)).toEqual(["mannetje", "vrouwtje"]);
+    expect(genderOptionsForSpecies("konijn").map((o) => o.value)).toEqual(["mannetje", "vrouwtje"]);
+    expect(genderOptionsForSpecies(null).map((o) => o.value)).toEqual(["mannetje", "vrouwtje"]);
+  });
+
+  it("gebruikt de gedeelde GENDER_LABELS voor de labels", () => {
+    expect(genderOptionsForSpecies("hond").map((o) => o.label)).toEqual([GENDER_LABELS.reu, GENDER_LABELS.teef]);
   });
 });

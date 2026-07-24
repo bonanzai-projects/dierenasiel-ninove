@@ -102,6 +102,41 @@ describe("AnimalEditForm — intake reason dropdown (Story 10.21)", () => {
   });
 });
 
+// Story 10.37: geslacht op de fiche moet overeenkomen met wat bij intake ingegeven
+// werd (reu/teef voor honden, kater/poes voor katten), niet mannelijk/vrouwelijk.
+describe("AnimalEditForm — geslachtsopties per soort (Story 10.37)", () => {
+  function genderOptionValues(): string[] {
+    return Array.from(getGenderSelect().options).map((o) => o.value);
+  }
+  function getGenderSelect(): HTMLSelectElement {
+    return screen.getByLabelText(/Geslacht/i) as HTMLSelectElement;
+  }
+
+  it("toont reu/teef bij een hond en preselecteert de opgeslagen waarde", () => {
+    render(<AnimalEditForm animal={mockAnimal({ species: "hond", gender: "teef" })} />);
+    expect(genderOptionValues()).toEqual(["", "reu", "teef"]);
+    expect(getGenderSelect().value).toBe("teef");
+  });
+
+  it("toont kater/poes bij een kat", () => {
+    render(<AnimalEditForm animal={mockAnimal({ species: "kat", gender: "poes" })} />);
+    expect(genderOptionValues()).toEqual(["", "kater", "poes"]);
+    expect(getGenderSelect().value).toBe("poes");
+  });
+
+  it("biedt geen mannelijk/vrouwelijk meer aan (was de mismatch met intake)", () => {
+    render(<AnimalEditForm animal={mockAnimal({ species: "hond", gender: "reu" })} />);
+    expect(genderOptionValues()).not.toContain("mannelijk");
+    expect(genderOptionValues()).not.toContain("vrouwelijk");
+  });
+
+  it("toont een legacy-waarde die niet in de lijst zit als extra optie (geen stille leegte)", () => {
+    render(<AnimalEditForm animal={mockAnimal({ species: "hond", gender: "mannelijk" })} />);
+    expect(genderOptionValues()).toContain("mannelijk");
+    expect(getGenderSelect().value).toBe("mannelijk");
+  });
+});
+
 describe("AnimalEditForm — sterilisatie detail (Story 10.23)", () => {
   // Story 10.29: checkbox vervangen door radiogroep Ja / Nee / Onbekend.
   function getNeuteredRadio(label: "Ja" | "Nee" | "Onbekend"): HTMLInputElement {
