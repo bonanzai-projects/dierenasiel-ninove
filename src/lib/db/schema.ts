@@ -487,6 +487,27 @@ export const walks = pgTable("walks", {
   index("idx_walks_status").on(table.status),
 ]);
 
+// Epic 12 fase 2: handmatige kalender-items die het team zelf beheert
+// (evenementen, stage, afstand-afspraken, vrije afspraken). Aggregatie-events
+// uit fase 1 komen uit hun eigen brontabellen; dit is de enige "eigen" bron.
+export const calendarEvents = pgTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  category: varchar("category", { length: 30 }).notNull(), // evenement | stage | afstand | afspraak
+  description: text("description"),
+  date: date("date").notNull(),
+  endDate: date("end_date"),
+  startTime: varchar("start_time", { length: 5 }), // HH:MM; leeg = hele dag
+  endTime: varchar("end_time", { length: 5 }),
+  location: varchar("location", { length: 200 }),
+  animalId: integer("animal_id").references(() => animals.id, { onDelete: "set null" }),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_calendar_events_date").on(table.date),
+]);
+
 export const animalWorkflowHistory = pgTable("animal_workflow_history", {
   id: serial("id").primaryKey(),
   animalId: integer("animal_id").references(() => animals.id).notNull(),

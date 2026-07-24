@@ -8,9 +8,11 @@ import {
   operations,
   walks,
   animalTodos,
+  calendarEvents,
 } from "@/lib/db/schema";
 import { and, gte, lte, eq, isNotNull } from "drizzle-orm";
 import type { CalendarEvent } from "@/lib/calendar/events";
+import type { CalendarCategoryKey } from "@/lib/calendar/categories";
 
 interface Range {
   /** YYYY-MM-DD, inclusief. */
@@ -290,5 +292,37 @@ export async function getCalendarEvents({ start, end }: Range): Promise<Calendar
     console.error("calendar: ibn deadlines failed", err);
   }
 
+  // — Handmatige kalender-items (fase 2: evenement/stage/afstand/afspraak) —
+  try {
+    const rows = await db
+      .select({
+        id: calendarEvents.id,
+        category: calendarEvents.category,
+        date: calendarEvents.date,
+        startTime: calendarEvents.startTime,
+        title: calendarEvents.title,
+      })
+      .from(calendarEvents)
+      .where(and(gte(calendarEvents.date, start), lte(calendarEvents.date, end)));
+    for (const r of rows) {
+      events.push({
+        id: `event-${r.id}`,
+        category: r.category as CalendarCategoryKey,
+        date: r.date,
+        time: r.startTime,
+        title: r.title,
+        href: `/beheerder/kalender/${r.id}`,
+      });
+    }
+  } catch (err) {
+    console.error("calendar: manual events failed", err);
+  }
+
   return events;
+}
+
+/** Haalt één handmatig kalender-item op (voor de bewerkpagina). */
+export async function getCalendarEventById(id: number) {
+  const [row] = await db.select().from(calendarEvents).where(eq(calendarEvents.id, id)).limit(1);
+  return row ?? null;
 }

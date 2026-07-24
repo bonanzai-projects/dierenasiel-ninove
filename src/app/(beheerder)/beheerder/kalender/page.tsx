@@ -1,3 +1,4 @@
+import Link from "next/link";
 import CalendarView from "@/components/beheerder/kalender/CalendarView";
 import { getCalendarEvents } from "@/lib/queries/calendar";
 import { buildMonthGrid } from "@/lib/calendar/events";
@@ -33,11 +34,19 @@ export default async function KalenderPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="font-heading text-2xl font-bold text-[#1b4332]">Kalender</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Gedeelde teamkalender — adopties, afspraken, wandelingen, to-do&apos;s en IBN-deadlines.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-[#1b4332]">Kalender</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Gedeelde teamkalender — adopties, afspraken, wandelingen, to-do&apos;s, IBN-deadlines en eigen items.
+          </p>
+        </div>
+        <Link
+          href="/beheerder/kalender/nieuw"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
+        >
+          + Nieuw item
+        </Link>
       </div>
 
       <CalendarView year={year} month={month} todayStr={todayStr} events={events} />
