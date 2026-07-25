@@ -271,7 +271,10 @@ export async function updateAnimal(
       intakeDate: parsed.data.intakeDate || sql`null`,
       intakeReason: parsed.data.intakeReason || sql`null`,
       isNeutered: parsed.data.isNeutered,
-      description: parsed.data.description || sql`null`,
+      // description is NOT NULL: lege beschrijving wegschrijven als "" (niet null),
+      // net als bij registreren. Anders crasht opslaan van een dier zonder
+      // beschrijving op de not-null-constraint (Story 10.39, Sven 2026-07-26).
+      description: parsed.data.description || "",
       websiteDescription: parsed.data.websiteDescription || sql`null`,
       posterDescription: parsed.data.posterDescription || sql`null`,
       shortDescription: parsed.data.shortDescription || sql`null`,

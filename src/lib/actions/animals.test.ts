@@ -554,6 +554,18 @@ describe("updateAnimal", () => {
     );
   });
 
+  // Story 10.39: description is NOT NULL in de DB. Een dier zonder beschrijving
+  // (bv. een vondeling) mag bij bewerken GEEN null wegschrijven — dat gooide een
+  // not-null-constraintfout ("Er ging iets mis bij het opslaan", Sven 2026-07-26).
+  it("schrijft een lege beschrijving als lege string, niet als null (NOT NULL-kolom)", async () => {
+    // updateFormData bevat geen description → mag NIET als null bewaard worden.
+    await updateAnimal(null, makeFormData(updateFormData));
+
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ description: "" }),
+    );
+  });
+
   it("revalidates the dieren path after update", async () => {
     await updateAnimal(null, makeFormData(updateFormData));
 
