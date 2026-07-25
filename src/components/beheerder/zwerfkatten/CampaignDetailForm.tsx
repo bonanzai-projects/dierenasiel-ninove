@@ -10,6 +10,7 @@ import {
   setCampaignStatusAction,
 } from "@/lib/actions/stray-cat-campaigns";
 import { CAMPAIGN_STATUS_LABELS } from "@/lib/constants";
+import AddressMap from "./AddressMap";
 import CampaignStatusBadge from "./CampaignStatusBadge";
 import CampaignPhotoGallery from "./CampaignPhotoGallery";
 import CampaignEmailAttachments from "./CampaignEmailAttachments";
@@ -55,6 +56,10 @@ function BasicsSection({
 }) {
   const [state, formAction, isPending] = useActionState(handleUpdateBasics, null);
   const router = useRouter();
+  // Gecontroleerd zodat het kaartje het adresveld volgt tijdens het bewerken
+  // (Story 10.40) én de invoer niet wegvalt na een server-actie.
+  const [address, setAddress] = useState(campaign.address ?? "");
+  const [municipality, setMunicipality] = useState(campaign.municipality ?? "");
 
   useEffect(() => {
     if (state?.success) router.refresh();
@@ -103,7 +108,8 @@ function BasicsSection({
           <select
             id="basics-municipality"
             name="municipality"
-            defaultValue={campaign.municipality ?? ""}
+            value={municipality}
+            onChange={(e) => setMunicipality(e.target.value)}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
           >
             {opdrachtgevers.length === 0 && !showLegacyOption && (
@@ -129,12 +135,16 @@ function BasicsSection({
             type="text"
             id="basics-address"
             name="address"
-            defaultValue={campaign.address}
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
           />
           <FieldError errors={fieldErrors?.address as string[] | undefined} />
         </div>
       </div>
+
+      {/* Story 10.40: kaartje van de locatie (Sven: "makkelijk om te situeren"). */}
+      <AddressMap address={address} municipality={municipality} />
 
       <div>
         <label htmlFor="basics-remarks" className="block text-sm font-medium text-gray-700">

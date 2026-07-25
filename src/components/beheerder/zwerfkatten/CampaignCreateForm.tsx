@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { createCampaignAction } from "@/lib/actions/stray-cat-campaigns";
+import AddressMap from "./AddressMap";
 import type { ActionResult, MunicipalityLogo } from "@/types";
 
 async function handleCreate(_prev: ActionResult<{ id: number }> | null, formData: FormData) {
@@ -28,6 +29,9 @@ export default function CampaignCreateForm({ opdrachtgevers }: Props) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(handleCreate, null);
   const formRef = useRef<HTMLFormElement>(null);
+  // Gecontroleerd zodat het kaartje meeschuift tijdens het typen (Story 10.40).
+  const [address, setAddress] = useState("");
+  const [municipality, setMunicipality] = useState("");
 
   useEffect(() => {
     if (state?.success) {
@@ -89,7 +93,8 @@ export default function CampaignCreateForm({ opdrachtgevers }: Props) {
               <select
                 id="municipality"
                 name="municipality"
-                defaultValue=""
+                value={municipality}
+                onChange={(e) => setMunicipality(e.target.value)}
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
               >
                 <option value="" disabled>— Kies een opdrachtgever —</option>
@@ -110,11 +115,16 @@ export default function CampaignCreateForm({ opdrachtgevers }: Props) {
             id="address"
             name="address"
             rows={2}
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
             placeholder="Straat en omschrijving locatie"
             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
           />
           <FieldError errors={fieldErrors?.address} />
         </div>
+
+        {/* Story 10.40: kaartje volgt het adres, zodat je de locatie meteen kan situeren. */}
+        <AddressMap address={address} municipality={municipality} className="mt-4" />
 
         <div className="mt-4">
           <label htmlFor="remarks" className="block text-sm font-medium text-gray-700">
