@@ -28,6 +28,10 @@ export const ALL_PERMISSIONS = [
   "gdpr:write",
   "stray_cat:read",
   "stray_cat:write",
+  // Epic 11 — AnimalShelter is een ALLEEN-LEZEN koppeling; er bestaat bewust geen
+  // "animalshelter:write". Deze permissie dekt het menu, het ophalen en het
+  // beslissen over verschillen (overnemen/negeren op onze eigen fiche).
+  "animalshelter:read",
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];

@@ -734,3 +734,50 @@ export const shelterSettings = pgTable("shelter_settings", {
   updatedBy: integer("updated_by").references(() => users.id),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ---------------------------------------------------------------------------
+// Epic 11 — koppeling met AnimalShelter.be (ALLEEN-LEZEN).
+// Zie _bmad-output/implementation-artifacts/epic-11-koerswijziging-2026-07-26.md.
+//
+// Bewust een koppelTABEL en geen kolom op `animals`: bij de eerste meting bestonden
+// 46 van de 53 externe dieren lokaal nog niet, en we moeten juist óók "bestaat enkel
+// daar" en "bestaat enkel hier" kunnen tonen. De koppeling is een relatie tussen twee
+// registraties, geen eigenschap van één dier.
+// ---------------------------------------------------------------------------
+
+export const animalShelterLinks = pgTable("animalshelter_links", {
+  id: serial("id").primaryKey(),
+  // NULL = dit dier bestaat (nog) alleen bij AnimalShelter.
+  animalId: integer("animal_id").references(() => animals.id, { onDelete: "cascade" }),
+  externalId: integer("external_id").notNull().unique(),
+  externalNumber: integer("external_number"),
+  category: varchar("category", { length: 10 }).notNull(), // dogs | cats | other
+  matchMethod: varchar("match_method", { length: 20 }), // chip | nummer | handmatig
+  status: varchar("status", { length: 20 }).notNull().default("niet_gekoppeld"), // gekoppeld | niet_gekoppeld | genegeerd
+  linkedBy: integer("linked_by").references(() => users.id),
+  linkedAt: timestamp("linked_at", { withTimezone: true }),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_animalshelter_links_animal_id").on(table.animalId),
+  index("idx_animalshelter_links_status").on(table.status),
+]);
+
+// Eén actieve beslissing per (dier, veld). "negeer_waarde" is waardegebonden via
+// `remoteValueHash`: verandert AnimalShelter dat veld later, dan komt het verschil
+// terug. "negeer_altijd" komt niet meer terug. Zie koerswijziging §4.1 — dempen
+// zonder terugkeer maakt van een beslissing een blinde vlek.
+export const animalShelterFieldDecisions = pgTable("animalshelter_field_decisions", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  fieldKey: varchar("field_key", { length: 50 }).notNull(),
+  decision: varchar("decision", { length: 20 }).notNull(), // negeer_waarde | negeer_altijd | overgenomen
+  remoteValueHash: varchar("remote_value_hash", { length: 64 }),
+  remoteValue: text("remote_value"),
+  localValue: text("local_value"),
+  decidedBy: integer("decided_by").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).defaultNow().notNull(),
+  note: text("note"),
+}, (table) => [
+  unique("uniq_animalshelter_decision_animal_field").on(table.animalId, table.fieldKey),
+  index("idx_animalshelter_decisions_animal_id").on(table.animalId),
+]);
