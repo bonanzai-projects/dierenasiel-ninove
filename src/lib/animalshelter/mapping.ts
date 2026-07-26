@@ -197,7 +197,9 @@ const nooitOverneembaar = () => null;
 export const FIELD_DEFINITIONS: FieldDefinition[] = [
   {
     key: "name",
-    label: "Naam",
+    // Story 10.42: bij AnimalShelter is de naam altijd de schuilnaam — die staat
+    // op adopteereendier.be. Ons `name` bevat diezelfde publieke naam.
+    label: "Naam / Schuilnaam",
     remote: (a) => normalizeText(a.naam),
     local: (a) => normalizeText(a.name),
     notTakeable: nooitOverneembaar,

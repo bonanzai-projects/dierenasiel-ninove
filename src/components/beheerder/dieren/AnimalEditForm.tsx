@@ -246,7 +246,7 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label htmlFor="name" className={`block text-xs font-medium ${fieldErrors?.name ? "text-red-700" : "text-gray-600"}`}>
-              Naam <span className="text-red-500">*</span>
+              Naam / Schuilnaam <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -262,8 +262,13 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
           </div>
 
           <div>
+            {/*
+              Story 10.42: de naam die publiek gebruikt wordt (en die ook op
+              AnimalShelter en adopteereendier.be staat) hoort in `name`. Dit veld
+              bewaart de naam die het dier daarvóór had.
+            */}
             <label htmlFor="aliasName" className="block text-xs font-medium text-gray-600">
-              Schuilnaam
+              Echte naam
             </label>
             <input
               type="text"
@@ -273,7 +278,7 @@ export default function AnimalEditForm({ animal }: { animal: Animal }) {
               maxLength={100}
               autoComplete="off"
               className="mt-0.5 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
-              placeholder="IBN alias"
+              placeholder="Naam bij de vorige eigenaar"
             />
           </div>
 

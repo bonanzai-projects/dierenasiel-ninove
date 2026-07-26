@@ -122,7 +122,7 @@ export default function IntakeForm() {
           {/* Naam */}
           <div {...(hasError(fieldErrors, "name") ? { "data-field-error": true } : {})}>
             <label htmlFor="name" className={labelClass("name")}>
-              Naam <span className="text-red-500">*</span>
+              Naam / Schuilnaam <span className="text-red-500">*</span>
             </label>
             <input
               type="text"

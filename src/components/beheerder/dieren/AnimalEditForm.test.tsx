@@ -283,6 +283,22 @@ describe("AnimalEditForm — niet-opgeslagen wijzigingen (Story 10.33)", () => {
     resetUnsavedChanges();
   });
 
+  // Story 10.42 — Sven, 2026-07-26: bij AnimalShelter is de naam altijd de
+  // schuilnaam, want die staat op de publieke adoptiewebsite. Onze twee
+  // naamvelden heten daarom naar wat er effectief in hoort.
+  it("noemt het hoofdveld 'Naam / Schuilnaam' en het tweede veld 'Echte naam'", () => {
+    render(<AnimalEditForm animal={mockAnimal({ name: "Bo", aliasName: "Shana" })} />);
+
+    const publiek = screen.getByLabelText(/Naam \/ Schuilnaam/i) as HTMLInputElement;
+    const echt = screen.getByLabelText(/Echte naam/i) as HTMLInputElement;
+
+    expect(publiek.name).toBe("name");
+    expect(publiek.value).toBe("Bo");
+    expect(echt.name).toBe("aliasName");
+    expect(echt.value).toBe("Shana");
+    expect(screen.queryByLabelText(/^Schuilnaam$/i)).toBeNull();
+  });
+
   const BAR = /Niet-opgeslagen wijzigingen/i;
 
   it("toont geen balk zolang er niets gewijzigd is", () => {
