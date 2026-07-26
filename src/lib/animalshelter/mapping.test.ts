@@ -173,4 +173,20 @@ describe("FIELD_DEFINITIONS — de gedeelde velden (klasse B)", () => {
     expect(fieldDefinition("images").format(["a", "b"])).toBe("2 foto's");
     expect(fieldDefinition("dateOfBirth").format("2020-12-01")).toBe("01/12/2020");
   });
+
+  it("toont de website-tekst leesbaar, zonder HTML-tags", () => {
+    // AnimalShelter levert HTML aan en zo hoort het ook bewaard te worden;
+    // maar een <p>-tag in een vergelijkingstabel leest niet.
+    const veld = fieldDefinition("websiteDescription");
+    const html = ["<p>Ras: Husky</p>", "<p>Leeftijd: 4</p>"].join("\r\n");
+    expect(veld.format(html)).toBe(["Ras: Husky", "", "Leeftijd: 4"].join("\n"));
+    expect(veld.format("Regel<br/>twee")).toBe(["Regel", "twee"].join("\n"));
+    expect(veld.format("Kat &amp; hond&nbsp;samen")).toBe("Kat & hond samen");
+    expect(veld.format(null)).toBe("—");
+  });
+
+  it("laat de op te slaan waarde ongemoeid — alleen de weergave wordt opgeschoond", () => {
+    const veld = fieldDefinition("websiteDescription");
+    expect(veld.remote(rocky)).toContain("<p>");
+  });
 });

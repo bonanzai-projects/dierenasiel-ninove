@@ -145,6 +145,30 @@ function formatText(value: FieldValue): string {
   return value;
 }
 
+/**
+ * Weergave van een tekst die HTML bevat. AnimalShelter levert de website-tekst
+ * als HTML aan, en zo hoort ze ook bewaard te worden — maar `<p>Ras: …</p>` in
+ * een vergelijkingstabel leest niet. Dit raakt alleen de weergave: de waarde die
+ * overgenomen en gehasht wordt, blijft de oorspronkelijke HTML.
+ */
+function formatRichText(value: FieldValue): string {
+  if (typeof value !== "string" || !value.trim()) return LEEG;
+  return value
+    // Eerst de regeleindes gelijktrekken: anders levert een `</p>` gevolgd door
+    // een echte CRLF twee regeleindes op in plaats van één.
+    .replace(/\r\n/g, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function formatDate(value: FieldValue): string {
   if (typeof value !== "string") return LEEG;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -252,7 +276,7 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
     remote: (a) => normalizeText(a.beschrijving_nl),
     local: (a) => normalizeText(a.websiteDescription),
     notTakeable: nooitOverneembaar,
-    format: formatText,
+    format: formatRichText,
     multiline: true,
   },
   {
@@ -261,7 +285,7 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
     remote: (a) => normalizeText(a.korte_beschrijving_nl),
     local: (a) => normalizeText(a.shortDescription),
     notTakeable: nooitOverneembaar,
-    format: formatText,
+    format: formatRichText,
     multiline: true,
   },
   {
