@@ -8,6 +8,7 @@ import { getSession } from "@/lib/auth/session";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { diffAnimal, type DiffRow } from "@/lib/animalshelter/diff";
+import { buildAnimalInsert, buildImportPreview } from "@/lib/animalshelter/import";
 import { matchAnimals } from "@/lib/animalshelter/match";
 import { fetchAllAnimals } from "@/lib/animalshelter/client";
 import type { LocalAnimalRecord } from "@/lib/animalshelter/overview";
@@ -359,6 +360,131 @@ export async function ignoreAnimalShelterAnimal(
     return { success: true, data: { externalId, negeren } };
   } catch {
     return { success: false, error: "Er ging iets mis bij het opslaan van je keuze." };
+  }
+}
+
+export interface ImportSelection {
+  externalId: number;
+  species?: string;
+  gender?: string;
+}
+
+/**
+ * Story 11.8 — maakt de geselecteerde AnimalShelter-dieren aan als nieuwe fiche.
+ *
+ * Er gebeurt niets automatisch: de beheerder heeft de voorbeeldweergave gezien
+ * en per dier bevestigd. Wat geblokkeerd is of nog een antwoord mist, wordt
+ * overgeslagen mét reden — nooit met een gok ingevuld.
+ */
+export async function importAnimalShelterAnimals(
+  selections: ImportSelection[],
+): Promise<
+  ActionResult<{
+    aangemaakt: { externalId: number; animalId: number; name: string }[];
+    overgeslagen: { externalId: number; naam: string; reden: string }[];
+  }>
+> {
+  const geweigerd = await guard();
+  if (geweigerd) return geweigerd;
+
+  if (selections.length === 0) {
+    return { success: false, error: "Er is geen enkel dier geselecteerd." };
+  }
+
+  const session = await getSession();
+
+  try {
+    const [remote, lokaleDieren, links] = await Promise.all([
+      fetchAllAnimals(),
+      db.select().from(animals),
+      db.select().from(animalShelterLinks),
+    ]);
+
+    const kandidaten = buildImportPreview(
+      remote,
+      lokaleDieren as LocalAnimalRecord[],
+      links,
+    );
+    const perExterneId = new Map(kandidaten.map((k) => [k.externalId, k]));
+    const externPerId = new Map(remote.map((a) => [a.id, a]));
+
+    const aangemaakt: { externalId: number; animalId: number; name: string }[] = [];
+    const overgeslagen: { externalId: number; naam: string; reden: string }[] = [];
+
+    for (const keuze of selections) {
+      const kandidaat = perExterneId.get(keuze.externalId);
+      const external = externPerId.get(keuze.externalId);
+
+      if (!kandidaat || !external) {
+        overgeslagen.push({
+          externalId: keuze.externalId,
+          naam: "",
+          reden: "Dit dier staat niet (meer) in de lijst om aan te maken.",
+        });
+        continue;
+      }
+
+      if (kandidaat.blockers.length > 0) {
+        overgeslagen.push({
+          externalId: keuze.externalId,
+          naam: kandidaat.name,
+          reden: kandidaat.blockers[0],
+        });
+        continue;
+      }
+
+      const species = keuze.species ?? kandidaat.species ?? undefined;
+      const gender = keuze.gender ?? kandidaat.gender ?? undefined;
+      if (!species || !gender) {
+        overgeslagen.push({
+          externalId: keuze.externalId,
+          naam: kandidaat.name,
+          reden: !species
+            ? "Kies eerst de soort — AnimalShelter zegt alleen \"other\"."
+            : "Kies eerst het geslacht — AnimalShelter geeft het als onbekend door.",
+        });
+        continue;
+      }
+
+      const [nieuw] = await db
+        .insert(animals)
+        .values(buildAnimalInsert(external, { species, gender }, kandidaat.slug))
+        .returning();
+
+      await db.insert(animalShelterLinks).values({
+        externalId: keuze.externalId,
+        animalId: nieuw.id,
+        externalNumber: external.nummer,
+        category: external.categorie,
+        matchMethod: "import",
+        status: "gekoppeld",
+        linkedBy: session?.userId ?? null,
+        linkedAt: new Date(),
+        lastSeenAt: new Date(),
+      });
+
+      await logAudit("animalshelter_dier_geimporteerd", "animal", nieuw.id, null, {
+        externalId: keuze.externalId,
+        naam: nieuw.name,
+      });
+
+      aangemaakt.push({ externalId: keuze.externalId, animalId: nieuw.id, name: nieuw.name });
+    }
+
+    revalidatePath(PAD);
+    revalidatePath(`${PAD}/importeren`);
+    revalidatePath("/beheerder/dieren");
+
+    if (aangemaakt.length === 0) {
+      return {
+        success: false,
+        error: overgeslagen[0]?.reden ?? "Er kon geen enkel dier aangemaakt worden.",
+      };
+    }
+
+    return { success: true, data: { aangemaakt, overgeslagen } };
+  } catch {
+    return { success: false, error: "Er ging iets mis bij het aanmaken. Probeer het later opnieuw." };
   }
 }
 

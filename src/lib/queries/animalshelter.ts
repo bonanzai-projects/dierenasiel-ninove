@@ -5,6 +5,7 @@ import { fetchAllAnimals } from "@/lib/animalshelter/client";
 import { isAnimalShelterEnabled } from "@/lib/animalshelter/config";
 import { AnimalShelterError } from "@/lib/animalshelter/http";
 import { diffAnimal, type AnimalDiff } from "@/lib/animalshelter/diff";
+import { buildImportPreview, type ImportCandidate } from "@/lib/animalshelter/import";
 import { matchAnimals } from "@/lib/animalshelter/match";
 import {
   buildOverview,
@@ -167,6 +168,33 @@ export async function getAnimalShelterComparison(
       genegeerdDier: lokaal.links.some(
         (l) => l.externalId === externalId && l.status === "genegeerd",
       ),
+    };
+  } catch (error) {
+    return { ok: false, error: toFetchError(error) };
+  }
+}
+
+export type ImportPreviewResult =
+  | { ok: true; kandidaten: ImportCandidate[] }
+  | { ok: false; error: AnimalShelterFetchError };
+
+/** Story 11.8 — wat er zou aangemaakt worden, vóór er iets gebeurt. */
+export async function getAnimalShelterImportPreview(): Promise<ImportPreviewResult> {
+  if (!isAnimalShelterEnabled()) {
+    return { ok: false, error: toFetchError(new AnimalShelterError("disabled", "")) };
+  }
+
+  try {
+    const [remote, lokaal] = await Promise.all([fetchAllAnimals(), loadLocalState()]);
+    const match = matchAnimals(remote, lokaal.locals, lokaal.links);
+    // Alleen dieren die nog geen tegenhanger hebben; de rest hoort op het
+    // vergelijkingsscherm thuis, niet in een importlijst.
+    const teImporteren = remote.filter((a) =>
+      match.enkelExtern.some((e) => e.id === a.id),
+    );
+    return {
+      ok: true,
+      kandidaten: buildImportPreview(teImporteren, lokaal.locals, lokaal.links),
     };
   } catch (error) {
     return { ok: false, error: toFetchError(error) };

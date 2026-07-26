@@ -75,6 +75,16 @@ describe("OverviewTable — het overzicht (Story 11.4)", () => {
     expect(screen.queryByText("Rocky")).toBeNull();
   });
 
+  it("wijst vanuit 'enkel bij AnimalShelter' de weg naar het importscherm", () => {
+    toon();
+    fireEvent.click(screen.getByRole("button", { name: /enkel bij animalshelter \(1\)/i }));
+
+    expect(screen.getByRole("link", { name: /dieren overnemen/i })).toHaveAttribute(
+      "href",
+      "/beheerder/animalshelter/importeren",
+    );
+  });
+
   it("toont onze eigen dieren die AnimalShelter niet kent", () => {
     toon();
     fireEvent.click(screen.getByRole("button", { name: /enkel bij ons \(1\)/i }));

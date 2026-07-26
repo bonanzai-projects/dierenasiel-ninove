@@ -4,7 +4,7 @@ import fixtureRaw from "@/lib/animalshelter/__fixtures__/animals.json";
 const {
   state,
   mockSelect, mockUpdate, mockUpdateSet, mockUpdateWhere,
-  mockInsert, mockInsertValues, mockOnConflict,
+  mockInsert, mockInsertValues, mockOnConflict, mockInsertReturning,
   mockDelete, mockDeleteWhere,
   mockGetSession, mockRequirePermission, mockLogAudit, mockRevalidate, mockFetchAll,
 } = vi.hoisted(() => {
@@ -27,7 +27,13 @@ const {
   const mockUpdate = vi.fn(() => ({ set: mockUpdateSet }));
 
   const mockOnConflict = vi.fn().mockResolvedValue(undefined);
-  const mockInsertValues = vi.fn(() => ({ onConflictDoUpdate: mockOnConflict }));
+  const mockInsertReturning = vi.fn().mockResolvedValue([{ id: 77, name: "Felix" }]);
+  const mockInsertValues = vi.fn(() => ({
+    onConflictDoUpdate: mockOnConflict,
+    returning: mockInsertReturning,
+    then: (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
+      Promise.resolve(undefined).then(res, rej),
+  }));
   const mockInsert = vi.fn(() => ({ values: mockInsertValues }));
 
   const mockDeleteWhere = vi.fn().mockResolvedValue(undefined);
@@ -40,7 +46,7 @@ const {
   return {
     state,
     mockSelect, mockUpdate, mockUpdateSet, mockUpdateWhere,
-    mockInsert, mockInsertValues, mockOnConflict,
+    mockInsert, mockInsertValues, mockOnConflict, mockInsertReturning,
     mockDelete, mockDeleteWhere,
     mockGetSession: vi.fn(),
     mockRequirePermission: vi.fn(),
@@ -72,6 +78,7 @@ import {
   clearAnimalShelterDecisions,
   ignoreAnimalShelterAnimal,
   ignoreAnimalShelterFields,
+  importAnimalShelterAnimals,
   linkAnimalShelterAnimal,
 } from "./animalshelter";
 import { animalShelterAnimalSchema } from "@/lib/animalshelter/types";
@@ -279,6 +286,106 @@ describe("linkAnimalShelterAnimal", () => {
   it("weigert een dier dat niet bij AnimalShelter staat", async () => {
     const result = await linkAnimalShelterAnimal(123456, 1);
     expect(result).toMatchObject({ success: false });
+  });
+});
+
+describe("importAnimalShelterAnimals (Story 11.8)", () => {
+  const felix = animalShelterAnimalSchema.parse(fixtureRaw[1]); // kat, geslacht M
+  const varken = animalShelterAnimalSchema.parse(fixtureRaw[2]); // other, geslacht O
+
+  beforeEach(() => {
+    mockFetchAll.mockResolvedValue([rocky, felix, varken]);
+    mockInsertReturning.mockResolvedValue([{ id: 77, name: "Felix" }]);
+  });
+
+  it("weigert zonder de juiste rechten", async () => {
+    mockRequirePermission.mockResolvedValue({ success: false, error: "Onvoldoende rechten" });
+
+    const result = await importAnimalShelterAnimals([{ externalId: felix.id }]);
+
+    expect(result).toEqual({ success: false, error: "Onvoldoende rechten" });
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("doet niets zonder selectie", async () => {
+    const result = await importAnimalShelterAnimals([]);
+    expect(result).toMatchObject({ success: false });
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("maakt een dier aan en legt de koppeling meteen vast", async () => {
+    const result = await importAnimalShelterAnimals([{ externalId: felix.id }]);
+
+    expect(result).toMatchObject({ success: true, data: { aangemaakt: [{ animalId: 77 }] } });
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Felix", species: "kat", gender: "kater", description: "" }),
+    );
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        externalId: felix.id, animalId: 77, matchMethod: "import", status: "gekoppeld",
+      }),
+    );
+  });
+
+  it("slaat een dier over waarvan het chipnummer al bij ons staat", async () => {
+    // `lokaleFiche` heeft de chip van Rocky.
+    const result = await importAnimalShelterAnimals([{ externalId: rocky.id }]);
+
+    expect(result).toMatchObject({ success: false });
+    expect(result).toHaveProperty("error", expect.stringMatching(/chipnummer/i));
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("weigert een dier aan te maken zonder antwoord op soort en geslacht", async () => {
+    const result = await importAnimalShelterAnimals([{ externalId: varken.id }]);
+
+    expect(result).toMatchObject({ success: false });
+    expect(result).toHaveProperty("error", expect.stringMatching(/soort/i));
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("gebruikt de keuze van de beheerder voor soort en geslacht", async () => {
+    const result = await importAnimalShelterAnimals([
+      { externalId: varken.id, species: "hangbuikvarken", gender: "mannetje" },
+    ]);
+
+    expect(result).toMatchObject({ success: true });
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ species: "hangbuikvarken", gender: "mannetje" }),
+    );
+  });
+
+  it("maakt de goede dieren aan en meldt per overgeslagen dier waarom", async () => {
+    const result = await importAnimalShelterAnimals([
+      { externalId: felix.id },
+      { externalId: rocky.id },
+      { externalId: varken.id },
+    ]);
+
+    expect(result).toMatchObject({ success: true });
+    if (result.success) {
+      expect(result.data.aangemaakt.map((a) => a.externalId)).toEqual([felix.id]);
+      expect(result.data.overgeslagen.map((o) => o.externalId)).toEqual([rocky.id, varken.id]);
+      expect(result.data.overgeslagen[0].reden).toMatch(/chipnummer/i);
+    }
+  });
+
+  it("logt elke aanmaak", async () => {
+    await importAnimalShelterAnimals([{ externalId: felix.id }]);
+
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "animalshelter_dier_geimporteerd", "animal", 77, null,
+      { externalId: felix.id, naam: "Felix" },
+    );
+  });
+
+  it("stopt netjes wanneer AnimalShelter onbereikbaar is", async () => {
+    mockFetchAll.mockRejectedValue(new Error("HTTP 503"));
+
+    const result = await importAnimalShelterAnimals([{ externalId: felix.id }]);
+
+    expect(result).toMatchObject({ success: false });
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 });
 

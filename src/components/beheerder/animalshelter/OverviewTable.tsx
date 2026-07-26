@@ -58,6 +58,20 @@ export default function OverviewTable({ model }: { model: OverviewModel }) {
         ))}
       </div>
 
+      {tab === "enkel_extern" && model.tellers.enkel_extern > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+          <p className="text-sm text-gray-700">
+            {model.tellers.enkel_extern} dieren staan bij AnimalShelter maar nog niet in onze tool.
+          </p>
+          <Link
+            href="/beheerder/animalshelter/importeren"
+            className="rounded-lg bg-[#1b4332] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#2d6a4f]"
+          >
+            Dieren overnemen…
+          </Link>
+        </div>
+      )}
+
       {leeg && (
         <p className="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
           Hier is niets te tonen.
