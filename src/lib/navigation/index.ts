@@ -18,6 +18,8 @@ export const BEHEERDER_NAV_ITEMS: readonly NavItem[] = [
   { label: "Kennels", href: "/beheerder/dieren/kennel", icon: "🏠", requiredPermission: "kennel:read" },
   { label: "Rapporten", href: "/beheerder/rapporten", icon: "📈", requiredPermission: "report:read" },
   { label: "Website", href: "/beheerder/website", icon: "🌐", requiredPermission: "website:read" },
+  // Epic 11 — alleen-lezen koppeling met animalshelter.be.
+  { label: "AnimalShelter", href: "/beheerder/animalshelter", icon: "🔗", requiredPermission: "animalshelter:read" },
   { label: "Mailing", href: "/beheerder/mailing", icon: "✉️", requiredPermission: "adoption:read" },
   { label: "Wandelaars", href: "/beheerder/wandelaars", icon: "🚶", requiredPermission: "walker:read" },
   { label: "GDPR", href: "/beheerder/gdpr", icon: "🔒", requiredPermission: "gdpr:read" },

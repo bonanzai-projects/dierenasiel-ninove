@@ -3,8 +3,8 @@ import { BEHEERDER_NAV_ITEMS, getVisibleNavItems } from "./index";
 import { isNavItemActive } from "./active";
 
 describe("BEHEERDER_NAV_ITEMS", () => {
-  it("has exactly 14 navigation items", () => {
-    expect(BEHEERDER_NAV_ITEMS).toHaveLength(14);
+  it("has exactly 15 navigation items", () => {
+    expect(BEHEERDER_NAV_ITEMS).toHaveLength(15);
   });
 
   it("each item has label, href, icon, and requiredPermission", () => {
@@ -37,6 +37,7 @@ describe("BEHEERDER_NAV_ITEMS", () => {
       "Kennels",
       "Rapporten",
       "Website",
+      "AnimalShelter",
       "Mailing",
       "Wandelaars",
       "GDPR",
@@ -47,9 +48,9 @@ describe("BEHEERDER_NAV_ITEMS", () => {
 });
 
 describe("getVisibleNavItems", () => {
-  it("shows all 14 items for beheerder", () => {
+  it("shows all 15 items for beheerder", () => {
     const items = getVisibleNavItems("beheerder");
-    expect(items).toHaveLength(14);
+    expect(items).toHaveLength(15);
   });
 
   it("shows the shared Kalender to every role (null permission)", () => {
