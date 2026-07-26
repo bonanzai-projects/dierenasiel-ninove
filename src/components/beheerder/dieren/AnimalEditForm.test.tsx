@@ -299,6 +299,20 @@ describe("AnimalEditForm — niet-opgeslagen wijzigingen (Story 10.33)", () => {
     expect(screen.queryByLabelText(/^Schuilnaam$/i)).toBeNull();
   });
 
+  // Story 10.43 — kaart om aan de kennel te hangen, naast de bestaande affiche.
+  it("biedt zowel de kennelkaart als de affiche aan om af te drukken", () => {
+    render(<AnimalEditForm animal={mockAnimal({ id: 310 })} />);
+
+    expect(screen.getByRole("link", { name: /kennelkaart \(pdf\)/i })).toHaveAttribute(
+      "href",
+      "/api/dieren/310/kennelkaart/pdf",
+    );
+    expect(screen.getByRole("link", { name: /affiche \(pdf\)/i })).toHaveAttribute(
+      "href",
+      "/api/dieren/310/affiche/pdf",
+    );
+  });
+
   const BAR = /Niet-opgeslagen wijzigingen/i;
 
   it("toont geen balk zolang er niets gewijzigd is", () => {
