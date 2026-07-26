@@ -5,6 +5,7 @@ import {
   fieldDefinition,
   mapGender,
   mapIntakeReason,
+  mapNeutered,
   mapSpecies,
   parseBelgianDate,
   parseIsoDate,
@@ -88,6 +89,40 @@ describe("intakereden", () => {
   });
 });
 
+describe("gesteriliseerd/gecastreerd", () => {
+  // Betekenis bevestigd door Sven op 2026-07-26: 0 = nee, 1 = ja, 2 = niet van toepassing.
+  it("mapt nee en ja", () => {
+    expect(mapNeutered(0)).toBe(false);
+    expect(mapNeutered(1)).toBe(true);
+  });
+
+  it("mapt 'niet van toepassing' naar leeg — wij kennen die waarde niet", () => {
+    expect(mapNeutered(2)).toBeNull();
+    expect(mapNeutered(null)).toBeNull();
+    expect(mapNeutered(7)).toBeNull();
+  });
+
+  it("is nu overneembaar bij een duidelijke code", () => {
+    // Felix heeft code 1.
+    expect(fieldDefinition("isNeutered").remote(felix)).toBe(true);
+    expect(fieldDefinition("isNeutered").notTakeable(felix)).toBeNull();
+  });
+
+  it("blijft niet-overneembaar bij 'niet van toepassing'", () => {
+    // Rocky heeft code 2. "Niet van toepassing" is iets anders dan "onbekend",
+    // en wij hebben er geen veldwaarde voor — dus geen knop, wel uitleg.
+    expect(fieldDefinition("isNeutered").remote(rocky)).toBeNull();
+    expect(fieldDefinition("isNeutered").notTakeable(rocky)).toMatch(/niet van toepassing/i);
+  });
+
+  it("toont de waarde leesbaar", () => {
+    const veld = fieldDefinition("isNeutered");
+    expect(veld.format(true)).toBe("Ja");
+    expect(veld.format(false)).toBe("Nee");
+    expect(veld.format(null)).toBe("—");
+  });
+});
+
 describe("hulpjes", () => {
   it("zet 1/0 om naar een boolean en laat null met rust", () => {
     expect(toBoolean(1)).toBe(true);
@@ -148,9 +183,7 @@ describe("FIELD_DEFINITIONS — de gedeelde velden (klasse B)", () => {
     expect(fieldDefinition("websiteDescription").remote(rocky)).toContain("Rocky");
   });
 
-  it("markeert de vier onbesliste mappings als niet-overneembaar, met reden", () => {
-    // gecastreerd: de codes 0/1/2 spreken zichzelf tegen in de echte data.
-    expect(fieldDefinition("isNeutered").notTakeable(rocky)).toMatch(/gecastreerd/i);
+  it("markeert de resterende onbesliste mappings als niet-overneembaar, met reden", () => {
     // geslacht O bij het varken.
     expect(fieldDefinition("gender").notTakeable(varken)).toMatch(/onbekend|geslacht/i);
     // soort "other".

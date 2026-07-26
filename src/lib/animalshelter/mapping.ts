@@ -129,6 +129,21 @@ export function mapIntakeReason(reason: string | null | undefined): string | nul
   return INTAKE_REASON_MAP[key] ?? null;
 }
 
+/**
+ * `gecastreerd` 0 | 1 | 2. Betekenis bevestigd door Sven op 2026-07-26:
+ * 0 = nee, 1 = ja, 2 = niet van toepassing.
+ *
+ * Voor code 2 hebben wij géén veldwaarde. Ons `isNeutered` is een drietoestand
+ * ja / nee / onbekend (Story 10.29), en "niet van toepassing" is iets anders dan
+ * "onbekend". Daarom geeft 2 hier `null` terug en wordt het veld voor dat dier
+ * niet overneembaar gemaakt — met uitleg, in plaats van stilzwijgend leeg.
+ */
+export function mapNeutered(code: number | null | undefined): boolean | null {
+  if (code === 0) return false;
+  if (code === 1) return true;
+  return null;
+}
+
 export function toBoolean(value: number | null | undefined): boolean | null {
   if (value === null || value === undefined) return null;
   return value === 1;
@@ -237,11 +252,13 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
   {
     key: "isNeutered",
     label: "Gesteriliseerd/gecastreerd",
-    remote: (a) => (a.gecastreerd === null ? null : String(a.gecastreerd)),
+    remote: (a) => mapNeutered(a.gecastreerd),
     local: (a) => (a.isNeutered === null || a.isNeutered === undefined ? null : a.isNeutered),
-    notTakeable: () =>
-      "De codes 0/1/2 van AnimalShelter voor 'gecastreerd' zijn nog niet bevestigd — vraag aan Sven openstaand.",
-    format: (v) => (typeof v === "boolean" ? (v ? "Ja" : "Nee") : v === null ? LEEG : `code ${v}`),
+    notTakeable: (a) =>
+      a.gecastreerd === 0 || a.gecastreerd === 1
+        ? null
+        : "AnimalShelter geeft hier \"niet van toepassing\" door; wij hebben daar geen waarde voor.",
+    format: formatText,
   },
   {
     key: "intakeDate",

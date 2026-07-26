@@ -229,7 +229,13 @@ describe("ignoreAnimalShelterFields", () => {
   });
 
   it("laat ook een niet-overneembaar verschil dempen", async () => {
+    // Rocky heeft `gecastreerd: 2` (= niet van toepassing) terwijl onze fiche "ja"
+    // zegt: een echt verschil, maar zonder overname-knop. Dempen moet wel kunnen,
+    // anders blijft het voor eeuwig op het scherm staan.
+    state.animals = [{ ...lokaleFiche, isNeutered: true }];
+
     const result = await ignoreAnimalShelterFields(ROCKY_ID, 1, ["isNeutered"]);
+
     expect(result).toMatchObject({ success: true, data: { genegeerd: ["isNeutered"] } });
   });
 });

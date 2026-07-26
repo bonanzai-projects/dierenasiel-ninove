@@ -2,6 +2,7 @@ import { slugify } from "@/lib/utils";
 import {
   mapGender,
   mapIntakeReason,
+  mapNeutered,
   mapSpecies,
   normalizeText,
   parseBelgianDate,
@@ -162,9 +163,9 @@ export function buildAnimalInsert(
       .map((b) => b.image),
     isAvailableForAdoption: toBoolean(external.adoptie) ?? false,
     isOnWebsite: toBoolean(external.publishonwebsite) ?? false,
-    // De codes 0/1/2 voor `gecastreerd` zijn nog niet bevestigd (§6.2.1):
-    // liever leeg dan een medisch foute fiche.
-    isNeutered: null,
+    // 0 = nee, 1 = ja, 2 = niet van toepassing (bevestigd door Sven 2026-07-26).
+    // Bij 2 blijft het veld leeg: "niet van toepassing" is geen waarde die wij kennen.
+    isNeutered: mapNeutered(external.gecastreerd),
     // Het dier komt aan het begin van ÓNZE workflow te staan. Kennel, fase en
     // uitstroom blijven handwerk van het asiel — dat is klasse A (§2).
     workflowPhase: "intake",

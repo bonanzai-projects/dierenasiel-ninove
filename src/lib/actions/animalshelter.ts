@@ -37,6 +37,7 @@ const APPLICABLE_FIELDS = new Set([
   "breed",
   "gender",
   "dateOfBirth",
+  "isNeutered",
   "identificationNr",
   "intakeDate",
   "intakeReason",

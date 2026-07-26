@@ -157,10 +157,14 @@ describe("buildAnimalInsert", () => {
     expect(waarden).toMatchObject({ species: "hangbuikvarken", gender: "mannetje" });
   });
 
-  it("laat velden leeg die AnimalShelter niet betrouwbaar aanlevert", () => {
-    const waarden = buildAnimalInsert(rocky, {}, "rocky");
-    // `gecastreerd` 0/1/2 is nog niet bevestigd (koerswijziging §6.2.1).
-    expect(waarden.isNeutered).toBeNull();
+  it("neemt gesteriliseerd over bij een duidelijke code", () => {
+    // Felix heeft code 1 = ja (betekenis bevestigd door Sven 2026-07-26).
+    expect(buildAnimalInsert(felix, {}, "felix").isNeutered).toBe(true);
+  });
+
+  it("laat gesteriliseerd leeg bij 'niet van toepassing'", () => {
+    // Rocky heeft code 2. Dat is iets anders dan "nee", dus niet invullen.
+    expect(buildAnimalInsert(rocky, {}, "rocky").isNeutered).toBeNull();
   });
 
   it("zet het dier aan het begin van ONZE workflow, niet die van hen", () => {

@@ -38,9 +38,34 @@ describe("diffAnimal — de vergelijking", () => {
     const diff = diffAnimal(rocky, rockyLokaal);
     const anders = diff.rows.filter((r) => r.state !== "gelijk");
 
-    // Alleen 'gecastreerd' blijft over: dat veld is nog niet beslecht (§6.2.1).
-    expect(anders.map((r) => r.key)).toEqual(["isNeutered"]);
+    expect(anders.map((r) => r.key)).toEqual([]);
     expect(diff.open).toBe(0);
+  });
+
+  it("zwijgt over 'niet van toepassing' wanneer wij het veld ook leeg lieten", () => {
+    // Rocky heeft `gecastreerd: 2`. Dat levert bij ons geen waarde op, en onze
+    // fiche staat leeg — dus valt er niets te melden.
+    expect(rij(diffAnimal(rocky, rockyLokaal), "isNeutered").state).toBe("gelijk");
+  });
+
+  it("toont 'niet van toepassing' wél wanneer onze fiche ingevuld is", () => {
+    const diff = diffAnimal(rocky, { ...rockyLokaal, isNeutered: true });
+    const rij_ = rij(diff, "isNeutered");
+
+    // Geen knop — "niet van toepassing" mag onze "Ja" niet overschrijven.
+    expect(rij_).toMatchObject({ state: "niet_overneembaar", takeable: false });
+    expect(rij_.reason).toMatch(/niet van toepassing/i);
+  });
+
+  it("biedt gesteriliseerd wél aan bij een duidelijke code", () => {
+    // Code 1 = ja.
+    const diff = diffAnimal({ ...rocky, gecastreerd: 1 }, { ...rockyLokaal, isNeutered: false });
+    expect(rij(diff, "isNeutered")).toMatchObject({
+      state: "verschil",
+      takeable: true,
+      remoteText: "Ja",
+      localText: "Nee",
+    });
   });
 
   it("meldt een verschil en biedt het aan om over te nemen", () => {
