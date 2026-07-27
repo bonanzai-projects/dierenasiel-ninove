@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Kennel, Animal } from "@/types";
 import type { KennelWithOccupancy } from "@/lib/queries/kennels";
 import { resolveKennelTilePhotos } from "@/lib/kennels/tile-photos";
+import { ANIMAL_PHOTO_FOCUS } from "@/lib/kennels/photo-framing";
 
 interface KennelFloorPlanProps {
   occupancy: KennelWithOccupancy[];
@@ -198,25 +199,27 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlight
               style={{
                 backgroundImage: `url(${photo.url})`,
                 backgroundSize: "cover",
-                backgroundPosition: "center",
+                // Hoger dan het midden: op een liggende tegel valt bij een
+                // staande foto de helft van de hoogte weg — zonder deze
+                // verschuiving is dat net de band met de kop. Zie photo-framing.
+                backgroundPosition: ANIMAL_PHOTO_FOCUS,
                 transform: `translateX(${(idx - photoIndex) * 100}%)`,
               }}
               aria-hidden="true"
             />
           ))}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/75 to-transparent"
-          />
         </div>
       )}
-      <span
-        className={`absolute inset-x-0 bottom-1 z-10 flex flex-col items-center text-[10px] leading-tight sm:text-xs ${
-          hasPhoto ? "text-white drop-shadow" : "text-gray-900"
-        }`}
-      >
-        <span>{kennel.code}</span>
-        <span className={`text-[9px] sm:text-[10px] ${hasPhoto ? "text-white/90" : "text-gray-700"}`}>
+      {/*
+        Story 10.44 — het opschrift stond onder elkaar onderaan, met een
+        verduistering over de onderste helft van de foto om het leesbaar te
+        houden. Samen slokte dat het grootste deel van de tegel op. Nu: één
+        smalle balk bovenaan, code en bezetting naast elkaar, op een donkere
+        ondergrond die genoeg doorlaat om de foto er nog door te zien.
+      */}
+      <span className="absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-1.5 bg-black/55 px-1 py-px text-[9px] leading-tight text-white sm:text-[10px]">
+        <span className="font-bold">{kennel.code}</span>
+        <span className="font-normal text-white/90">
           {count}/{kennel.capacity}
         </span>
       </span>

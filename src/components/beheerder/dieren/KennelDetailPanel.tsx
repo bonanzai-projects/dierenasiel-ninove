@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { assignKennel } from "@/lib/actions/kennels";
+import { ANIMAL_PHOTO_FOCUS } from "@/lib/kennels/photo-framing";
 import type { Animal, Kennel } from "@/types";
 
 function getZoneLabel(zone: string): string {
@@ -108,6 +109,9 @@ function AnimalRow({ animal, kennelCode }: { animal: Animal; kennelCode: string 
               src={animal.imageUrl}
               alt={animal.name}
               className="h-10 w-10 rounded-full object-cover"
+              // Zelfde reden als op het grondplan: in een rond kadertje van 40px
+              // valt bij een staande foto het midden in beeld — de kop niet.
+              style={{ objectPosition: ANIMAL_PHOTO_FOCUS }}
             />
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-lg">
@@ -170,7 +174,10 @@ function AnimalPreviewModal({ animal, onClose }: { animal: Animal; onClose: () =
           <img
             src={animal.imageUrl}
             alt={animal.name}
-            className="h-64 w-full object-cover"
+            // In een voorvertoning hoort niets weg te vallen: de hele foto past
+            // in het kader (Sven zag hier enkel het achterwerk van Beauty). Het
+            // kader groeit mee met een staande foto tot 60% van de schermhoogte.
+            className="max-h-[60vh] w-full bg-gray-100 object-contain"
           />
         ) : (
           <div className="flex h-64 w-full items-center justify-center bg-gray-100 text-6xl">
