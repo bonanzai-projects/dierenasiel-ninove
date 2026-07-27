@@ -163,3 +163,72 @@ describe("KennelFloorPlan — groter opschrift op volledig scherm (Story 10.48)"
     expect(balkVan(false)).not.toContain("text-sm");
   });
 });
+
+describe("KennelFloorPlan — naam van het dier op de tegel (Story 10.50)", () => {
+  it("zet de naam bovenaan het vak, op een achtergrondkleur", () => {
+    render(
+      <KennelFloorPlan
+        occupancy={[{ kennel: mockKennel(), count: 1 } as KennelWithOccupancy]}
+        animalsByKennel={{ 1: [mockAnimal({ name: "Beauty" })] }}
+      />,
+    );
+
+    const naam = screen.getByText("Beauty");
+    expect(naam.className).toContain("top-0");
+    expect(naam.className).toMatch(/\bbg-/);
+    expect(naam.className).toContain("text-white");
+  });
+
+  it("toont de naam van het dier waarvan de foto op dat moment te zien is", () => {
+    render(
+      <KennelFloorPlan
+        occupancy={[{ kennel: mockKennel(), count: 2 } as KennelWithOccupancy]}
+        animalsByKennel={{
+          1: [
+            mockAnimal({ id: 1, name: "Beauty", imageUrl: "/beauty.jpg" }),
+            mockAnimal({ id: 2, name: "Puck", imageUrl: "/puck.jpg" }),
+          ],
+        }}
+      />,
+    );
+
+    // De carrousel start bij de eerste foto.
+    expect(screen.getByText("Beauty")).toBeInTheDocument();
+    expect(screen.queryByText("Puck")).toBeNull();
+  });
+
+  it("toont ook een naam wanneer het dier geen foto heeft", () => {
+    render(
+      <KennelFloorPlan
+        occupancy={[{ kennel: mockKennel(), count: 1 } as KennelWithOccupancy]}
+        animalsByKennel={{ 1: [mockAnimal({ name: "Naamloos", imageUrl: null, images: null })] }}
+      />,
+    );
+
+    expect(screen.getByText("Naamloos")).toBeInTheDocument();
+  });
+
+  it("laat de naambalk weg bij een leeg hok", () => {
+    const { container } = render(
+      <KennelFloorPlan
+        occupancy={[{ kennel: mockKennel(), count: 0 } as KennelWithOccupancy]}
+        animalsByKennel={{}}
+      />,
+    );
+
+    // Enkel het opschrift onderaan (code + bezetting) blijft over.
+    expect(container.querySelectorAll('span[class*="absolute inset-x-0"]')).toHaveLength(1);
+  });
+
+  it("laat de naam meegroeien op volledig scherm", () => {
+    render(
+      <KennelFloorPlan
+        occupancy={[{ kennel: mockKennel(), count: 1 } as KennelWithOccupancy]}
+        animalsByKennel={{ 1: [mockAnimal({ name: "Beauty" })] }}
+        largeLabels
+      />,
+    );
+
+    expect(screen.getByText("Beauty").className).toContain("text-sm");
+  });
+});

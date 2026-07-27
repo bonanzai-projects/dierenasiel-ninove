@@ -171,6 +171,11 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlight
   const hasPhoto = photos.length > 0;
   const currentPhoto = photos[photoIndex];
 
+  // Story 10.50: de naam hoort bij de foto die op dat moment te zien is. Zit er
+  // een dier zónder foto in het hok, dan is er niets om af te wisselen en tonen
+  // we gewoon de eerste bewoner.
+  const bewonerNaam = currentPhoto?.name ?? animals[0]?.name ?? "";
+
   return (
     <button
       ref={registerRef}
@@ -215,6 +220,20 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlight
             />
           ))}
         </div>
+      )}
+      {/*
+        Story 10.50 — de naam van de bewoner bovenaan, in de huiskleur zodat ze
+        niet te verwarren is met het hoknummer onderaan. Lange namen worden
+        afgekapt: het vak is smaller dan sommige namen lang zijn.
+      */}
+      {bewonerNaam && (
+        <span
+          className={`absolute inset-x-0 top-0 z-10 truncate bg-[#1b4332]/85 text-center font-semibold leading-tight text-white ${
+            largeLabel ? "px-2 py-0.5 text-sm sm:text-base" : "px-1 py-px text-[9px] sm:text-[10px]"
+          }`}
+        >
+          {bewonerNaam}
+        </span>
       )}
       {/*
         Story 10.44 — het opschrift stond onder elkaar, met een verduistering
