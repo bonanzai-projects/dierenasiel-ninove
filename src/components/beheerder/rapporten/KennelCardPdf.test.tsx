@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createElement } from "react";
-import { renderToBuffer } from "@react-pdf/renderer";
+import { createElement, isValidElement, type ReactNode } from "react";
+import { renderToBuffer, Polyline } from "@react-pdf/renderer";
 import KennelCardPdf from "./KennelCardPdf";
 import { buildKennelCard } from "@/lib/animals/kennel-card";
 
@@ -42,7 +42,50 @@ const leeg = buildKennelCard({
   lastDeworming: null,
 });
 
+/**
+ * Telt de vinkjes in de opgebouwde elementenboom. Een vinkje is een `<Polyline>`
+ * (getekend, niet als letterteken — de standaard PDF-fonts hebben geen ✓).
+ */
+function telVinkjes(kaart: Parameters<typeof KennelCardPdf>[0]["kaart"]): number {
+  let aantal = 0;
+
+  const loop = (node: ReactNode): void => {
+    if (Array.isArray(node)) {
+      node.forEach(loop);
+      return;
+    }
+    if (!isValidElement(node)) return;
+
+    if (node.type === Polyline) aantal += 1;
+
+    // De kaart is opgebouwd uit eigen deelcomponenten (Keuzes, Vinkje). Die
+    // moeten we zelf uitvoeren om bij hun inhoud te komen; de primitieven van
+    // @react-pdf zijn gewone strings ("VIEW", "POLYLINE") en stoppen de recursie.
+    if (typeof node.type === "function") {
+      const component = node.type as (props: unknown) => ReactNode;
+      loop(component(node.props));
+      return;
+    }
+
+    const props = node.props as { children?: ReactNode };
+    if (props.children !== undefined) loop(props.children);
+  };
+
+  loop(KennelCardPdf({ kaart }));
+  return aantal;
+}
+
 describe("KennelCardPdf", () => {
+  it("zet een vinkje bij het juiste geslacht en bij steriel ja/neen", () => {
+    // Sven leest de kaart vanop een meter: een dikkere rand rond het bolletje is
+    // niet te onderscheiden, een vinkje wel. Reu + Neen = 2 vinkjes.
+    expect(telVinkjes(volledig)).toBe(2);
+  });
+
+  it("zet geen vinkje wanneer geslacht of steriel onbekend is", () => {
+    expect(telVinkjes(leeg)).toBe(0);
+  });
+
   it("rendert een volledig ingevulde kaart", async () => {
     const buffer = await renderToBuffer(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Svg, Polyline } from "@react-pdf/renderer";
 import type { KennelCardModel, KennelCardOption } from "@/lib/animals/kennel-card";
 
 /**
@@ -37,8 +37,22 @@ const styles = StyleSheet.create({
 
   keuzes: { flexDirection: "row", gap: 26, flexGrow: 1, paddingBottom: 2 },
   keuze: { flexDirection: "row", alignItems: "center", gap: 6 },
-  bolletje: { width: 13, height: 13, borderRadius: 7, border: LIJN },
-  bolletjeAan: { width: 13, height: 13, borderRadius: 7, border: "2.5 solid #111" },
+  bolletje: {
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    border: LIJN,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bolletjeAan: {
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    border: "1.4 solid #111",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   keuzeTekst: { fontSize: 13 },
   keuzeTekstAan: { fontSize: 13, fontFamily: "Helvetica-Bold" },
 
@@ -52,12 +66,34 @@ const styles = StyleSheet.create({
   voet: { marginTop: 10, fontSize: 7.5, color: "#777", textAlign: "right" },
 });
 
+/**
+ * Het vinkje wordt **getekend**, niet als letterteken gezet: de standaard
+ * PDF-fonts (Helvetica) hebben geen ✓ in hun tekenset, dus een tekstvinkje komt
+ * er als een leeg vakje of een verkeerd teken uit.
+ */
+function Vinkje() {
+  return (
+    <Svg width={10} height={10} viewBox="0 0 10 10">
+      <Polyline
+        points="1.2,5.3 3.9,8.2 8.8,1.6"
+        stroke={INKT}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
 function Keuzes({ opties }: { opties: KennelCardOption[] }) {
   return (
     <View style={styles.keuzes}>
       {opties.map((optie) => (
         <View key={optie.label} style={styles.keuze}>
-          <View style={optie.gemarkeerd ? styles.bolletjeAan : styles.bolletje} />
+          <View style={optie.gemarkeerd ? styles.bolletjeAan : styles.bolletje}>
+            {optie.gemarkeerd ? <Vinkje /> : null}
+          </View>
           <Text style={optie.gemarkeerd ? styles.keuzeTekstAan : styles.keuzeTekst}>
             {optie.label}
           </Text>
