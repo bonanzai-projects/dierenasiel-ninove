@@ -161,19 +161,11 @@ export default function KennelLayoutManager({
             ))}
           </select>
         </div>
-        <span aria-hidden="true" className="hidden h-5 w-px bg-gray-300 sm:block" />
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-4 w-4 rounded border border-emerald-600 bg-emerald-400/60" />
-          <span>Leeg</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-4 w-4 rounded border border-amber-600 bg-amber-400/60" />
-          <span>Deels bezet</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-4 w-4 rounded border border-red-600 bg-red-400/60" />
-          <span>Vol</span>
-        </div>
+        {/*
+          Story 10.47 — de kleurenlegende (Leeg / Deels bezet / Vol) is hier weg:
+          de kleuren spreken voor zich en het opschrift op elk vak toont de
+          bezetting al met cijfers.
+        */}
         <button
           type="button"
           onClick={() => setPlanOpVolledigScherm(true)}

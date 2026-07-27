@@ -359,3 +359,31 @@ describe("KennelLayoutManager — venster vult de breedte (Story 10.46)", () => 
     expect(venster.querySelector('[style*="aspect-ratio"]')).toBeNull();
   });
 });
+
+describe("KennelLayoutManager — geen kleurenlegende meer (Story 10.47)", () => {
+  it("toont de legende Leeg/Deels bezet/Vol niet langer", () => {
+    // Johan 2026-07-28: triviale info die enkel plaats innam boven het plan.
+    const kennel = mockKennel({ id: 1, code: "H01" });
+    render(
+      <KennelLayoutManager
+        kennels={[kennel]}
+        occupancy={[mockOccupancy(kennel, 0)]}
+        animalsByKennel={{}}
+        allAnimals={[]}
+      />,
+    );
+
+    expect(screen.queryByText("Leeg")).toBeNull();
+    expect(screen.queryByText("Deels bezet")).toBeNull();
+    expect(screen.queryByText("Vol")).toBeNull();
+  });
+
+  it("houdt de zoekfunctie en de knop Volledig scherm wél", () => {
+    render(
+      <KennelLayoutManager kennels={[]} occupancy={[]} animalsByKennel={{}} allAnimals={[]} />,
+    );
+
+    expect(screen.getByLabelText("Zoek:")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /volledig scherm/i })).toBeInTheDocument();
+  });
+});
