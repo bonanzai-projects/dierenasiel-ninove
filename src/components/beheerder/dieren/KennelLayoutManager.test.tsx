@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import KennelLayoutManager from "./KennelLayoutManager";
 import type { Animal, Kennel } from "@/types";
 import type { KennelWithOccupancy } from "@/lib/queries/kennels";
@@ -284,5 +284,56 @@ describe("KennelLayoutManager — edge case dier zonder kennel (Story 10.24)", (
     fireEvent.change(select, { target: { value: "12" } });
 
     expect(scrollSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("KennelLayoutManager — grondplan op volledig scherm (Story 10.45)", () => {
+  function toonBeheer() {
+    const kennel = mockKennel({ id: 1, code: "H01" });
+    const animal = mockAnimal({ id: 1, name: "Beauty", kennelId: 1 });
+    return render(
+      <KennelLayoutManager
+        kennels={[kennel]}
+        occupancy={[mockOccupancy(kennel, 1)]}
+        animalsByKennel={{ 1: [animal] }}
+        allAnimals={[animal]}
+      />,
+    );
+  }
+
+  it("biedt een knop boven het grondplan om het op volledig scherm te tonen", () => {
+    toonBeheer();
+    expect(screen.getByRole("button", { name: /volledig scherm/i })).toBeInTheDocument();
+    // Zolang er niet op geklikt is, staat er geen venster open.
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("opent het grondplan mét de vakken in een venster", () => {
+    toonBeheer();
+    fireEvent.click(screen.getByRole("button", { name: /volledig scherm/i }));
+
+    const venster = screen.getByRole("dialog");
+    expect(within(venster).getByAltText("Grondplan kennels")).toBeInTheDocument();
+    expect(within(venster).getByRole("button", { name: /Kennel H01/ })).toBeInTheDocument();
+  });
+
+  it("sluit het venster bij een klik op een hok en toont datzelfde hok in het detailpaneel", () => {
+    toonBeheer();
+    fireEvent.click(screen.getByRole("button", { name: /volledig scherm/i }));
+
+    const venster = screen.getByRole("dialog");
+    fireEvent.click(within(venster).getByRole("button", { name: /Kennel H01/ }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("heading", { name: /Kennel\s+H01/ })).toBeInTheDocument();
+  });
+
+  it("sluit het venster met Escape zonder een hok te kiezen", () => {
+    toonBeheer();
+    fireEvent.click(screen.getByRole("button", { name: /volledig scherm/i }));
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("heading", { name: /Kennel\s+H01/ })).toBeNull();
   });
 });

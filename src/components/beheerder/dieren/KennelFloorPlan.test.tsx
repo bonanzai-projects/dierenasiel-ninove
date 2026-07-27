@@ -104,12 +104,13 @@ describe("KennelFloorPlan — opschrift van de tegel (Story 10.44)", () => {
     expect(balk.className).not.toContain("flex-col");
   });
 
-  it("plakt die balk bovenaan het vak, niet onderaan", () => {
+  it("plakt die balk onderaan het vak, niet bovenaan", () => {
+    // Johan 2026-07-28: bovenaan dekte de balk net de kop van het dier af.
     toonTegel();
     const balk = screen.getByText("H14").parentElement!;
 
-    expect(balk.className).toContain("top-0");
-    expect(balk.className).not.toMatch(/\bbottom-/);
+    expect(balk.className).toContain("bottom-0");
+    expect(balk.className).not.toMatch(/\btop-/);
   });
 
   it("geeft de balk een donkere achtergrond zodat het opschrift leesbaar blijft", () => {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import KennelFloorPlan from "./KennelFloorPlan";
+import { createPortal } from "react-dom";
+import KennelFloorPlan, { GRONDPLAN_BREEDTE, GRONDPLAN_HOOGTE } from "./KennelFloorPlan";
 import KennelSidebarList from "./KennelSidebarList";
 import KennelCreateForm from "./KennelCreateForm";
 import KennelDetailPanel from "./KennelDetailPanel";
@@ -29,6 +30,8 @@ export default function KennelLayoutManager({
   const [highlightedKennelId, setHighlightedKennelId] = useState<number | null>(null);
   const [searchValue, setSearchValue] = useState<string>("");
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  // Story 10.45: het grondplan groot in een venster, zonder de zijkolommen.
+  const [planOpVolledigScherm, setPlanOpVolledigScherm] = useState(false);
 
   // Story 10.19+: bepaal welke lagen daadwerkelijk in gebruik zijn (sorteer oplopend).
   const availableLayers = useMemo(() => {
@@ -62,6 +65,16 @@ export default function KennelLayoutManager({
     return () => clearTimeout(id);
   }, [searchMessage]);
 
+  // Story 10.45: Escape sluit het venster — zelfde gewoonte als elders in de backoffice.
+  useEffect(() => {
+    if (!planOpVolledigScherm) return;
+    function opToets(e: KeyboardEvent) {
+      if (e.key === "Escape") setPlanOpVolledigScherm(false);
+    }
+    document.addEventListener("keydown", opToets);
+    return () => document.removeEventListener("keydown", opToets);
+  }, [planOpVolledigScherm]);
+
   function handleAnimalSearch(animalIdRaw: string) {
     setSearchValue(animalIdRaw);
     if (!animalIdRaw) {
@@ -94,6 +107,23 @@ export default function KennelLayoutManager({
     setSelectedKennel(kennel);
     setHighlightedKennelId(kennel.id);
   }
+
+  // Story 10.45: het plan wordt op twee plaatsen getoond (in de pagina en op
+  // volledig scherm). Alleen de klik op een hok verschilt, de rest blijft gelijk.
+  const planEigenschappen = {
+    occupancy: filteredOccupancy,
+    animalsByKennel,
+    editingKennelId: editingId,
+    selectedKennelId: selectedKennel?.id ?? null,
+    highlightedKennelId,
+    activeLayer,
+    availableLayers,
+    onLayerChange: (l: number) => {
+      setActiveLayer(l);
+      setSelectedKennel(null);
+      setEditingId(null);
+    },
+  };
 
   return (
     // 2-rijen grid op lg: rij 1 = legende/zoek (alleen middenkolom), rij 2 =
@@ -144,6 +174,13 @@ export default function KennelLayoutManager({
           <span className="inline-block h-4 w-4 rounded border border-red-600 bg-red-400/60" />
           <span>Vol</span>
         </div>
+        <button
+          type="button"
+          onClick={() => setPlanOpVolledigScherm(true)}
+          className="ml-auto rounded-md border border-[#1b4332] px-2.5 py-1 text-sm font-medium text-[#1b4332] transition-colors hover:bg-emerald-50"
+        >
+          ⛶ Volledig scherm
+        </button>
       </div>
 
       {/* Grondplan — rij 2, middenkolom. */}
@@ -157,21 +194,7 @@ export default function KennelLayoutManager({
             {searchMessage}
           </div>
         )}
-        <KennelFloorPlan
-          occupancy={filteredOccupancy}
-          animalsByKennel={animalsByKennel}
-          editingKennelId={editingId}
-          selectedKennelId={selectedKennel?.id ?? null}
-          highlightedKennelId={highlightedKennelId}
-          onSelectKennel={setSelectedKennel}
-          activeLayer={activeLayer}
-          availableLayers={availableLayers}
-          onLayerChange={(l) => {
-            setActiveLayer(l);
-            setSelectedKennel(null);
-            setEditingId(null);
-          }}
-        />
+        <KennelFloorPlan {...planEigenschappen} onSelectKennel={setSelectedKennel} />
       </div>
 
       {/* Rechter kolom: detailpaneel — rij 2 zodat de bovenkant uitlijnt met het grondplan. */}
@@ -185,6 +208,48 @@ export default function KennelLayoutManager({
           />
         )}
       </div>
+
+      {/*
+        Story 10.45 — het plan groot in beeld, zonder de zijkolommen. Een klik op
+        een hok doet hetzelfde als in de gewone weergave: het venster gaat dicht
+        en het detailpaneel van dat hok staat open.
+
+        Het kader houdt de verhouding van het planbeeld aan en vult de hoogte,
+        zodat het hele plan in één blik past zonder te scrollen.
+      */}
+      {planOpVolledigScherm &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Grondplan op volledig scherm"
+            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/85 p-4"
+            onClick={() => setPlanOpVolledigScherm(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setPlanOpVolledigScherm(false)}
+              className="absolute right-4 top-4 z-10 rounded-md bg-white/90 px-3 py-1.5 text-sm font-medium text-gray-800 shadow hover:bg-white"
+            >
+              Sluiten
+            </button>
+            <div
+              className="h-full max-w-full"
+              style={{ aspectRatio: `${GRONDPLAN_BREEDTE} / ${GRONDPLAN_HOOGTE}` }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <KennelFloorPlan
+                {...planEigenschappen}
+                onSelectKennel={(kennel) => {
+                  setSelectedKennel(kennel);
+                  setPlanOpVolledigScherm(false);
+                }}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

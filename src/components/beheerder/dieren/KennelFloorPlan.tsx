@@ -22,6 +22,14 @@ interface KennelFloorPlanProps {
   onLayerChange?: (layer: number) => void;
 }
 
+/**
+ * Afmetingen van `public/images/grondplan-kennels.png`. De vakken staan in
+ * procenten op dit beeld, dus wie het plan in een eigen kader wil tonen (Story
+ * 10.45: volledig scherm) moet die verhouding aanhouden.
+ */
+export const GRONDPLAN_BREEDTE = 622;
+export const GRONDPLAN_HOOGTE = 1168;
+
 function getOccupancyColor(count: number, capacity: number): string {
   if (count === 0) return "bg-emerald-400/60 border-emerald-600 hover:bg-emerald-400/80";
   if (count < capacity) return "bg-amber-400/60 border-amber-600 hover:bg-amber-400/80";
@@ -211,13 +219,16 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlight
         </div>
       )}
       {/*
-        Story 10.44 — het opschrift stond onder elkaar onderaan, met een
-        verduistering over de onderste helft van de foto om het leesbaar te
-        houden. Samen slokte dat het grootste deel van de tegel op. Nu: één
-        smalle balk bovenaan, code en bezetting naast elkaar, op een donkere
-        ondergrond die genoeg doorlaat om de foto er nog door te zien.
+        Story 10.44 — het opschrift stond onder elkaar, met een verduistering
+        over de onderste helft van de foto om het leesbaar te houden. Samen
+        slokte dat het grootste deel van de tegel op. Nu: één smalle balk, code
+        en bezetting naast elkaar, op een donkere ondergrond die genoeg
+        doorlaat om de foto er nog door te zien.
+
+        Story 10.45 — die balk staat onderaan: bovenaan dekte ze net de kop van
+        het dier af, en dat is precies waar we met de uitsnede naartoe werken.
       */}
-      <span className="absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-1.5 bg-black/55 px-1 py-px text-[9px] leading-tight text-white sm:text-[10px]">
+      <span className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-1.5 bg-black/55 px-1 py-px text-[9px] leading-tight text-white sm:text-[10px]">
         <span className="font-bold">{kennel.code}</span>
         <span className="font-normal text-white/90">
           {count}/{kennel.capacity}
