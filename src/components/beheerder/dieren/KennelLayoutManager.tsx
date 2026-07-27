@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import KennelFloorPlan, { GRONDPLAN_BREEDTE, GRONDPLAN_HOOGTE } from "./KennelFloorPlan";
+import KennelFloorPlan from "./KennelFloorPlan";
 import KennelSidebarList from "./KennelSidebarList";
 import KennelCreateForm from "./KennelCreateForm";
 import KennelDetailPanel from "./KennelDetailPanel";
@@ -214,8 +214,9 @@ export default function KennelLayoutManager({
         een hok doet hetzelfde als in de gewone weergave: het venster gaat dicht
         en het detailpaneel van dat hok staat open.
 
-        Het kader houdt de verhouding van het planbeeld aan en vult de hoogte,
-        zodat het hele plan in één blik past zonder te scrollen.
+        Story 10.46 — het plan neemt de volle breedte; wat er niet op past lees
+        je al scrollend. In de hoogte persen maakte de vakjes niet groter, want
+        het plan is staand en schermen zijn liggend.
       */}
       {planOpVolledigScherm &&
         typeof document !== "undefined" &&
@@ -224,21 +225,17 @@ export default function KennelLayoutManager({
             role="dialog"
             aria-modal="true"
             aria-label="Grondplan op volledig scherm"
-            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/85 p-4"
+            className="fixed inset-0 z-[90] overflow-y-auto bg-black/85"
             onClick={() => setPlanOpVolledigScherm(false)}
           >
             <button
               type="button"
               onClick={() => setPlanOpVolledigScherm(false)}
-              className="absolute right-4 top-4 z-10 rounded-md bg-white/90 px-3 py-1.5 text-sm font-medium text-gray-800 shadow hover:bg-white"
+              className="fixed right-4 top-4 z-10 rounded-md bg-white/90 px-3 py-1.5 text-sm font-medium text-gray-800 shadow hover:bg-white"
             >
               Sluiten
             </button>
-            <div
-              className="h-full max-w-full"
-              style={{ aspectRatio: `${GRONDPLAN_BREEDTE} / ${GRONDPLAN_HOOGTE}` }}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="w-full" onClick={(e) => e.stopPropagation()}>
               <KennelFloorPlan
                 {...planEigenschappen}
                 onSelectKennel={(kennel) => {

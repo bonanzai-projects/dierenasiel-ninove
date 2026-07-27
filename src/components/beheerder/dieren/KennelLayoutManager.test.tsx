@@ -337,3 +337,25 @@ describe("KennelLayoutManager — grondplan op volledig scherm (Story 10.45)", (
     expect(screen.queryByRole("heading", { name: /Kennel\s+H01/ })).toBeNull();
   });
 });
+
+describe("KennelLayoutManager — venster vult de breedte (Story 10.46)", () => {
+  it("laat het plan de volle breedte nemen en verticaal scrollen", () => {
+    // Johan 2026-07-28: het plan in de hoogte persen maakte de vakjes niet
+    // groter. Liever de volle breedte en scrollen.
+    const kennel = mockKennel({ id: 1, code: "H01" });
+    render(
+      <KennelLayoutManager
+        kennels={[kennel]}
+        occupancy={[mockOccupancy(kennel, 0)]}
+        animalsByKennel={{}}
+        allAnimals={[]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /volledig scherm/i }));
+
+    const venster = screen.getByRole("dialog");
+    expect(venster.className).toContain("overflow-y-auto");
+    // Geen kader meer dat het plan op de verhouding van het beeld vastzet.
+    expect(venster.querySelector('[style*="aspect-ratio"]')).toBeNull();
+  });
+});
