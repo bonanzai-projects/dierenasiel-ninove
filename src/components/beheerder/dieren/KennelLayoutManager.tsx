@@ -32,6 +32,9 @@ export default function KennelLayoutManager({
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   // Story 10.45: het grondplan groot in een venster, zonder de zijkolommen.
   const [planOpVolledigScherm, setPlanOpVolledigScherm] = useState(false);
+  // Story 10.49: kennels aanmaken en hun positie bijstellen gebeurt zelden, dus
+  // die kolom staat dicht en geeft haar plaats aan het grondplan.
+  const [zijbalkOpen, setZijbalkOpen] = useState(false);
 
   // Story 10.19+: bepaal welke lagen daadwerkelijk in gebruik zijn (sorteer oplopend).
   const availableLayers = useMemo(() => {
@@ -129,20 +132,38 @@ export default function KennelLayoutManager({
     // 2-rijen grid op lg: rij 1 = legende/zoek (alleen middenkolom), rij 2 =
     // grondplan + detailpaneel. Zo lijnen de bovenkant van het grondplan en
     // van het 'Kennel bezetting'-paneel exact uit (geen magische pixels).
-    <div className="grid items-start gap-4 lg:grid-cols-[280px_1fr_320px] lg:grid-rows-[auto_minmax(0,1fr)]">
+    <div
+      className={`grid items-start gap-4 lg:grid-rows-[auto_minmax(0,1fr)] ${
+        zijbalkOpen ? "lg:grid-cols-[280px_1fr_320px]" : "lg:grid-cols-[0px_1fr_320px]"
+      }`}
+    >
       {/* Linker kolom: blijft vast in beeld; overspant beide rijen. */}
-      <div className="order-3 space-y-4 lg:order-none lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
-        <KennelCreateForm defaultLayer={activeLayer} />
-        <KennelSidebarList
-          kennels={filteredKennels}
-          editingId={editingId}
-          onEditingChange={setEditingId}
-          onSelectKennel={setSelectedKennel}
-        />
-      </div>
+      {zijbalkOpen && (
+        <div className="order-3 space-y-4 lg:order-none lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-16 lg:max-h-[calc(100vh-5rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
+          <KennelCreateForm defaultLayer={activeLayer} />
+          <KennelSidebarList
+            kennels={filteredKennels}
+            editingId={editingId}
+            onEditingChange={setEditingId}
+            onSelectKennel={setSelectedKennel}
+          />
+        </div>
+      )}
 
       {/* Legende + zoek — rij 1, middenkolom. Houdt rij 2 (grondplan + paneel) uitgelijnd. */}
       <div className="order-1 flex flex-wrap items-center gap-4 text-sm lg:order-none lg:col-start-2 lg:row-start-1">
+        {/*
+          Story 10.49 — kennels aanmaken of verplaatsen doe je zelden; die kolom
+          staat dus dicht en het grondplan krijgt haar breedte.
+        */}
+        <button
+          type="button"
+          onClick={() => setZijbalkOpen((open) => !open)}
+          aria-expanded={zijbalkOpen}
+          className="rounded-md border border-gray-300 px-2.5 py-1 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        >
+          {zijbalkOpen ? "◂" : "▸"} Kennels beheren
+        </button>
         <div className="flex items-center gap-2">
           <label htmlFor="kennel-search-animal" className="font-semibold text-[#1b4332]">
             Zoek:

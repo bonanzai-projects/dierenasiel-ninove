@@ -28,7 +28,7 @@ export default async function KennelOverviewPage() {
           Kennel Overzicht
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Klik op een vak in het grondplan voor de bewoners. Klik in de linkse lijst om positie en eigenschappen aan te passen — wijzigingen gebeuren via x/y/breedte/hoogte (in %).
+          Klik op een vak in het grondplan voor de bewoners. Via <span className="font-medium">Kennels beheren</span> open je de lijst om een kennel toe te voegen of haar positie en eigenschappen aan te passen — wijzigingen gebeuren via x/y/breedte/hoogte (in %).
         </p>
       </div>
 

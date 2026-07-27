@@ -410,3 +410,53 @@ describe("KennelLayoutManager — opschrift in het venster (Story 10.48)", () =>
     expect(within(tegelInVenster).getByText("H01").parentElement!.className).toContain("text-sm");
   });
 });
+
+describe("KennelLayoutManager — inklapbare linkerkolom (Story 10.49)", () => {
+  function toonBeheer() {
+    const kennel = mockKennel({ id: 1, code: "H01" });
+    return render(
+      <KennelLayoutManager
+        kennels={[kennel]}
+        occupancy={[mockOccupancy(kennel, 0)]}
+        animalsByKennel={{}}
+        allAnimals={[]}
+      />,
+    );
+  }
+
+  it("start met de linkerkolom dicht — die wordt maar zelden gebruikt", () => {
+    toonBeheer();
+
+    expect(screen.queryByText(/Nieuwe kennel toevoegen/i)).toBeNull();
+    expect(screen.queryByText(/^Kennels \(/)).toBeNull();
+    expect(screen.getByRole("button", { name: /kennels beheren/i })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  it("klapt open en weer dicht met die knop", () => {
+    toonBeheer();
+    const knop = screen.getByRole("button", { name: /kennels beheren/i });
+
+    fireEvent.click(knop);
+    expect(screen.getByText(/Nieuwe kennel toevoegen/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Kennels \(/)).toBeInTheDocument();
+    expect(knop).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(knop);
+    expect(screen.queryByText(/Nieuwe kennel toevoegen/i)).toBeNull();
+    expect(knop).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("geeft de vrijgekomen ruimte aan het grondplan", () => {
+    const { container } = toonBeheer();
+    const raster = container.firstElementChild as HTMLElement;
+
+    // Dicht: geen kolom van 280px meer vooraan.
+    expect(raster.className).not.toContain("280px");
+
+    fireEvent.click(screen.getByRole("button", { name: /kennels beheren/i }));
+    expect((container.firstElementChild as HTMLElement).className).toContain("280px");
+  });
+});
