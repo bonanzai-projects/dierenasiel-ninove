@@ -230,6 +230,7 @@ export default function KennelLayoutManager({
             <div className="w-full" onClick={(e) => e.stopPropagation()}>
               <KennelFloorPlan
                 {...planEigenschappen}
+                largeLabels
                 onSelectKennel={(kennel) => {
                   setSelectedKennel(kennel);
                   setPlanOpVolledigScherm(false);

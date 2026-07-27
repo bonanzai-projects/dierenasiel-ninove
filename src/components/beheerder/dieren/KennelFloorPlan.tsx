@@ -20,6 +20,9 @@ interface KennelFloorPlanProps {
   activeLayer?: number;
   availableLayers?: number[];
   onLayerChange?: (layer: number) => void;
+  // Story 10.48: op volledig scherm is een vak ruim dubbel zo groot; daar mag
+  // het opschrift mee groeien, anders oogt het piepklein.
+  largeLabels?: boolean;
 }
 
 function getOccupancyColor(count: number, capacity: number): string {
@@ -45,6 +48,7 @@ export default function KennelFloorPlan({
   activeLayer,
   availableLayers,
   onLayerChange,
+  largeLabels = false,
 }: KennelFloorPlanProps) {
   const positioned = occupancy.filter(
     (o) => o.kennel.posX !== null && o.kennel.posY !== null && o.kennel.posW !== null && o.kennel.posH !== null,
@@ -113,6 +117,7 @@ export default function KennelFloorPlan({
             isEditing={editingKennelId === kennel.id}
             isSelected={selectedKennelId === kennel.id}
             isHighlighted={highlightedKennelId === kennel.id}
+            largeLabel={largeLabels}
             onSelect={onSelectKennel}
             registerRef={(el) => {
               if (el) tileRefs.current.set(kennel.id, el);
@@ -132,11 +137,12 @@ interface KennelTileProps {
   isEditing: boolean;
   isSelected: boolean;
   isHighlighted?: boolean;
+  largeLabel?: boolean;
   onSelect?: (kennel: Kennel) => void;
   registerRef?: (el: HTMLButtonElement | null) => void;
 }
 
-function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlighted = false, onSelect, registerRef }: KennelTileProps) {
+function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlighted = false, largeLabel = false, onSelect, registerRef }: KennelTileProps) {
   const x = num(kennel.posX)!;
   const y = num(kennel.posY)!;
   const w = num(kennel.posW)!;
@@ -220,7 +226,11 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlight
         Story 10.45 — die balk staat onderaan: bovenaan dekte ze net de kop van
         het dier af, en dat is precies waar we met de uitsnede naartoe werken.
       */}
-      <span className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-1.5 bg-black/55 px-1 py-px text-[9px] leading-tight text-white sm:text-[10px]">
+      <span
+        className={`absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-1.5 bg-black/55 leading-tight text-white ${
+          largeLabel ? "px-2 py-0.5 text-sm sm:text-base" : "px-1 py-px text-[9px] sm:text-[10px]"
+        }`}
+      >
         <span className="font-bold">{kennel.code}</span>
         <span className="font-normal text-white/90">
           {count}/{kennel.capacity}

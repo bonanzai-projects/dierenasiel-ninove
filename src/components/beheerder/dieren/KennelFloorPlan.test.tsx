@@ -135,3 +135,31 @@ describe("ANIMAL_PHOTO_FOCUS", () => {
     expect(parseFloat(verticaal)).toBeGreaterThan(0);
   });
 });
+
+describe("KennelFloorPlan — groter opschrift op volledig scherm (Story 10.48)", () => {
+  function balkVan(largeLabels: boolean) {
+    const { unmount } = render(
+      <KennelFloorPlan
+        occupancy={[{ kennel: mockKennel(), count: 1 } as KennelWithOccupancy]}
+        animalsByKennel={{ 1: [mockAnimal()] }}
+        largeLabels={largeLabels}
+      />,
+    );
+    const balk = screen.getByText("H14").parentElement!;
+    const klassen = balk.className;
+    unmount();
+    return klassen;
+  }
+
+  it("zet het opschrift groter wanneer het plan de volle breedte krijgt", () => {
+    // In de gewone weergave is een vak ~100px breed, op volledig scherm ~250px:
+    // hetzelfde opschrift oogt daar piepklein.
+    expect(balkVan(true)).toContain("text-sm");
+    expect(balkVan(true)).not.toContain("text-[9px]");
+  });
+
+  it("houdt het kleine opschrift in de gewone weergave", () => {
+    expect(balkVan(false)).toContain("text-[9px]");
+    expect(balkVan(false)).not.toContain("text-sm");
+  });
+});

@@ -387,3 +387,26 @@ describe("KennelLayoutManager — geen kleurenlegende meer (Story 10.47)", () =>
     expect(screen.getByRole("button", { name: /volledig scherm/i })).toBeInTheDocument();
   });
 });
+
+describe("KennelLayoutManager — opschrift in het venster (Story 10.48)", () => {
+  it("toont de hoknummers groter in het venster dan in de gewone weergave", () => {
+    const kennel = mockKennel({ id: 1, code: "H01" });
+    render(
+      <KennelLayoutManager
+        kennels={[kennel]}
+        occupancy={[mockOccupancy(kennel, 0)]}
+        animalsByKennel={{}}
+        allAnimals={[]}
+      />,
+    );
+
+    // "H01" staat ook in de zijbalklijst — kijk dus in de tegel zelf.
+    const tegel = screen.getByRole("button", { name: /^Kennel H01:/ });
+    expect(within(tegel).getByText("H01").parentElement!.className).toContain("text-[9px]");
+
+    fireEvent.click(screen.getByRole("button", { name: /volledig scherm/i }));
+    const venster = screen.getByRole("dialog");
+    const tegelInVenster = within(venster).getByRole("button", { name: /^Kennel H01:/ });
+    expect(within(tegelInVenster).getByText("H01").parentElement!.className).toContain("text-sm");
+  });
+});
