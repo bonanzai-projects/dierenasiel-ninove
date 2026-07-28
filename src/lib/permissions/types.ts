@@ -32,6 +32,9 @@ export const ALL_PERMISSIONS = [
   // "animalshelter:write". Deze permissie dekt het menu, het ophalen en het
   // beslissen over verschillen (overnemen/negeren op onze eigen fiche).
   "animalshelter:read",
+  // Epic 13 — evenementen (draaiboek, kosten, evaluatie).
+  "event:read",
+  "event:write",
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];

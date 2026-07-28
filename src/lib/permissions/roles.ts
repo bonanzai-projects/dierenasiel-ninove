@@ -16,6 +16,9 @@ export const ROLE_PERMISSIONS: PermissionMap = {
     "workflow:write",
     "website:read",
     "animalshelter:read",
+    // Epic 13: een eetkermis wordt door het team gedragen, niet door één beheerder.
+    "event:read",
+    "event:write",
   ],
 
   dierenarts: [
@@ -48,5 +51,7 @@ export const ROLE_PERMISSIONS: PermissionMap = {
     "website:read",
     "website:write",
     "animalshelter:read",
+    "event:read",
+    "event:write",
   ],
 };

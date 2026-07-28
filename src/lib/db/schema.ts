@@ -508,6 +508,52 @@ export const calendarEvents = pgTable("calendar_events", {
   index("idx_calendar_events_date").on(table.date),
 ]);
 
+// Epic 13 — evenementenbeheer (eetkermis, quiz, opendeurdag ...). Het evenement
+// zelf; draaiboek, kosten en evaluatie hangen er in eigen tabellen aan.
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  type: varchar("type", { length: 40 }).notNull(), // zie EVENT_TYPES
+  status: varchar("status", { length: 20 }).notNull().default("gepland"), // zie EVENT_STATUSES
+  date: date("date").notNull(),
+  endDate: date("end_date"),
+  startTime: varchar("start_time", { length: 5 }), // HH:MM; leeg = hele dag
+  endTime: varchar("end_time", { length: 5 }),
+  location: varchar("location", { length: 200 }),
+  // Vrije tekst: wie de eetkermis trekt is niet noodzakelijk iemand met een login.
+  responsible: varchar("responsible", { length: 120 }),
+  expectedVisitors: integer("expected_visitors"),
+  description: text("description"),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_events_date").on(table.date),
+]);
+
+// Epic 13, story 13.2 — het draaiboek: taken per fase van een evenement.
+// onDelete cascade: een evenement verwijderen laat geen taken achter.
+export const eventTasks = pgTable("event_tasks", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .references(() => events.id, { onDelete: "cascade" })
+    .notNull(),
+  phase: varchar("phase", { length: 20 }).notNull(), // voorbereiding | dag-zelf | afbraak
+  title: varchar("title", { length: 200 }).notNull(),
+  date: date("date"),
+  time: varchar("time", { length: 5 }), // HH:MM
+  responsible: varchar("responsible", { length: 120 }),
+  notes: text("notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  done: boolean("done").notNull().default(false),
+  doneAt: timestamp("done_at", { withTimezone: true }),
+  doneByUserId: integer("done_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_event_tasks_event_id").on(table.eventId),
+]);
+
 export const animalWorkflowHistory = pgTable("animal_workflow_history", {
   id: serial("id").primaryKey(),
   animalId: integer("animal_id").references(() => animals.id).notNull(),
