@@ -170,6 +170,23 @@ export const neglectReports = pgTable("neglect_reports", {
   index("idx_neglect_reports_animal_id").on(table.animalId),
 ]);
 
+// Story 10.55 (Sven): gewicht op verschillende tijdstippen, voor élk dier —
+// belangrijk bij een IBN-dossier, maar even nuttig bij ontworming (dosering) en
+// om een evolutie te zien. Los van `neglect_reports.weight_on_arrival`, dat één
+// vaststelling bij intake is binnen een juridisch dossier.
+export const animalWeights = pgTable("animal_weights", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  weightKg: numeric("weight_kg", { precision: 6, scale: 3 }).notNull(),
+  notes: text("notes"),
+  recordedBy: integer("recorded_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_animal_weights_animal_id").on(table.animalId),
+  index("idx_animal_weights_animal_date").on(table.animalId, table.date),
+]);
+
 export const behaviorRecords = pgTable("behavior_records", {
   id: serial("id").primaryKey(),
   animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),

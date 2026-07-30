@@ -15,11 +15,13 @@ import BehaviorRecordSection from "@/components/beheerder/dieren/BehaviorRecordS
 import FeedingPlanSection from "@/components/beheerder/dieren/FeedingPlanSection";
 import VaccinationSection from "@/components/beheerder/dieren/VaccinationSection";
 import DewormingSection from "@/components/beheerder/dieren/DewormingSection";
+import AnimalWeightSection from "@/components/beheerder/dieren/AnimalWeightSection";
 import VetVisitSection from "@/components/beheerder/dieren/VetVisitSection";
 import OperationSection from "@/components/beheerder/dieren/OperationSection";
 import MedicationSection from "@/components/beheerder/dieren/MedicationSection";
 import TodoSection from "@/components/beheerder/dieren/TodoSection";
 import { getBehaviorRecordsByAnimalId, countBehaviorRecords } from "@/lib/queries/behavior-records";
+import { getWeightsByAnimalId } from "@/lib/queries/animal-weights";
 import { getFeedingPlanByAnimalId } from "@/lib/queries/feeding-plans";
 import { getVaccinationsByAnimalId } from "@/lib/queries/vaccinations";
 import { getDewormingsByAnimalId } from "@/lib/queries/dewormings";
@@ -58,7 +60,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings, workflowHistory, animalTraitsValues] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings, workflowHistory, animalTraitsValues, weighings] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -78,6 +80,7 @@ export default async function DierDetailPage({ params }: Props) {
     getWorkflowSettings(),
     getWorkflowHistoryWithUserByAnimalId(animalId),
     getAnimalTraits(animalId),
+    getWeightsByAnimalId(animalId),
   ]);
 
   if (!animal) notFound();
@@ -178,6 +181,12 @@ export default async function DierDetailPage({ params }: Props) {
                   <DewormingSection animalId={animalId} dewormings={dewormingsList} />
                 </SectionCard>
               </div>
+
+              {/* Story 10.55 (Sven): gewicht op verschillende tijdstippen — nuttig bij
+                  een IBN-dossier, maar evengoed bij het doseren van een ontworming. */}
+              <SectionCard title="Gewicht">
+                <AnimalWeightSection animalId={animalId} weighings={weighings} />
+              </SectionCard>
 
               <SectionCard title="Dierenarts-bezoeken">
                 <VetVisitSection animalId={animalId} visits={vetVisitsList} />

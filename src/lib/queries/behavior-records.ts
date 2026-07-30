@@ -2,11 +2,27 @@ import { db } from "@/lib/db";
 import { behaviorRecords, users } from "@/lib/db/schema";
 import { eq, desc, count } from "drizzle-orm";
 
+/**
+ * Kolommen van de fiche plus de naam van wie ze invulde (Story 10.54).
+ * Bewust uitgeschreven i.p.v. `select()`: de naam komt uit een tweede tabel.
+ */
+const ficheMetInvuller = {
+  id: behaviorRecords.id,
+  animalId: behaviorRecords.animalId,
+  date: behaviorRecords.date,
+  checklist: behaviorRecords.checklist,
+  notes: behaviorRecords.notes,
+  recordedBy: behaviorRecords.recordedBy,
+  createdAt: behaviorRecords.createdAt,
+  recordedByName: users.name,
+};
+
 export async function getBehaviorRecordsByAnimalId(animalId: number) {
   try {
     const results = await db
-      .select()
+      .select(ficheMetInvuller)
       .from(behaviorRecords)
+      .leftJoin(users, eq(behaviorRecords.recordedBy, users.id))
       .where(eq(behaviorRecords.animalId, animalId))
       .orderBy(desc(behaviorRecords.date));
     return results;

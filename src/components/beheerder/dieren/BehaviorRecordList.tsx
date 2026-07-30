@@ -1,9 +1,10 @@
 import { BEHAVIOR_VERZORGERS_ITEMS, BEHAVIOR_HONDEN_ITEMS } from "@/lib/constants";
-import type { BehaviorRecord } from "@/types";
+import { behaviorRecorder } from "@/lib/reports/behavior-report-format";
+import type { BehaviorRecordWithRecorder } from "@/types";
 
 interface BehaviorRecordListProps {
-  records: BehaviorRecord[];
-  onEdit?: (record: BehaviorRecord) => void;
+  records: BehaviorRecordWithRecorder[];
+  onEdit?: (record: BehaviorRecordWithRecorder) => void;
 }
 
 function formatBool(val: unknown): string {
@@ -91,10 +92,15 @@ export default function BehaviorRecordList({ records, onEdit }: BehaviorRecordLi
             className="rounded-lg border border-gray-200 bg-white"
           >
             <summary className="flex cursor-pointer items-center justify-between px-4 py-3 hover:bg-gray-50">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-sm font-medium text-gray-800">
                   {record.date}
                 </span>
+                {behaviorRecorder(record) && (
+                  <span className="text-xs text-gray-500">
+                    Ingevuld door {behaviorRecorder(record)}
+                  </span>
+                )}
                 {aggressiveCount > 0 && (
                   <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                     {aggressiveCount} agressief

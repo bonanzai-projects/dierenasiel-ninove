@@ -16,6 +16,7 @@ vi.mock("@/lib/db", () => {
     };
     chain.from = vi.fn().mockReturnValue(chain);
     chain.where = vi.fn().mockReturnValue(chain);
+    chain.leftJoin = vi.fn().mockReturnValue(chain);
     chain.orderBy = vi.fn().mockReturnValue(chain);
     chain.limit = vi.fn().mockImplementation(() => resolve());
     chain.then = vi.fn().mockImplementation((fn: (v: unknown) => unknown) => resolve().then(fn));
@@ -77,7 +78,7 @@ const sampleRecord = {
   notes: null,
   recordedBy: 1,
   createdAt: new Date(),
-  recorderName: "Jan Medewerker",
+  recordedByName: "Jan Medewerker",
 };
 
 describe("getBehaviorRecordsByAnimalId", () => {

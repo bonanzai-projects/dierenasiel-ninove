@@ -7,6 +7,8 @@ import { dewormings, vaccinations } from "@/lib/db/schema";
 import { requirePermission } from "@/lib/permissions";
 import { getAnimalById } from "@/lib/queries/animals";
 import { buildKennelCard } from "@/lib/animals/kennel-card";
+import { getLatestWeight } from "@/lib/queries/animal-weights";
+import { formatWeightValue } from "@/lib/animals/weight";
 import KennelCardPdf from "@/components/beheerder/rapporten/KennelCardPdf";
 
 /**
@@ -51,6 +53,9 @@ export async function GET(
     .orderBy(desc(dewormings.date))
     .limit(1);
 
+  // Story 10.55: het laatst gewogen gewicht vult het Kg-vakje.
+  const laatsteWeging = await getLatestWeight(animalId);
+
   const kaart = buildKennelCard({
     animal: {
       name: animal.name,
@@ -61,11 +66,10 @@ export async function GET(
       isNeutered: animal.isNeutered,
       dateOfBirth: animal.dateOfBirth,
       intakeDate: animal.intakeDate,
-      // Er is (nog) geen algemeen gewichtsveld op een dier: `weightOnArrival`
-      // hoort bij het verwaarlozingsrapport en bestaat alleen bij IBN-dossiers.
-      // Het Kg-vakje blijft dus leeg om met de hand in te vullen — net als op de
-      // papieren kaart. Komt er ooit een gewichtsveld, dan volstaat deze regel.
-      weightOnArrival: null,
+      // Story 10.55: het Kg-vakje toont de laatste weging. Is er nog niet
+      // gewogen, dan blijft het leeg om met de hand in te vullen — net als op
+      // de papieren kaart.
+      weightKg: formatWeightValue(laatsteWeging?.weightKg ?? null) || null,
     },
     lastVaccination: laatsteVaccinatie?.date ?? null,
     lastDeworming: laatsteOntworming?.date ?? null,

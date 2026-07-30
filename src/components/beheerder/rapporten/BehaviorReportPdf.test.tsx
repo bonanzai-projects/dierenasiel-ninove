@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import BehaviorReportPdf from "./BehaviorReportPdf";
-import type { BehaviorRecord, Animal } from "@/types";
+import type { BehaviorRecordWithRecorder, Animal } from "@/types";
 
 // Story 10.27: regressie-guard — bewaakt dat de PDF effectief rendert (o.a. dat
 // alle gebruikte fontFamily/fontStyle-combinaties oplosbaar zijn in @react-pdf).
@@ -17,7 +17,7 @@ const animal: Pick<Animal, "id" | "name" | "species" | "breed" | "dossierNr" | "
   intakeDate: "2026-01-05",
 };
 
-const records: BehaviorRecord[] = [
+const records: BehaviorRecordWithRecorder[] = [
   {
     id: 1,
     animalId: 300,
@@ -32,11 +32,12 @@ const records: BehaviorRecord[] = [
     },
     notes: "Eerste evaluatie",
     recordedBy: 1,
+    recordedByName: "Sven",
     createdAt: new Date("2026-01-10"),
-  } as BehaviorRecord,
+  } as BehaviorRecordWithRecorder,
 ];
 
-async function render(recs: BehaviorRecord[], caregivers: string[]) {
+async function render(recs: BehaviorRecordWithRecorder[], caregivers: string[]) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const element = createElement(BehaviorReportPdf, {
     animal,
@@ -65,11 +66,11 @@ describe("BehaviorReportPdf", () => {
   // Ruimere timeout: het renderen van meerdere matrix-blokken duurt onder
   // parallelle test-load meer dan de standaard 5s.
   it("renders a long stay with more records than fit in one matrix block", async () => {
-    const many: BehaviorRecord[] = Array.from({ length: 14 }, (_, i) => ({
+    const many: BehaviorRecordWithRecorder[] = Array.from({ length: 14 }, (_, i) => ({
       ...records[0],
       id: i + 1,
       date: `2026-01-${String(i + 1).padStart(2, "0")}`,
-    })) as BehaviorRecord[];
+    })) as BehaviorRecordWithRecorder[];
 
     const buffer = await render(many, ["Sven Vanderrusten"]);
     expect(buffer.length).toBeGreaterThan(0);

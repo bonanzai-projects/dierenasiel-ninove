@@ -4,6 +4,7 @@ import {
   behaviorAnswer,
   buildBehaviorColumns,
   chunkBehaviorColumns,
+  behaviorRecorder,
 } from "./behavior-report-format";
 
 describe("sortBehaviorRecordsAsc", () => {
@@ -130,5 +131,26 @@ describe("chunkBehaviorColumns", () => {
 
   it("always returns at least one block, even for no columns", () => {
     expect(chunkBehaviorColumns([], 10)).toEqual([[]]);
+  });
+});
+
+// Story 10.54 (Sven): wie de fiche invulde hoort op het rapport.
+describe("behaviorRecorder", () => {
+  it("geeft de naam van wie de fiche invulde", () => {
+    expect(behaviorRecorder({ recordedByName: "Sven" })).toBe("Sven");
+  });
+
+  it("geeft niets terug voor een lege kolom van het blanco formulier", () => {
+    expect(behaviorRecorder(null)).toBe("");
+    expect(behaviorRecorder(undefined)).toBe("");
+  });
+
+  it("geeft niets terug wanneer de invuller onbekend is", () => {
+    expect(behaviorRecorder({ recordedByName: null })).toBe("");
+    expect(behaviorRecorder({})).toBe("");
+  });
+
+  it("laat spaties rond de naam vallen", () => {
+    expect(behaviorRecorder({ recordedByName: "  Katrien  " })).toBe("Katrien");
   });
 });

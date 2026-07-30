@@ -53,8 +53,13 @@ vi.mock("@/lib/db/schema", () => ({
     isActive: "kennels.is_active",
     notes: "kennels.notes",
   },
+  users: {
+    id: "users.id",
+    name: "users.name",
+  },
   behaviorRecords: {
     id: "behavior_records.id",
+    recordedBy: "behavior_records.recorded_by",
     animalId: "behavior_records.animal_id",
     date: "behavior_records.date",
     checklist: "behavior_records.checklist",
@@ -304,6 +309,8 @@ describe("getBehaviorReportByAnimalId", () => {
     mockOrderBy.mockReturnValue({ then: (res: (v: unknown) => void) => Promise.resolve(mockBehaviorRecords).then(res) } as any);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockWhere.mockReturnValue({ orderBy: mockOrderBy } as any);
+    // Story 10.54: de query joint nu users voor de naam van wie de fiche invulde.
+    mockLeftJoin.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, groupBy: mockGroupBy, leftJoin: mockLeftJoin });
     mockFrom.mockReturnValue({ where: mockWhere, orderBy: mockOrderBy, innerJoin: mockInnerJoin, leftJoin: mockLeftJoin });
     mockSelect.mockReturnValue({ from: mockFrom });
   });

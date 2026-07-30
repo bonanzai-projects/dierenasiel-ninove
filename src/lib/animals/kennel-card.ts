@@ -26,7 +26,8 @@ export interface KennelCardInput {
     isNeutered: boolean | null;
     dateOfBirth: string | null;
     intakeDate: string | null;
-    weightOnArrival: string | null;
+    /** Laatst gewogen gewicht in kg, al opgemaakt (bv. "32,5"). Story 10.55. */
+    weightKg: string | null;
   };
   /** Datum van de meest recente vaccinatie, of null. */
   lastVaccination: string | null;
@@ -106,7 +107,7 @@ export function buildKennelCard({
     geboortedatum: datum(animal.dateOfBirth),
     gevaccineerd: datum(lastVaccination),
     ontworming: datum(lastDeworming),
-    gewicht: tekst(animal.weightOnArrival),
+    gewicht: tekst(animal.weightKg),
     inHuisSinds: datum(animal.intakeDate),
   };
 }

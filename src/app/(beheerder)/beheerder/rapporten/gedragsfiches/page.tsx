@@ -9,15 +9,16 @@ import {
   sortBehaviorRecordsAsc,
   behaviorAnswer,
   buildBehaviorColumns,
+  behaviorRecorder,
 } from "@/lib/reports/behavior-report-format";
 import AnimalSelect from "@/components/beheerder/rapporten/AnimalSelect";
-import type { BehaviorRecord } from "@/types";
+import type { BehaviorRecordWithRecorder } from "@/types";
 
 // Story 10.27: gealigneerd op de officiële Bijlage VIII B (KB 27/04/2007) — matrix
 // met criteria als rijen en elke evaluatiedatum als kolom (minimum 5 kolommen).
 const MIN_COLUMNS = 5;
 
-type Column = BehaviorRecord | null;
+type Column = BehaviorRecordWithRecorder | null;
 
 function MatrixSection({
   title,
@@ -46,6 +47,15 @@ function MatrixSection({
             </tr>
           </thead>
           <tbody>
+            {/* Story 10.54 (Sven): wie de fiche invulde, per evaluatie. */}
+            <tr>
+              <td className="border border-gray-300 px-2 py-1.5 text-gray-700">Ingevuld door :</td>
+              {columns.map((col, i) => (
+                <td key={i} className="border border-gray-300 px-2 py-1.5 text-center">
+                  {behaviorRecorder(col)}
+                </td>
+              ))}
+            </tr>
             {items.map((item) => (
               <tr key={item.key}>
                 <td className="border border-gray-300 px-2 py-1.5 text-gray-700">{item.label}</td>
@@ -87,7 +97,7 @@ export default async function GedragsfichesRapportPage({ searchParams }: Props) 
 
   const [selectedAnimal, records, caregivers] = await Promise.all([
     animalId ? getAnimalById(animalId) : Promise.resolve(null),
-    animalId ? getBehaviorReportByAnimalId(animalId) : Promise.resolve([] as BehaviorRecord[]),
+    animalId ? getBehaviorReportByAnimalId(animalId) : Promise.resolve([] as BehaviorRecordWithRecorder[]),
     getShelterCaregivers(),
   ]);
 

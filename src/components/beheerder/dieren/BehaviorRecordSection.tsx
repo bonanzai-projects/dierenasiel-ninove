@@ -3,12 +3,12 @@
 import { useState } from "react";
 import BehaviorRecordForm from "./BehaviorRecordForm";
 import BehaviorRecordList from "./BehaviorRecordList";
-import type { BehaviorRecord } from "@/types";
+import type { BehaviorRecord, BehaviorRecordWithRecorder } from "@/types";
 
 interface BehaviorRecordSectionProps {
   animalId: number;
   species: string;
-  records: BehaviorRecord[];
+  records: BehaviorRecordWithRecorder[];
   recordCount: number;
 }
 
@@ -35,12 +35,12 @@ export default function BehaviorRecordSection({
   recordCount,
 }: BehaviorRecordSectionProps) {
   const [view, setView] = useState<"list" | "form">("list");
-  const [editingRecord, setEditingRecord] = useState<BehaviorRecord | null>(null);
+  const [editingRecord, setEditingRecord] = useState<BehaviorRecordWithRecorder | null>(null);
 
   const isDog = species === "hond";
   const showReminder = isWednesdayReminderNeeded(records);
 
-  function handleEdit(record: BehaviorRecord) {
+  function handleEdit(record: BehaviorRecordWithRecorder) {
     setEditingRecord(record);
     setView("form");
   }

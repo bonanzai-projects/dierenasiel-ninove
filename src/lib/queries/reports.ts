@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
-import { animals, behaviorRecords, vaccinations, dewormings, vetVisits, medications, vetInspectionReports, adoptionContracts, adoptionCandidates, kennels, walks, walkers, animalWorkflowHistory } from "@/lib/db/schema";
+import { animals, behaviorRecords, vaccinations, dewormings, vetVisits, medications, vetInspectionReports, adoptionContracts, adoptionCandidates, kennels, walks, walkers, animalWorkflowHistory, users } from "@/lib/db/schema";
 import { eq, and, asc, desc, gte, lte, isNotNull, inArray, count, sql } from "drizzle-orm";
-import type { Animal, BehaviorRecord, VetInspectionReport } from "@/types";
+import type { Animal, BehaviorRecord, BehaviorRecordWithRecorder, VetInspectionReport } from "@/types";
 import { latestByAnimalId, latestByAnimalIdForCategory } from "@/lib/reports/animal-report-format";
 
 export interface AnimalReportFilters {
@@ -133,14 +133,25 @@ export async function getAnimalReport(
 
 export async function getBehaviorReportByAnimalId(
   animalId: number,
-): Promise<BehaviorRecord[]> {
+): Promise<BehaviorRecordWithRecorder[]> {
   try {
+    // Story 10.54 (Sven): de naam van wie de fiche invulde hoort op het rapport.
     const results = await db
-      .select()
+      .select({
+        id: behaviorRecords.id,
+        animalId: behaviorRecords.animalId,
+        date: behaviorRecords.date,
+        checklist: behaviorRecords.checklist,
+        notes: behaviorRecords.notes,
+        recordedBy: behaviorRecords.recordedBy,
+        createdAt: behaviorRecords.createdAt,
+        recordedByName: users.name,
+      })
       .from(behaviorRecords)
+      .leftJoin(users, eq(behaviorRecords.recordedBy, users.id))
       .where(eq(behaviorRecords.animalId, animalId))
       .orderBy(desc(behaviorRecords.date));
-    return results as BehaviorRecord[];
+    return results as BehaviorRecordWithRecorder[];
   } catch (err) {
     console.error("getBehaviorReportByAnimalId query failed:", err);
     return [];

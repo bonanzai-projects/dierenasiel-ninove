@@ -57,3 +57,14 @@ export function behaviorAnswer(
   if (val === false) return "Nee";
   return "";
 }
+
+/**
+ * Naam van wie de fiche invulde (Story 10.54, vraag Sven). Leeg bij een lege
+ * kolom van het blanco formulier of wanneer de invuller niet gekend is —
+ * fiches van vóór deze story hebben geen ingelogde gebruiker bij zich.
+ */
+export function behaviorRecorder(
+  column: { recordedByName?: string | null } | null | undefined,
+): string {
+  return column?.recordedByName?.trim() ?? "";
+}

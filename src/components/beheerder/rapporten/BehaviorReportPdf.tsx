@@ -6,8 +6,9 @@ import {
   behaviorAnswer,
   buildBehaviorColumns,
   chunkBehaviorColumns,
+  behaviorRecorder,
 } from "@/lib/reports/behavior-report-format";
-import type { BehaviorRecord, Animal } from "@/types";
+import type { BehaviorRecordWithRecorder, Animal } from "@/types";
 
 // Story 10.27: gealigneerd op de officiële Bijlage VIII B (KB 27/04/2007).
 // Matrix-layout: criteria als rijen, elke evaluatiedatum als kolom. Minimum 5
@@ -44,12 +45,12 @@ const styles = StyleSheet.create({
 
 interface Props {
   animal: Pick<Animal, "id" | "name" | "species" | "breed" | "dossierNr" | "identificationNr" | "intakeDate">;
-  records: BehaviorRecord[];
+  records: BehaviorRecordWithRecorder[];
   caregivers: string[];
   generatedAt: string;
 }
 
-type Column = BehaviorRecord | null;
+type Column = BehaviorRecordWithRecorder | null;
 
 function MatrixSection({
   title,
@@ -102,6 +103,15 @@ function MatrixBlock({
           {columns.map((col, i) => (
             <Text key={i} style={[styles.cell, styles.dateCell, { width: dateColWidth }]}>
               {col ? formatDateBE(col.date) : ""}
+            </Text>
+          ))}
+        </View>
+        {/* Story 10.54 (Sven): wie de fiche invulde, per evaluatie. */}
+        <View style={styles.row}>
+          <Text style={[styles.cell, styles.labelCell]}>Ingevuld door :</Text>
+          {columns.map((col, i) => (
+            <Text key={i} style={[styles.cell, { width: dateColWidth }]}>
+              {behaviorRecorder(col)}
             </Text>
           ))}
         </View>

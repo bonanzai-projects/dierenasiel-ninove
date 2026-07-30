@@ -17,7 +17,7 @@ function invoer(over: Partial<KennelCardInput["animal"]> = {}, rest: Partial<Ken
       isNeutered: false,
       dateOfBirth: "2024-10-27",
       intakeDate: "2026-05-06",
-      weightOnArrival: null,
+      weightKg: null,
       ...over,
     },
     lastVaccination: null,
@@ -101,7 +101,7 @@ describe("buildKennelCard", () => {
   });
 
   it("laat een veld leeg in plaats van een streepje — er wordt op geschreven", () => {
-    const kaart = buildKennelCard(invoer({ breed: null, dateOfBirth: null, weightOnArrival: null }));
+    const kaart = buildKennelCard(invoer({ breed: null, dateOfBirth: null, weightKg: null }));
 
     expect(kaart.ras).toBe("");
     expect(kaart.geboortedatum).toBe("");
@@ -110,7 +110,7 @@ describe("buildKennelCard", () => {
   });
 
   it("neemt het gewicht bij aankomst over", () => {
-    expect(buildKennelCard(invoer({ weightOnArrival: "12,5" })).gewicht).toBe("12,5");
+    expect(buildKennelCard(invoer({ weightKg: "12,5" })).gewicht).toBe("12,5");
   });
 
   it("toont de echte naam apart wanneer die ingevuld is", () => {

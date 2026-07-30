@@ -1,4 +1,4 @@
-import type { animals, animalTraits, animalAttachments, neglectReports, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients, strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignMedicalInspections, strayCatCampaignPhotos, municipalityLogos, veterinaryDiagnoses, blacklistEntries, cages } from "@/lib/db/schema";
+import type { animals, animalTraits, animalAttachments, neglectReports, animalWeights, behaviorRecords, feedingPlans, vaccinations, dewormings, vetVisits, operations, medications, medicationLogs, animalTodos, vetInspectionReports, adoptionCandidates, kennismakingen, adoptionContracts, postAdoptionFollowups, kennels, newsArticles, contactSubmissions, kennelSponsors, pages, users, auditLogs, walkers, walks, shelterSettings, animalWorkflowHistory, mailingLists, mailingSends, mailingSendRecipients, strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignMedicalInspections, strayCatCampaignPhotos, municipalityLogos, veterinaryDiagnoses, blacklistEntries, cages } from "@/lib/db/schema";
 import type { GuardWarning } from "@/lib/workflow/guards";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
@@ -22,7 +22,17 @@ export type NewAnimalAttachment = typeof animalAttachments.$inferInsert;
 export type NeglectReport = typeof neglectReports.$inferSelect;
 export type NewNeglectReport = typeof neglectReports.$inferInsert;
 
+export type AnimalWeight = typeof animalWeights.$inferSelect;
+export type NewAnimalWeight = typeof animalWeights.$inferInsert;
+
 export type BehaviorRecord = typeof behaviorRecords.$inferSelect;
+/**
+ * Gedragsfiche mét de naam van wie ze invulde (Story 10.54). De naam komt uit
+ * `users` via `recordedBy`; oudere fiches hebben er geen en houden `null`.
+ */
+export type BehaviorRecordWithRecorder = BehaviorRecord & {
+  recordedByName: string | null;
+};
 export type NewBehaviorRecord = typeof behaviorRecords.$inferInsert;
 
 export type FeedingPlan = typeof feedingPlans.$inferSelect;
