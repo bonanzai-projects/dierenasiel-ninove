@@ -129,31 +129,13 @@ export async function resetDatabase(): Promise<ActionResult> {
   }
 }
 
-/** Wis alles en laad de volledige testdata (seed). */
-export async function seedDatabase(): Promise<ActionResult> {
-  const permCheck = await requirePermission("settings:write");
-  if (permCheck) return permCheck;
-
-  try {
-    await clearAllTables();
-    await insertDefaults();
-    await insertSeedData();
-
-    revalidatePath("/");
-
-    return {
-      success: true,
-      data: undefined,
-      message: "Database is gewist en opnieuw geladen met testdata.",
-    };
-  } catch (err) {
-    console.error("seedDatabase failed:", err);
-    return {
-      success: false,
-      error: "Er ging iets mis bij het laden van de testdata.",
-    };
-  }
-}
+/**
+ * De knop "Seed testdata" is in Story 10.53 vervangen door bewaren/terugzetten.
+ * De server-actie is mee verdwenen: een openstaand eindpunt dat alles wist en
+ * testdata laadt, hoort niet in een toepassing met echte gegevens.
+ *
+ * Onderstaande headless variant blijft bestaan voor de end-to-end-tests.
+ */
 
 /**
  * Headless variant (no permission check) — used by API route for E2E teardown.

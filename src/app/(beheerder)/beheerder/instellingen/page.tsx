@@ -5,14 +5,16 @@ import ThresholdSettingPanel from "@/components/beheerder/instellingen/Threshold
 import WalkDaysSettingPanel from "@/components/beheerder/instellingen/WalkDaysSettingPanel";
 import CaregiversSettingPanel from "@/components/beheerder/instellingen/CaregiversSettingPanel";
 import DatabaseResetPanel from "@/components/beheerder/instellingen/DatabaseResetPanel";
-import SeedTestDataPanel from "@/components/beheerder/instellingen/SeedTestDataPanel";
+import DatabaseBackupPanel from "@/components/beheerder/instellingen/DatabaseBackupPanel";
+import { getBackups } from "@/lib/queries/database-backups";
 
 export default async function InstellingenPage() {
-  const [workflowSettings, threshold, walkDays, caregivers] = await Promise.all([
+  const [workflowSettings, threshold, walkDays, caregivers, backups] = await Promise.all([
     getWorkflowSettings(),
     getWalkingClubThreshold(),
     getWalkDays(),
     getShelterCaregivers(),
+    getBackups(),
   ]);
 
   return (
@@ -43,7 +45,7 @@ export default async function InstellingenPage() {
       </section>
 
       <section className="mt-6">
-        <SeedTestDataPanel />
+        <DatabaseBackupPanel backups={backups} />
       </section>
 
       <section className="mt-6">

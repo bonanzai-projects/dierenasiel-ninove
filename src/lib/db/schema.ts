@@ -827,3 +827,22 @@ export const animalShelterFieldDecisions = pgTable("animalshelter_field_decision
   unique("uniq_animalshelter_decision_animal_field").on(table.animalId, table.fieldKey),
   index("idx_animalshelter_decisions_animal_id").on(table.animalId),
 ]);
+
+// Bewaarde momentopnames van de databank (Story 10.53). Bewust ZONDER
+// verwijzingen naar andere tabellen: bij het terugzetten wordt alles leeggemaakt
+// met TRUNCATE ... CASCADE, en een verwijzing zou deze tabel mee wegvegen.
+// `content` is de volledige momentopname als JSON; het logboek zit er niet in.
+export const databaseBackups = pgTable("database_backups", {
+  id: serial("id").primaryKey(),
+  label: varchar("label", { length: 200 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdByUserId: integer("created_by_user_id"),
+  createdByName: varchar("created_by_name", { length: 120 }),
+  isAutomatic: boolean("is_automatic").default(false).notNull(),
+  rowCount: integer("row_count").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  tableCounts: jsonb("table_counts"),
+  content: text("content").notNull(),
+}, (table) => [
+  index("idx_database_backups_created_at").on(table.createdAt),
+]);
