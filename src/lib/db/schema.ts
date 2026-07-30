@@ -649,6 +649,14 @@ export const strayCatCampaigns = pgTable("stray_cat_campaigns", {
   photoUrl: varchar("photo_url", { length: 500 }),
   municipalityLogoId: integer("municipality_logo_id").references(() => municipalityLogos.id, { onDelete: "set null" }),
   linkedAnimalId: integer("linked_animal_id").references(() => animals.id, { onDelete: "set null" }),
+  // Story 10.56: het adres wordt bij het opslaan één keer opgezocht in het
+  // Vlaamse adressenregister. De kaart toont die coördinaten i.p.v. Google zelf
+  // te laten zoeken — dat laatste greep er bij fusiegemeenten geregeld naast.
+  latitude: numeric("latitude", { precision: 9, scale: 6 }),
+  longitude: numeric("longitude", { precision: 9, scale: 6 }),
+  geocodedAddress: varchar("geocoded_address", { length: 255 }),
+  geocodeMatch: varchar("geocode_match", { length: 20 }), // huisnummer | straat | gemeente
+  geocodedAt: timestamp("geocoded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_stray_cat_campaigns_status").on(table.status),

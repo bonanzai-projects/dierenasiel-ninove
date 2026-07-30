@@ -21,7 +21,8 @@
     "test:run": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "db:backfill-campaign-coordinates": "tsx src/lib/db/backfill/run-backfill-campaign-coordinates.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

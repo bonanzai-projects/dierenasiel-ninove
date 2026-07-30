@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { getCampaignById, getOccupiedCageNumbers, getMedicalInspectionById } from "@/lib/queries/stray-cat-campaigns";
 import { getMunicipalityLogoByName } from "@/lib/queries/municipality-logos";
 import { CAMPAIGN_STATUSES } from "@/lib/constants";
+import { geocodeAddress, type GeocodeResult } from "@/lib/maps/geocode";
 import {
   createCampaignSchema,
   updateCampaignBasicsSchema,
@@ -24,6 +25,37 @@ import {
 import type { ActionResult } from "@/types";
 
 const REVALIDATE_PATH = "/beheerder/dieren/zwerfkattenbeleid";
+
+/**
+ * Story 10.56: zoek het adres één keer op en bewaar de coördinaten.
+ * Vindt het register niets, dan blijven de velden leeg en valt de kaart terug
+ * op de oude zoekterm — opslaan mag hier nooit op stuklopen.
+ */
+async function geocodeKolommen(address: string, municipality: string) {
+  const treffer = await geocodeAddress(address, municipality);
+  return {
+    latitude: treffer ? String(treffer.lat) : null,
+    longitude: treffer ? String(treffer.lng) : null,
+    geocodedAddress: treffer?.formattedAddress || null,
+    geocodeMatch: treffer?.matchType ?? null,
+    geocodedAt: new Date(),
+  };
+}
+
+/**
+ * Waarschuwing voor de gebruiker wanneer het adres niet hard bevestigd is.
+ * Bewust niet geëxporteerd: in een "use server"-bestand mag enkel een async
+ * functie naar buiten (Next behandelt elke export als server-actie).
+ */
+function geocodeWaarschuwing(treffer: Pick<GeocodeResult, "matchType"> | null): string | undefined {
+  if (!treffer) {
+    return "Dit adres is niet teruggevonden in het Vlaamse adressenregister. Controleer of het klopt — het kaartje toont dan enkel een ruwe zoekopdracht.";
+  }
+  if (treffer.matchType !== "huisnummer") {
+    return "Het huisnummer is niet teruggevonden; het kaartje toont de straat of de gemeente.";
+  }
+  return undefined;
+}
 
 async function requireAuth(): Promise<
   | { success: true; session: { userId: number; role: string } }
@@ -51,6 +83,8 @@ export async function createCampaignAction(
     // Story 10.18: auto-link logo waar naam (case-insensitive) overeenkomt met gemeente.
     const matchedLogo = await getMunicipalityLogoByName(parsed.data.municipality);
 
+    const ligging = await geocodeKolommen(parsed.data.address, parsed.data.municipality);
+
     const rows = await db
       .insert(strayCatCampaigns)
       .values({
@@ -60,6 +94,7 @@ export async function createCampaignAction(
         remarks: parsed.data.remarks || null,
         status: "open",
         municipalityLogoId: matchedLogo?.id ?? null,
+        ...ligging,
       })
       .returning({ id: strayCatCampaigns.id });
 
@@ -74,7 +109,11 @@ export async function createCampaignAction(
     );
 
     revalidatePath(REVALIDATE_PATH);
-    return { success: true, data: { id: campaignId } };
+    return {
+      success: true,
+      data: { id: campaignId },
+      message: geocodeWaarschuwing(ligging.geocodeMatch ? { matchType: ligging.geocodeMatch as GeocodeResult["matchType"] } : null),
+    };
   } catch (error) {
     console.error("createCampaignAction failed:", error);
     return { success: false, error: "Campagne aanmaken mislukt. Probeer opnieuw." };
@@ -99,6 +138,13 @@ export async function updateCampaignBasicsAction(
     // Auto-link logo via naam-match (consistent met createCampaignAction).
     const matchedLogo = await getMunicipalityLogoByName(parsed.data.municipality);
 
+    // Alleen opnieuw opzoeken wanneer het adres of de gemeente wijzigde.
+    const adresGewijzigd =
+      existing.address !== parsed.data.address || existing.municipality !== parsed.data.municipality;
+    const ligging = adresGewijzigd
+      ? await geocodeKolommen(parsed.data.address, parsed.data.municipality)
+      : null;
+
     await db
       .update(strayCatCampaigns)
       .set({
@@ -107,6 +153,7 @@ export async function updateCampaignBasicsAction(
         address: parsed.data.address,
         remarks: parsed.data.remarks || null,
         municipalityLogoId: matchedLogo?.id ?? null,
+        ...(ligging ?? {}),
       })
       .where(eq(strayCatCampaigns.id, parsed.data.campaignId));
 
@@ -132,7 +179,13 @@ export async function updateCampaignBasicsAction(
 
     revalidatePath(REVALIDATE_PATH);
     revalidatePath(`${REVALIDATE_PATH}/${parsed.data.campaignId}`);
-    return { success: true, data: undefined };
+    return {
+      success: true,
+      data: undefined,
+      message: ligging
+        ? geocodeWaarschuwing(ligging.geocodeMatch ? { matchType: ligging.geocodeMatch as GeocodeResult["matchType"] } : null)
+        : undefined,
+    };
   } catch (error) {
     console.error("updateCampaignBasicsAction failed:", error);
     return { success: false, error: "Verzoekgegevens bijwerken mislukt. Probeer opnieuw." };

@@ -144,7 +144,16 @@ function BasicsSection({
       </div>
 
       {/* Story 10.40: kaartje van de locatie (Sven: "makkelijk om te situeren"). */}
-      <AddressMap address={address} municipality={municipality} />
+      <AddressMap
+        address={address}
+        municipality={municipality}
+        lookup={{
+          lat: campaign.latitude,
+          lng: campaign.longitude,
+          geocodedAddress: campaign.geocodedAddress,
+          geocodeMatch: campaign.geocodeMatch,
+        }}
+      />
 
       <div>
         <label htmlFor="basics-remarks" className="block text-sm font-medium text-gray-700">
