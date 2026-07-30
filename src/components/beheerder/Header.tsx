@@ -1,5 +1,5 @@
-import LogoutButton from "@/components/layout/LogoutButton";
 import MobileSidebar from "./MobileSidebar";
+import UserMenu from "./UserMenu";
 import type { NavItem } from "@/lib/navigation";
 
 interface HeaderProps {
@@ -18,15 +18,7 @@ export default function Header({ userName, userRole, navItems }: HeaderProps) {
         </h2>
       </div>
       <div className="flex items-center gap-4">
-        <div className="hidden items-center gap-2 sm:flex">
-          <span className="text-sm font-medium text-gray-700">{userName}</span>
-          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-            {userRole}
-          </span>
-        </div>
-        <div className="xl:hidden">
-          <LogoutButton />
-        </div>
+        <UserMenu userName={userName} userRole={userRole} />
       </div>
     </header>
   );

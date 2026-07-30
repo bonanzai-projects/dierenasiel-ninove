@@ -5,7 +5,7 @@ import { useState } from "react";
 import { logout } from "@/lib/actions/auth";
 
 interface LogoutButtonProps {
-  variant?: "default" | "sidebar";
+  variant?: "default" | "sidebar" | "menuitem";
 }
 
 export default function LogoutButton({ variant = "default" }: LogoutButtonProps) {
@@ -20,6 +20,20 @@ export default function LogoutButton({ variant = "default" }: LogoutButtonProps)
     } catch {
       setIsLoading(false);
     }
+  }
+
+  if (variant === "menuitem") {
+    return (
+      <button
+        onClick={handleLogout}
+        disabled={isLoading}
+        role="menuitem"
+        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:opacity-50"
+      >
+        <span aria-hidden="true">🚪</span>
+        {isLoading ? "Uitloggen..." : "Uitloggen"}
+      </button>
+    );
   }
 
   if (variant === "sidebar") {

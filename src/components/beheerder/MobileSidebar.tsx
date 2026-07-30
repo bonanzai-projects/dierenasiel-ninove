@@ -10,7 +10,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import LogoutButton from "@/components/layout/LogoutButton";
 import { isNavItemActive } from "@/lib/navigation/active";
 import type { NavItem } from "@/lib/navigation";
 
@@ -79,10 +78,6 @@ export default function MobileSidebar({ items }: MobileSidebarProps) {
             </Link>
           ))}
         </nav>
-
-        <div className="border-t border-white/10 p-3">
-          <LogoutButton variant="sidebar" />
-        </div>
       </SheetContent>
     </Sheet>
   );

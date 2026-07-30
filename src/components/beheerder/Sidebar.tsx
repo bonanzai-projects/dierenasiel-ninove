@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import LogoutButton from "@/components/layout/LogoutButton";
 import { isNavItemActive } from "@/lib/navigation/active";
 import type { NavItem } from "@/lib/navigation";
 
@@ -46,11 +45,6 @@ export default function Sidebar({ items }: SidebarProps) {
           </Link>
         ))}
       </nav>
-
-      {/* Bottom logout */}
-      <div className="border-t border-white/10 p-3">
-        <LogoutButton variant="sidebar" />
-      </div>
     </aside>
   );
 }
