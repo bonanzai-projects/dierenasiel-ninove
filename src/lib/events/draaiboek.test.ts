@@ -19,8 +19,14 @@ const taak = (over: Partial<Taak> & { id: number }): Taak => ({
 });
 
 describe("draaiboek-fasen", () => {
-  it("kent voorbereiding, de dag zelf en afbraak — in die volgorde", () => {
-    expect(DRAAIBOEK_PHASE_KEYS).toEqual(["voorbereiding", "dag-zelf", "afbraak"]);
+  // Sven, vraag 7 (2026-08-06): "Evaluatie mag er ook bij".
+  it("kent voorbereiding, de dag zelf, afbraak en evaluatie — in die volgorde", () => {
+    expect(DRAAIBOEK_PHASE_KEYS).toEqual([
+      "voorbereiding",
+      "dag-zelf",
+      "afbraak",
+      "evaluatie",
+    ]);
   });
 
   it("geeft elke fase een label", () => {
@@ -31,9 +37,14 @@ describe("draaiboek-fasen", () => {
 });
 
 describe("groupTasksByPhase", () => {
-  it("geeft alle drie de fasen terug, ook als ze leeg zijn", () => {
+  it("geeft alle fasen terug, ook als ze leeg zijn", () => {
     const groepen = groupTasksByPhase([]);
-    expect(groepen.map((g) => g.phase)).toEqual(["voorbereiding", "dag-zelf", "afbraak"]);
+    expect(groepen.map((g) => g.phase)).toEqual([
+      "voorbereiding",
+      "dag-zelf",
+      "afbraak",
+      "evaluatie",
+    ]);
     expect(groepen.every((g) => g.tasks.length === 0)).toBe(true);
   });
 
@@ -75,8 +86,9 @@ describe("groupTasksByPhase", () => {
       taak({ id: 1, phase: "afbraak" }),
       taak({ id: 2, phase: "dag-zelf" }),
       taak({ id: 3, phase: "voorbereiding" }),
+      taak({ id: 4, phase: "evaluatie" }),
     ]);
-    expect(groepen.map((g) => g.tasks.map((t) => t.id))).toEqual([[3], [2], [1]]);
+    expect(groepen.map((g) => g.tasks.map((t) => t.id))).toEqual([[3], [2], [1], [4]]);
   });
 
   it("negeert een taak met een onbekende fase niet stilzwijgend maar zet ze bij de voorbereiding", () => {

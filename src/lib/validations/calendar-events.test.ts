@@ -2,14 +2,20 @@ import { describe, it, expect } from "vitest";
 import { calendarEventSchema } from "./calendar-events";
 
 const valid = {
-  title: "Eetfestijn",
-  category: "evenement" as const,
+  title: "Stage Lien",
+  category: "stage" as const,
   date: "2026-09-12",
 };
 
 describe("calendarEventSchema", () => {
   it("aanvaardt een minimaal geldig item (titel + categorie + datum)", () => {
     expect(calendarEventSchema.safeParse(valid).success).toBe(true);
+  });
+
+  // Story 13.7: een evenement ontstaat in de evenementenmodule, niet hier.
+  it("weigert de categorie 'evenement'", () => {
+    const r = calendarEventSchema.safeParse({ ...valid, category: "evenement" });
+    expect(r.success).toBe(false);
   });
 
   it("eist een titel", () => {

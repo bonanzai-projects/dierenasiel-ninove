@@ -53,7 +53,7 @@ function fd(data: Record<string, string>): FormData {
 
 const geldig = {
   name: "Eetkermis 2026",
-  type: "eetkermis",
+  type: "eetfestijn",
   status: "gepland",
   date: "2026-09-12",
 };
@@ -93,7 +93,7 @@ describe("createEvent", () => {
     expect(mockInsertValues).toHaveBeenCalledWith(
       expect.objectContaining({
         name: "Eetkermis 2026",
-        type: "eetkermis",
+        type: "eetfestijn",
         status: "gepland",
         date: "2026-09-12",
         location: "Parochiezaal",

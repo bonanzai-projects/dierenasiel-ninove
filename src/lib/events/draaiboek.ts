@@ -1,8 +1,12 @@
 /**
  * Epic 13, story 13.2 — het draaiboek van een evenement.
  *
- * Drie VASTE fasen in plaats van vrije groepen: een draaiboek dat je eerst zelf
- * moet structureren, wordt geen draaiboek. Pure logica, geen database.
+ * VASTE fasen in plaats van vrije groepen: een draaiboek dat je eerst zelf moet
+ * structureren, wordt geen draaiboek. Pure logica, geen database.
+ *
+ * Sinds story 13.3 zijn het er vier: Sven vroeg de evaluatie er als fase bij
+ * (vraag 7, 2026-08-06). Het gaat om de taken ná de opkuis — de evaluatie
+ * plannen, cijfers opvragen, afspraken vastleggen — niet om de evaluatie zelf.
  */
 
 export interface DraaiboekPhase {
@@ -27,6 +31,11 @@ export const DRAAIBOEK_PHASES: readonly DraaiboekPhase[] = [
     key: "afbraak",
     label: "Afbraak & nazorg",
     hint: "Opruimen, materiaal terugbrengen, afrekenen, bedanken.",
+  },
+  {
+    key: "evaluatie",
+    label: "Evaluatie",
+    hint: "Wat we nadien nog willen weten: cijfers opvragen, samenzitten, afspraken voor volgend jaar.",
   },
 ] as const;
 

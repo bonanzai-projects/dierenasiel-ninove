@@ -121,4 +121,64 @@ describe("DraaiboekPanel", () => {
     expect(within(afbraak).getByText("Zaal poetsen")).toBeInTheDocument();
     expect(within(afbraak).queryByText("Zaal reserveren")).not.toBeInTheDocument();
   });
+
+  // Story 13.8 — te laat is te laat, ook op de fiche zelf.
+  describe("timing-labels", () => {
+    const VANDAAG = "2026-08-06";
+
+    it("markeert een taak die te laat is", () => {
+      render(
+        <DraaiboekPanel
+          eventId={4}
+          tasks={[taak({ id: 1, title: "Traiteur bellen", date: "2026-08-01" })]}
+          canWrite
+          today={VANDAAG}
+        />,
+      );
+      expect(screen.getByText("5 dagen te laat")).toBeInTheDocument();
+    });
+
+    it("markeert een taak van vandaag", () => {
+      render(
+        <DraaiboekPanel
+          eventId={4}
+          tasks={[taak({ id: 1, date: VANDAAG })]}
+          canWrite
+          today={VANDAAG}
+        />,
+      );
+      expect(screen.getByText("Vandaag")).toBeInTheDocument();
+    });
+
+    it("zwijgt over een taak die nog ver weg is", () => {
+      render(
+        <DraaiboekPanel
+          eventId={4}
+          tasks={[taak({ id: 1, date: "2026-12-01" })]}
+          canWrite
+          today={VANDAAG}
+        />,
+      );
+      expect(screen.queryByText(/te laat|Vandaag|Morgen|over \d+ dagen/)).not.toBeInTheDocument();
+    });
+
+    it("zwijgt over een taak die al afgevinkt is", () => {
+      render(
+        <DraaiboekPanel
+          eventId={4}
+          tasks={[taak({ id: 1, date: "2026-08-01", done: true })]}
+          canWrite
+          today={VANDAAG}
+        />,
+      );
+      expect(screen.queryByText(/te laat/)).not.toBeInTheDocument();
+    });
+
+    it("zwijgt wanneer de dag van vandaag niet meegegeven is", () => {
+      render(
+        <DraaiboekPanel eventId={4} tasks={[taak({ id: 1, date: "2026-08-01" })]} canWrite />,
+      );
+      expect(screen.queryByText(/te laat/)).not.toBeInTheDocument();
+    });
+  });
 });

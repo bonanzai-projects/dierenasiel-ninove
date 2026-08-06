@@ -1,6 +1,15 @@
 import type { PermissionMap } from "./types";
 import { ALL_PERMISSIONS } from "./types";
 
+/**
+ * `event:read` / `event:write` staan bewust ENKEL bij de beheerder (story 13.3).
+ * Sven, vraag 25/26 (2026-08-06): "Geldzaken en opbrengsten en zo enkel beheerders,
+ * ik zou zelfs voorlopig alles zeggen … zal toch door mij gestuurd worden" en
+ * "Enkel beheerders of trekkers". Een evenement is dus géén gedeelde module zoals
+ * de kalender. Gaat dit later open naar medewerkers, dan komt er een aparte
+ * `event:finance:read` bij — het kostenblok is dan al één afgebakend stuk scherm.
+ */
+
 export const ROLE_PERMISSIONS: PermissionMap = {
   beheerder: ALL_PERMISSIONS,
 
@@ -16,9 +25,6 @@ export const ROLE_PERMISSIONS: PermissionMap = {
     "workflow:write",
     "website:read",
     "animalshelter:read",
-    // Epic 13: een eetkermis wordt door het team gedragen, niet door één beheerder.
-    "event:read",
-    "event:write",
   ],
 
   dierenarts: [
@@ -51,7 +57,5 @@ export const ROLE_PERMISSIONS: PermissionMap = {
     "website:read",
     "website:write",
     "animalshelter:read",
-    "event:read",
-    "event:write",
   ],
 };

@@ -1,12 +1,13 @@
 import { z } from "zod";
 
-/** Categorieën van een handmatig kalender-item (fase 2). */
-export const CALENDAR_EVENT_CATEGORIES = [
-  "evenement",
-  "stage",
-  "afstand",
-  "afspraak",
-] as const;
+/**
+ * Categorieën van een handmatig kalender-item (fase 2).
+ *
+ * "evenement" hoort hier sinds story 13.7 NIET meer bij: een evenement ontstaat in
+ * de evenementenmodule (met draaiboek, kosten en vrijwilligers) en verschijnt van
+ * daaruit op de kalender. Eén plek waar een evenement leeft.
+ */
+export const CALENDAR_EVENT_CATEGORIES = ["stage", "afstand", "afspraak"] as const;
 
 const optionalTime = z
   .string()

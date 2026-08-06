@@ -50,8 +50,8 @@ export default async function EvenementenPage() {
         <h1 className="font-heading text-2xl font-bold text-[#1b4332]">Evenementen</h1>
         <InfoButton title="Werken met evenementen" label="Uitleg over het evenementenscherm">
           <p>
-            Elk evenement — een eetkermis, een quiz, een standje op de markt — krijgt een eigen
-            fiche. Op die fiche komt het draaiboek te staan: wie doet wat, en wanneer.
+            Elk evenement — het eetfestijn, de kerstmarkt, een standje op de jaarmarkt — krijgt
+            een eigen fiche. Op die fiche komt het draaiboek te staan: wie doet wat, en wanneer.
           </p>
           <p className="mt-2">
             Evenementen waarvan de datum voorbij is, schuiven vanzelf naar{" "}
@@ -60,8 +60,14 @@ export default async function EvenementenPage() {
           </p>
         </InfoButton>
         <Link
+          href="/beheerder/evenementen/jaaroverzicht"
+          className="ml-auto rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Jaaroverzicht
+        </Link>
+        <Link
           href="/beheerder/evenementen/nieuw"
-          className="ml-auto rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
+          className="rounded-lg bg-[#1b4332] px-4 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f]"
         >
           + Nieuw evenement
         </Link>
@@ -71,7 +77,7 @@ export default async function EvenementenPage() {
         <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
           <p className="text-sm text-gray-600">
             Er staat nog geen enkel evenement in. Begin met het eerstvolgende dat op de planning
-            staat — de eetkermis bijvoorbeeld.
+            staat — het eetfestijn bijvoorbeeld.
           </p>
         </div>
       )}

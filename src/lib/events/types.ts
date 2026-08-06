@@ -1,8 +1,10 @@
 /**
  * Epic 13 — evenementenbeheer. Types en statussen van een evenement.
  *
- * De typelijst is een VOORSTEL op basis van wat een asiel doorgaans organiseert;
- * Sven moet ze nog bevestigen (vraag 1 uit epic-13-evenementenbeheer.md).
+ * De typelijst komt van Sven zelf (vraag 1, 2026-08-06), mét de aantallen per jaar:
+ * eetfestijn (1), opendeurdag (1), kerstmarkt (3), jaarmarkt (3), wafel-/koekjesverkoop (1),
+ * paaseierenverkoop (1), standje op markt of beurs (2), benefiet (2) — samen zo'n 14 per jaar.
+ * Een quiz doen ze niet, en het heet een eetfestijn, geen eetkermis.
  * Uitbreiden = één regel hier, geen migratie: het type is een varchar.
  */
 
@@ -12,11 +14,12 @@ export interface EventType {
 }
 
 export const EVENT_TYPES: readonly EventType[] = [
-  { key: "eetkermis", label: "Eetkermis" },
-  { key: "quiz", label: "Quiz" },
+  { key: "eetfestijn", label: "Eetfestijn" },
   { key: "opendeurdag", label: "Opendeurdag" },
   { key: "kerstmarkt", label: "Kerstmarkt" },
+  { key: "jaarmarkt", label: "Jaarmarkt" },
   { key: "wafelverkoop", label: "Wafel- of koekjesverkoop" },
+  { key: "paaseierenverkoop", label: "Paaseierenverkoop" },
   { key: "markt", label: "Standje op een markt of beurs" },
   { key: "benefiet", label: "Benefiet" },
   { key: "andere", label: "Andere" },

@@ -52,6 +52,17 @@ describe("ROLE_PERMISSIONS", () => {
     expect(ROLE_PERMISSIONS.coördinator).not.toContain("user:manage");
   });
 
+  // Sven, vraag 25/26 (2026-08-06): "Geldzaken en opbrengsten en zo enkel beheerders,
+  // ik zou zelfs voorlopig alles zeggen" + "Enkel beheerders of trekkers".
+  it("restricts event:read and event:write to beheerder only", () => {
+    expect(ROLE_PERMISSIONS.beheerder).toContain("event:read");
+    expect(ROLE_PERMISSIONS.beheerder).toContain("event:write");
+    for (const rol of ["medewerker", "dierenarts", "adoptieconsulent", "coördinator"] as const) {
+      expect(ROLE_PERMISSIONS[rol]).not.toContain("event:read");
+      expect(ROLE_PERMISSIONS[rol]).not.toContain("event:write");
+    }
+  });
+
   it("restricts settings:write to beheerder only", () => {
     expect(ROLE_PERMISSIONS.beheerder).toContain("settings:write");
     expect(ROLE_PERMISSIONS.medewerker).not.toContain("settings:write");

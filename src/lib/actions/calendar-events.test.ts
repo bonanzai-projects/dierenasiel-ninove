@@ -49,7 +49,7 @@ function fd(data: Record<string, string>): FormData {
   return f;
 }
 
-const validCreate = { title: "Eetfestijn", category: "evenement", date: "2026-09-12" };
+const validCreate = { title: "Stage Lien", category: "stage", date: "2026-09-12" };
 
 describe("createCalendarEvent", () => {
   beforeEach(() => {
@@ -76,8 +76,8 @@ describe("createCalendarEvent", () => {
     expect(res.success).toBe(true);
     expect(mockInsertValues).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: "Eetfestijn",
-        category: "evenement",
+        title: "Stage Lien",
+        category: "stage",
         date: "2026-09-12",
         startTime: "18:00",
         animalId: 3,

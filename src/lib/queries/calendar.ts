@@ -9,10 +9,12 @@ import {
   walks,
   animalTodos,
   calendarEvents,
+  events as shelterEvents,
 } from "@/lib/db/schema";
 import { and, gte, lte, eq, isNotNull, sql } from "drizzle-orm";
 import type { CalendarEvent } from "@/lib/calendar/events";
 import { expandEventDates } from "@/lib/calendar/events";
+import { eventsToCalendar } from "@/lib/calendar/from-events";
 import type { CalendarCategoryKey } from "@/lib/calendar/categories";
 
 interface Range {
@@ -329,6 +331,31 @@ export async function getCalendarEvents({ start, end }: Range): Promise<Calendar
     }
   } catch (err) {
     console.error("calendar: manual events failed", err);
+  }
+
+  // — Evenementen uit de eigen module (Epic 13, story 13.7) —
+  // Zelfde overlapfilter als hierboven: een eetfestijn van twee dagen moet ook
+  // opduiken wanneer enkel de tweede dag in het venster valt.
+  try {
+    const rows = await db
+      .select({
+        id: shelterEvents.id,
+        name: shelterEvents.name,
+        status: shelterEvents.status,
+        date: shelterEvents.date,
+        endDate: shelterEvents.endDate,
+        startTime: shelterEvents.startTime,
+      })
+      .from(shelterEvents)
+      .where(
+        and(
+          lte(shelterEvents.date, end),
+          gte(sql`coalesce(${shelterEvents.endDate}, ${shelterEvents.date})`, start),
+        ),
+      );
+    events.push(...eventsToCalendar(rows, start, end));
+  } catch (err) {
+    console.error("calendar: shelter events failed", err);
   }
 
   return events;

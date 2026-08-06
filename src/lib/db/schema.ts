@@ -525,7 +525,7 @@ export const calendarEvents = pgTable("calendar_events", {
   index("idx_calendar_events_date").on(table.date),
 ]);
 
-// Epic 13 — evenementenbeheer (eetkermis, quiz, opendeurdag ...). Het evenement
+// Epic 13 — evenementenbeheer (eetfestijn, kerstmarkt, jaarmarkt ...). Het evenement
 // zelf; draaiboek, kosten en evaluatie hangen er in eigen tabellen aan.
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
@@ -537,10 +537,14 @@ export const events = pgTable("events", {
   startTime: varchar("start_time", { length: 5 }), // HH:MM; leeg = hele dag
   endTime: varchar("end_time", { length: 5 }),
   location: varchar("location", { length: 200 }),
-  // Vrije tekst: wie de eetkermis trekt is niet noodzakelijk iemand met een login.
+  // Vrije tekst: wie het eetfestijn trekt is niet noodzakelijk iemand met een login.
   responsible: varchar("responsible", { length: 120 }),
   expectedVisitors: integer("expected_visitors"),
   description: text("description"),
+  // Story 13.10 — de vorige editie waarvan dit een kopie is. Geen FK-verwijzing naar
+  // zichzelf met cascade: wie de editie van vorig jaar verwijdert, mag deze niet
+  // meesleuren. Blijft dus een los nummer (set null bij verwijderen gebeurt in de actie).
+  copiedFromEventId: integer("copied_from_event_id"),
   createdByUserId: integer("created_by_user_id").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -555,7 +559,7 @@ export const eventTasks = pgTable("event_tasks", {
   eventId: integer("event_id")
     .references(() => events.id, { onDelete: "cascade" })
     .notNull(),
-  phase: varchar("phase", { length: 20 }).notNull(), // voorbereiding | dag-zelf | afbraak
+  phase: varchar("phase", { length: 20 }).notNull(), // voorbereiding | dag-zelf | afbraak | evaluatie
   title: varchar("title", { length: 200 }).notNull(),
   date: date("date"),
   time: varchar("time", { length: 5 }), // HH:MM
@@ -570,6 +574,97 @@ export const eventTasks = pgTable("event_tasks", {
 }, (table) => [
   index("idx_event_tasks_event_id").on(table.eventId),
 ]);
+
+// Epic 13, story 13.5 — kosten én opbrengsten van een evenement in één tabel.
+// `kind` bepaalt de kant; begroot en werkelijk staan naast elkaar op dezelfde rij
+// (keuze van Sven, vraag 14). onDelete cascade zoals bij de draaiboektaken.
+export const eventCosts = pgTable("event_costs", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .references(() => events.id, { onDelete: "cascade" })
+    .notNull(),
+  kind: varchar("kind", { length: 12 }).notNull(), // kost | opbrengst
+  category: varchar("category", { length: 40 }).notNull(), // zie COST_/REVENUE_CATEGORIES
+  description: varchar("description", { length: 200 }).notNull(),
+  // numeric i.p.v. een geldbedrag in centen: drizzle geeft het als tekst terug en
+  // er wordt nergens in SQL mee gerekend — het optellen gebeurt in `summarizeCosts`.
+  budgetAmount: numeric("budget_amount", { precision: 10, scale: 2 }),
+  actualAmount: numeric("actual_amount", { precision: 10, scale: 2 }),
+  supplier: varchar("supplier", { length: 120 }),
+  paid: boolean("paid").notNull().default(false),
+  notes: text("notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_event_costs_event_id").on(table.eventId),
+]);
+
+// Epic 13, story 13.6 — wie staat waar en wanneer (Sven, vraag 10). Bewust plat:
+// één rij = één persoon op één post op één dag. `personName` is vrije tekst, want
+// vrijwilligers hebben meestal geen login; `userId` mag er los bij staan.
+export const eventShifts = pgTable("event_shifts", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .references(() => events.id, { onDelete: "cascade" })
+    .notNull(),
+  date: date("date").notNull(),
+  startTime: varchar("start_time", { length: 5 }), // HH:MM; leeg = hele dag
+  endTime: varchar("end_time", { length: 5 }),
+  post: varchar("post", { length: 60 }).notNull(), // bar, kassa, frituur ... vrije tekst
+  personName: varchar("person_name", { length: 120 }).notNull(),
+  userId: integer("user_id").references(() => users.id),
+  notes: text("notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_event_shifts_event_id").on(table.eventId),
+]);
+
+// Epic 13, story 13.11 — de materiaallijst (Sven, vraag 9). `origin` bepaalt of iets
+// nadien terug moet; `supplier` is van wie het komt. Vrije tekst, want dat kan evengoed
+// een vereniging als een verhuurbedrijf zijn.
+export const eventMaterials = pgTable("event_materials", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .references(() => events.id, { onDelete: "cascade" })
+    .notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  quantity: integer("quantity"),
+  origin: varchar("origin", { length: 20 }).notNull(), // zie MATERIAL_ORIGINS
+  supplier: varchar("supplier", { length: 120 }),
+  arranged: boolean("arranged").notNull().default(false),
+  returned: boolean("returned").notNull().default(false),
+  notes: text("notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_event_materials_event_id").on(table.eventId),
+]);
+
+// Epic 13, story 13.9 — de evaluatie na afloop. Eén per evenement (unique), want
+// Sven schrijft ze zelf (vraag 23). De cijfers zijn precies die welke hij vandaag al
+// bijhoudt: kaarten gebruikt -> betalende borden -> opbrengst (vraag 22).
+export const eventEvaluations = pgTable("event_evaluations", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .references(() => events.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  visitors: integer("visitors"),
+  ticketsUsed: integer("tickets_used"),
+  paidPlates: integer("paid_plates"),
+  wentWell: text("went_well"),
+  couldBeBetter: text("could_be_better"),
+  agreements: text("agreements"),
+  updatedByUserId: integer("updated_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 export const animalWorkflowHistory = pgTable("animal_workflow_history", {
   id: serial("id").primaryKey(),

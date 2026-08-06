@@ -10,8 +10,25 @@ import {
 } from "./types";
 
 describe("evenement-types", () => {
-  it("bevat de eetkermis — het voorbeeld van Sven", () => {
-    expect(EVENT_TYPE_KEYS).toContain("eetkermis");
+  // Sven, vraag 1 (2026-08-06): eetfestijn, opendeurdag, kerstmarkt, jaarmarkt,
+  // wafel-/koekjesverkoop, paaseierenverkoop, standje op markt of beurs, benefiet.
+  it("volgt de lijst die Sven opgaf", () => {
+    expect(EVENT_TYPE_KEYS).toEqual([
+      "eetfestijn",
+      "opendeurdag",
+      "kerstmarkt",
+      "jaarmarkt",
+      "wafelverkoop",
+      "paaseierenverkoop",
+      "markt",
+      "benefiet",
+      "andere",
+    ]);
+  });
+
+  it("kent geen quiz meer — die organiseren ze niet", () => {
+    expect(EVENT_TYPE_KEYS).not.toContain("quiz");
+    expect(EVENT_TYPE_KEYS).not.toContain("eetkermis");
   });
 
   it("heeft een 'andere' vangnet-type zodat niets buiten de lijst valt", () => {
@@ -23,7 +40,7 @@ describe("evenement-types", () => {
   });
 
   it("valt terug op de sleutel voor een onbekend type", () => {
-    expect(eventTypeLabel("eetkermis")).toBe("Eetkermis");
+    expect(eventTypeLabel("eetfestijn")).toBe("Eetfestijn");
     expect(eventTypeLabel("bestaat-niet")).toBe("bestaat-niet");
   });
 });

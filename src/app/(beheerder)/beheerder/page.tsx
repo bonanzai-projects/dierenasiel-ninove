@@ -12,6 +12,9 @@ import RecentAdoptionRequests, {
 } from "@/components/beheerder/dashboard/RecentAdoptionRequests";
 import StatusOverview from "@/components/beheerder/dashboard/StatusOverview";
 import ActiveStrayCatCampaigns from "@/components/beheerder/dashboard/ActiveStrayCatCampaigns";
+import EventRemindersWidget from "@/components/beheerder/dashboard/EventRemindersWidget";
+import { getSession } from "@/lib/auth/session";
+import { hasPermission } from "@/lib/permissions";
 
 interface PageProps {
   searchParams: Promise<{ aanvragen?: string }>;
@@ -23,10 +26,14 @@ export default async function BeheerderDashboard({ searchParams }: PageProps) {
   const range: AdoptionRequestRange = matched?.value ?? DEFAULT_ADOPTION_REQUEST_RANGE;
   const days = (matched ?? ADOPTION_REQUEST_RANGES.find((r) => r.value === DEFAULT_ADOPTION_REQUEST_RANGE)!).days;
 
-  const [stats, activeStrayCatCampaigns] = await Promise.all([
+  const [stats, activeStrayCatCampaigns, session] = await Promise.all([
     getDashboardStats({ adoptionRequestsDays: days }),
     getActiveStrayCatCampaigns(10),
+    getSession(),
   ]);
+
+  // Evenementen zijn sinds story 13.3 enkel voor beheerders; het blok volgt dat.
+  const toontEvenementen = session ? hasPermission(session.role, "event:read") : false;
 
   return (
     <div>
@@ -49,6 +56,7 @@ export default async function BeheerderDashboard({ searchParams }: PageProps) {
         <AlertWidget />
         <DeadlineWidget />
         <TodoWidget />
+        {toontEvenementen && <EventRemindersWidget />}
       </div>
     </div>
   );

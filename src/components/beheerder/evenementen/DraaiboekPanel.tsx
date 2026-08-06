@@ -7,13 +7,20 @@ import {
   toggleEventTask,
   type EventTaskRow,
 } from "@/lib/actions/event-tasks";
+import { addStandardTasks } from "@/lib/actions/event-copy";
 import { groupTasksByPhase, draaiboekProgress } from "@/lib/events/draaiboek";
+import { describeDeadline, REMINDER_HORIZON_DAYS } from "@/lib/events/reminders";
 import EventTaskForm from "./EventTaskForm";
 
 interface DraaiboekPanelProps {
   eventId: number;
   tasks: EventTaskRow[];
   canWrite: boolean;
+  /**
+   * Vandaag als YYYY-MM-DD, van de server. Story 13.8: een taak die te laat is,
+   * krijgt hier hetzelfde label als in het seintje op het dashboard.
+   */
+  today?: string;
 }
 
 /** "12/09 · 16:00" — leeg blijft leeg. */
@@ -22,7 +29,19 @@ function moment(task: EventTaskRow): string {
   return [dag, task.time].filter(Boolean).join(" · ");
 }
 
-export default function DraaiboekPanel({ eventId, tasks, canWrite }: DraaiboekPanelProps) {
+/** Kleurtje van het "te laat"-label; dezelfde tinten als op het dashboard. */
+function deadlinePill(urgency: string): string {
+  if (urgency === "verlopen") return "bg-red-100 text-red-700";
+  if (urgency === "vandaag") return "bg-orange-100 text-orange-700";
+  return "bg-yellow-100 text-yellow-700";
+}
+
+export default function DraaiboekPanel({
+  eventId,
+  tasks,
+  canWrite,
+  today,
+}: DraaiboekPanelProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   // Eén formulier tegelijk: ofwel een nieuwe taak in een fase, ofwel één taak bewerken.
@@ -70,6 +89,29 @@ export default function DraaiboekPanel({ eventId, tasks, canWrite }: DraaiboekPa
 
       {fout && <p className="mt-2 text-sm text-red-600">{fout}</p>}
 
+      {/* Story 13.10 — bij een leeg draaiboek niet bij nul beginnen. */}
+      {canWrite && tasks.length === 0 && (
+        <div className="mt-3 rounded-md border border-dashed border-emerald-300 bg-emerald-50/40 p-3">
+          <p className="text-sm text-gray-700">
+            Nog een leeg draaiboek. Wil je de taken die elk jaar terugkomen alvast klaarzetten?
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setFout(null);
+              startTransition(async () => {
+                const res = await addStandardTasks(eventId);
+                if (res.success) router.refresh();
+                else setFout(res.error ?? "Klaarzetten mislukt");
+              });
+            }}
+            className="mt-2 rounded-md bg-[#1b4332] px-3 py-1 text-sm font-medium text-white hover:bg-[#2d6a4f]"
+          >
+            Standaardtaken klaarzetten
+          </button>
+        </div>
+      )}
+
       <div className="mt-3 space-y-5">
         {groepen.map((groep) => (
           <section key={groep.phase} aria-label={groep.label}>
@@ -104,6 +146,18 @@ export default function DraaiboekPanel({ eventId, tasks, canWrite }: DraaiboekPa
                     <div className="min-w-0 flex-1">
                       <p className={`text-sm ${task.done ? "text-gray-400 line-through" : "text-gray-900"}`}>
                         {task.title}
+                        {(() => {
+                          if (!today || task.done || !task.date) return null;
+                          const deadline = describeDeadline(task.date, today);
+                          if (deadline.days > REMINDER_HORIZON_DAYS) return null;
+                          return (
+                            <span
+                              className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${deadlinePill(deadline.urgency)}`}
+                            >
+                              {deadline.label}
+                            </span>
+                          );
+                        })()}
                       </p>
                       <p className="text-xs text-gray-500">
                         {[moment(task), task.responsible].filter(Boolean).join(" · ")}
