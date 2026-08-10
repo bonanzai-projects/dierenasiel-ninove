@@ -844,6 +844,9 @@ export const strayCatCampaignMedicalInspections = pgTable("stray_cat_campaign_me
   felvStatus: varchar("felv_status", { length: 20 }),
   outcome: varchar("outcome", { length: 30 }),
   notes: text("notes"),
+  // Story 10.60 — Sven: "kan er bij de inspectie de naam van de persoon
+  // bijgezet worden die een wijziging doet? maw inlog persoon".
+  recordedBy: integer("recorded_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_stray_cat_campaign_medical_inspections_campaign_id").on(table.campaignId),
@@ -856,11 +859,30 @@ export const strayCatCampaignInspections = pgTable("stray_cat_campaign_inspectio
     .notNull()
     .references(() => strayCatCampaigns.id, { onDelete: "cascade" }),
   inspectionDate: date("inspection_date").notNull(),
+  // Blijft bestaan naast de kooirijen hieronder: afgeleid als "minstens één
+  // kooi had vangst". R14, de CSV en alle bestaande rijen leunen erop.
   wasSuccessful: boolean("was_successful").notNull().default(false),
   notes: text("notes"),
+  recordedBy: integer("recorded_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_stray_cat_campaign_inspections_campaign_id").on(table.campaignId),
+]);
+
+// Story 10.60: per kooi bijhouden of er die ronde vangst was. Eén rij per kooi
+// per inspectie, want het aantal kooien verschilt per campagne.
+// De code wordt als tekst bewaard en niet als verwijzing naar `cages.id`: de
+// kooienbibliotheek kent soft-delete, en een historische inspectie moet
+// leesbaar blijven als een kooi daar later uit verdwijnt.
+export const strayCatCampaignInspectionCages = pgTable("stray_cat_campaign_inspection_cages", {
+  id: serial("id").primaryKey(),
+  inspectionId: integer("inspection_id")
+    .notNull()
+    .references(() => strayCatCampaignInspections.id, { onDelete: "cascade" }),
+  cageCode: varchar("cage_code", { length: 20 }).notNull(),
+  caught: boolean("caught").notNull().default(false),
+}, (table) => [
+  index("idx_stray_cat_campaign_inspection_cages_inspection_id").on(table.inspectionId),
 ]);
 
 export const blacklistEntries = pgTable("blacklist_entries", {

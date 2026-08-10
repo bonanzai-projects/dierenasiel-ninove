@@ -2,7 +2,8 @@
 
 import { useActionState, useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { StrayCatCampaign, StrayCatCampaignInspection, StrayCatCampaignMedicalInspection, ActionResult } from "@/types";
+import type { StrayCatCampaign, ActionResult } from "@/types";
+import type { InspectionWithCages, MedicalInspectionWithRecorder } from "@/lib/queries/stray-cat-campaigns";
 import {
   deployCagesAction,
   linkAnimalAction,
@@ -15,6 +16,7 @@ import CampaignStatusBadge from "./CampaignStatusBadge";
 import CampaignPhotoGallery from "./CampaignPhotoGallery";
 import CampaignEmailAttachments from "./CampaignEmailAttachments";
 import InspectionLogSection from "./InspectionLogSection";
+import { parseCageCodes } from "@/lib/stray-cats/inspection-cages";
 import MedicalInspectionsSection from "./MedicalInspectionsSection";
 import type { CampaignAttachment, CampaignPhoto } from "@/lib/queries/stray-cat-campaigns";
 import type { MunicipalityLogo, Cage } from "@/types";
@@ -23,8 +25,8 @@ interface Props {
   campaign: StrayCatCampaign;
   availableCats: { id: number; name: string }[];
   occupiedCages: Record<string, number>;
-  inspections: StrayCatCampaignInspection[];
-  medicalInspections: StrayCatCampaignMedicalInspection[];
+  inspections: InspectionWithCages[];
+  medicalInspections: MedicalInspectionWithRecorder[];
   attachments?: CampaignAttachment[];
   opdrachtgevers?: MunicipalityLogo[];
   cages?: Cage[];
@@ -474,7 +476,11 @@ export default function CampaignDetailForm({ campaign, availableCats, occupiedCa
       </div>
 
       {/* Kooi-inspecties — log van rondes om kooien te controleren */}
-      <InspectionLogSection campaignId={campaign.id} inspections={inspections} />
+      <InspectionLogSection
+        campaignId={campaign.id}
+        inspections={inspections}
+        deployedCages={parseCageCodes(campaign.cageNumbers)}
+      />
 
       {/* Medische inspecties — 1 rij per kat naar de dierenarts (CRUD) */}
       <MedicalInspectionsSection campaignId={campaign.id} inspections={medicalInspections} />

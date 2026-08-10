@@ -5,12 +5,13 @@ import { hasPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignMedicalInspections } from "@/lib/db/schema";
+import { strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignInspectionCages, strayCatCampaignMedicalInspections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getCampaignById, getOccupiedCageNumbers, getMedicalInspectionById } from "@/lib/queries/stray-cat-campaigns";
 import { getMunicipalityLogoByName } from "@/lib/queries/municipality-logos";
 import { CAMPAIGN_STATUSES } from "@/lib/constants";
 import { geocodeAddress, type GeocodeResult } from "@/lib/maps/geocode";
+import { cageResultsFor, parseCageCodes, wasSuccessfulFrom } from "@/lib/stray-cats/inspection-cages";
 import {
   createCampaignSchema,
   updateCampaignBasicsSchema,
@@ -496,22 +497,45 @@ export async function addInspectionAction(
     const campaign = await getCampaignById(parsed.data.campaignId);
     if (!campaign) return { success: false, error: "Campagne niet gevonden" };
 
+    // De kooien van de campagne zijn de enige geldige keuzes. Heeft de campagne
+    // er nog geen, dan blijft het losse vinkje gelden (AC3).
+    const deployed = parseCageCodes(campaign.cageNumbers);
+    const results = cageResultsFor(deployed, parsed.data.caughtCages);
+    const wasSuccessful =
+      deployed.length > 0
+        ? wasSuccessfulFrom(results.filter((r) => r.caught).map((r) => r.cageCode))
+        : parsed.data.wasSuccessful;
+
+    const session = await getSession();
+
     const [record] = await db
       .insert(strayCatCampaignInspections)
       .values({
         campaignId: parsed.data.campaignId,
         inspectionDate: parsed.data.inspectionDate,
-        wasSuccessful: parsed.data.wasSuccessful,
+        wasSuccessful,
         notes: parsed.data.notes || null,
+        recordedBy: session?.userId ?? null,
       })
       .returning();
+
+    if (results.length > 0) {
+      await db.insert(strayCatCampaignInspectionCages).values(
+        results.map((r) => ({ inspectionId: record.id, cageCode: r.cageCode, caught: r.caught })),
+      );
+    }
 
     await logAudit(
       "stray_cat_campaign.inspection_log_added",
       "stray_cat_campaign",
       parsed.data.campaignId,
       null,
-      { inspectionId: record.id, inspectionDate: record.inspectionDate, wasSuccessful: record.wasSuccessful },
+      {
+        inspectionId: record.id,
+        inspectionDate: record.inspectionDate,
+        wasSuccessful: record.wasSuccessful,
+        caughtCages: results.filter((r) => r.caught).map((r) => r.cageCode),
+      },
     );
 
     revalidatePath(REVALIDATE_PATH);

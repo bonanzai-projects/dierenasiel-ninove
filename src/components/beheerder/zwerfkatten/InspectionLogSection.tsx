@@ -3,11 +3,15 @@
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addInspectionAction } from "@/lib/actions/stray-cat-campaigns";
-import type { StrayCatCampaignInspection, ActionResult } from "@/types";
+import type { InspectionWithCages } from "@/lib/queries/stray-cat-campaigns";
+import { catchSummary } from "@/lib/stray-cats/inspection-cages";
+import type { ActionResult } from "@/types";
 
 interface Props {
   campaignId: number;
-  inspections: StrayCatCampaignInspection[];
+  inspections: InspectionWithCages[];
+  /** Kooicodes die bij deze campagne uitgezet zijn. */
+  deployedCages: string[];
 }
 
 async function handleAdd(prev: ActionResult | null, formData: FormData) {
@@ -15,11 +19,12 @@ async function handleAdd(prev: ActionResult | null, formData: FormData) {
     campaignId: Number(formData.get("campaignId")),
     inspectionDate: formData.get("inspectionDate") as string,
     wasSuccessful: formData.get("wasSuccessful") === "on",
+    caughtCages: formData.getAll("caughtCages").map(String),
     notes: (formData.get("notes") as string) || "",
   });
 }
 
-export default function InspectionLogSection({ campaignId, inspections }: Props) {
+export default function InspectionLogSection({ campaignId, inspections, deployedCages }: Props) {
   const [state, formAction, isPending] = useActionState(handleAdd, null);
   const [showForm, setShowForm] = useState(false);
   const router = useRouter();
@@ -65,7 +70,7 @@ export default function InspectionLogSection({ campaignId, inspections }: Props)
           {inspections.map((entry) => (
             <li
               key={entry.id}
-              className="grid grid-cols-[7rem_5.5rem_1fr] items-center gap-3 py-2.5 text-sm"
+              className="grid grid-cols-[7rem_5.5rem_1fr] items-start gap-3 py-2.5 text-sm"
             >
               <span className="font-medium text-gray-700 tabular-nums">
                 {entry.inspectionDate}
@@ -79,7 +84,33 @@ export default function InspectionLogSection({ campaignId, inspections }: Props)
               >
                 {entry.wasSuccessful ? "✓ vangst" : "— leeg"}
               </span>
-              <span className="text-gray-600">{entry.notes ?? ""}</span>
+              <div className="text-gray-600">
+                {entry.cages.length > 0 && (
+                  <p className="flex flex-wrap gap-1">
+                    {entry.cages.map((cage) => (
+                      <span
+                        key={cage.cageCode}
+                        title={cage.caught ? "vangst" : "geen vangst"}
+                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+                          cage.caught
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {cage.cageCode}
+                      </span>
+                    ))}
+                  </p>
+                )}
+                {entry.notes && <p className="mt-0.5">{entry.notes}</p>}
+                {(entry.recordedByName || entry.cages.length > 0) && (
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    {catchSummary(entry.cages)}
+                    {catchSummary(entry.cages) && entry.recordedByName ? " · " : ""}
+                    {entry.recordedByName ? `geregistreerd door ${entry.recordedByName}` : ""}
+                  </p>
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -104,17 +135,46 @@ export default function InspectionLogSection({ campaignId, inspections }: Props)
                 className="mt-1 block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-emerald-500 focus:ring-emerald-500"
               />
             </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  name="wasSuccessful"
-                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                Vangst (kat in kooi)
-              </label>
-            </div>
+            {deployedCages.length === 0 && (
+              <div className="flex items-end">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    name="wasSuccessful"
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  Vangst (kat in kooi)
+                </label>
+              </div>
+            )}
           </div>
+
+          {deployedCages.length > 0 && (
+            <fieldset>
+              <legend className="block text-xs font-medium text-gray-700">
+                Vangst per kooi
+              </legend>
+              <p className="mb-1.5 text-xs text-gray-500">
+                Vink de kooien aan waar een kat in zat. Niets aangevinkt = lege ronde.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {deployedCages.map((code) => (
+                  <label
+                    key={code}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-700 hover:border-emerald-500"
+                  >
+                    <input
+                      type="checkbox"
+                      name="caughtCages"
+                      value={code}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    {code}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
           <div>
             <label htmlFor="notes" className="block text-xs font-medium text-gray-700">
               Notities

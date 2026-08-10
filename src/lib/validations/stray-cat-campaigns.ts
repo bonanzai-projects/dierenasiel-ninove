@@ -87,6 +87,9 @@ export const addInspectionSchema = z.object({
   campaignId: z.coerce.number().positive("Ongeldig campagne-ID"),
   inspectionDate: dateString,
   wasSuccessful: z.coerce.boolean().default(false),
+  // Story 10.60: kooien waar die ronde vangst was. Leeg wanneer de campagne
+  // nog geen kooien ingevuld heeft; dan telt `wasSuccessful` zoals vroeger.
+  caughtCages: z.array(z.string().trim().max(20)).optional().default([]),
   notes: z.string().trim().max(1000, "Notities mag max 1000 tekens zijn").optional().default(""),
 });
 

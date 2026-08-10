@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignAttachments, strayCatCampaignPhotos, strayCatCampaignMedicalInspections, animals } from "@/lib/db/schema";
-import { eq, and, desc, gte, lte, sql, isNotNull, ne } from "drizzle-orm";
+import { strayCatCampaigns, strayCatCampaignInspections, strayCatCampaignInspectionCages, strayCatCampaignAttachments, strayCatCampaignPhotos, strayCatCampaignMedicalInspections, animals, users } from "@/lib/db/schema";
+import { eq, and, desc, gte, lte, sql, isNotNull, ne, inArray } from "drizzle-orm";
 import { CAMPAIGN_STATUSES } from "@/lib/constants";
 import type { StrayCatCampaign, StrayCatCampaignInspection, StrayCatCampaignMedicalInspection } from "@/types";
 import type { SQL } from "drizzle-orm";
@@ -251,14 +251,50 @@ export async function getActiveStrayCatCampaigns(limit = 10): Promise<StrayCatCa
 /**
  * Inspectie-log entries voor een campagne (Story 10.9), nieuwste eerst.
  */
-export async function getInspectionsForCampaign(campaignId: number): Promise<StrayCatCampaignInspection[]> {
+export interface InspectionWithCages extends StrayCatCampaignInspection {
+  /** Naam van wie de ronde registreerde — opgehaald, niet mee opgeslagen. */
+  recordedByName: string | null;
+  /** Eén rij per uitgezette kooi. Leeg bij inspecties van vóór story 10.60. */
+  cages: { cageCode: string; caught: boolean }[];
+}
+
+export async function getInspectionsForCampaign(campaignId: number): Promise<InspectionWithCages[]> {
   try {
     const rows = await db
-      .select()
+      .select({
+        inspection: strayCatCampaignInspections,
+        recordedByName: users.name,
+      })
       .from(strayCatCampaignInspections)
+      .leftJoin(users, eq(strayCatCampaignInspections.recordedBy, users.id))
       .where(eq(strayCatCampaignInspections.campaignId, campaignId))
       .orderBy(desc(strayCatCampaignInspections.inspectionDate), desc(strayCatCampaignInspections.id));
-    return rows as StrayCatCampaignInspection[];
+
+    if (rows.length === 0) return [];
+
+    const cageRows = await db
+      .select()
+      .from(strayCatCampaignInspectionCages)
+      .where(
+        inArray(
+          strayCatCampaignInspectionCages.inspectionId,
+          rows.map((r) => r.inspection.id),
+        ),
+      )
+      .orderBy(strayCatCampaignInspectionCages.id);
+
+    const perInspection = new Map<number, { cageCode: string; caught: boolean }[]>();
+    for (const cage of cageRows) {
+      const list = perInspection.get(cage.inspectionId) ?? [];
+      list.push({ cageCode: cage.cageCode, caught: cage.caught });
+      perInspection.set(cage.inspectionId, list);
+    }
+
+    return rows.map((r) => ({
+      ...r.inspection,
+      recordedByName: r.recordedByName ?? null,
+      cages: perInspection.get(r.inspection.id) ?? [],
+    }));
   } catch (err) {
     console.error('getInspectionsForCampaign query failed:', err);
     return [];
@@ -338,16 +374,25 @@ export async function getCampaignPhotoById(id: number): Promise<CampaignPhoto | 
 /**
  * Medische inspecties per campagne (1 rij per kat), nieuwste eerst.
  */
+export interface MedicalInspectionWithRecorder extends StrayCatCampaignMedicalInspection {
+  /** Naam van wie de inspectie registreerde. */
+  recordedByName: string | null;
+}
+
 export async function getMedicalInspectionsForCampaign(
   campaignId: number,
-): Promise<StrayCatCampaignMedicalInspection[]> {
+): Promise<MedicalInspectionWithRecorder[]> {
   try {
     const rows = await db
-      .select()
+      .select({
+        inspection: strayCatCampaignMedicalInspections,
+        recordedByName: users.name,
+      })
       .from(strayCatCampaignMedicalInspections)
+      .leftJoin(users, eq(strayCatCampaignMedicalInspections.recordedBy, users.id))
       .where(eq(strayCatCampaignMedicalInspections.campaignId, campaignId))
       .orderBy(desc(strayCatCampaignMedicalInspections.inspectionDate), desc(strayCatCampaignMedicalInspections.id));
-    return rows as StrayCatCampaignMedicalInspection[];
+    return rows.map((r) => ({ ...r.inspection, recordedByName: r.recordedByName ?? null }));
   } catch (err) {
     console.error('getMedicalInspectionsForCampaign query failed:', err);
     return [];

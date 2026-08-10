@@ -1,6 +1,7 @@
 import type { StrayCatCampaign } from "@/types";
 import type { CampaignReportStats } from "@/lib/queries/stray-cat-campaigns";
 import { CAMPAIGN_OUTCOME_LABELS, FIV_FELV_STATUS_LABELS } from "@/lib/constants";
+import { parseCageCodes } from "@/lib/stray-cats/inspection-cages";
 
 /**
  * Eén bron voor rapport R14 — Zwerfkattenbeleid.
@@ -64,14 +65,8 @@ export function formatPeriod(dateFrom?: string, dateTo?: string): string {
 export function cageInfo(campaign: StrayCatCampaign): string {
   const parts: string[] = [];
   if (campaign.cageDeploymentDate) parts.push(campaign.cageDeploymentDate);
-  if (campaign.cageNumbers) {
-    const numbers = campaign.cageNumbers
-      .split(",")
-      .map((n) => n.trim())
-      .filter(Boolean)
-      .join(", ");
-    if (numbers) parts.push(`#${numbers}`);
-  }
+  const numbers = parseCageCodes(campaign.cageNumbers).join(", ");
+  if (numbers) parts.push(`#${numbers}`);
   return parts.length > 0 ? parts.join(" ") : "-";
 }
 

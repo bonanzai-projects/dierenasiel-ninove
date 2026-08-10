@@ -13,11 +13,11 @@ import {
   CAMPAIGN_OUTCOMES,
   CAMPAIGN_OUTCOME_LABELS,
 } from "@/lib/constants";
-import type { StrayCatCampaignMedicalInspection } from "@/types";
+import type { MedicalInspectionWithRecorder } from "@/lib/queries/stray-cat-campaigns";
 
 interface Props {
   campaignId: number;
-  inspections: StrayCatCampaignMedicalInspection[];
+  inspections: MedicalInspectionWithRecorder[];
 }
 
 interface DraftInspection {
@@ -42,7 +42,7 @@ const EMPTY_DRAFT: DraftInspection = {
   notes: "",
 };
 
-function fromInspection(i: StrayCatCampaignMedicalInspection): DraftInspection {
+function fromInspection(i: MedicalInspectionWithRecorder): DraftInspection {
   return {
     inspectionDate: i.inspectionDate ?? "",
     vetName: i.vetName ?? "",
@@ -225,7 +225,7 @@ function InspectionRow({
   onCancelDelete,
   onConfirmDeleteAction,
 }: {
-  inspection: StrayCatCampaignMedicalInspection;
+  inspection: MedicalInspectionWithRecorder;
   isEditing: boolean;
   isConfirmDelete: boolean;
   isPending: boolean;
@@ -395,12 +395,15 @@ function InspectionRow({
       </div>
 
       {/* Beschrijving + notities (uitgelijnd onder kolom 2) */}
-      {(inspection.catDescription || inspection.notes) && (
+      {(inspection.catDescription || inspection.notes || inspection.recordedByName) && (
         <div className="mt-1 grid grid-cols-[7rem_1fr] gap-x-4 text-xs text-gray-500">
           <span aria-hidden="true" />
           <div className="space-y-0.5">
             {inspection.catDescription && <p>{inspection.catDescription}</p>}
             {inspection.notes && <p className="italic">{inspection.notes}</p>}
+            {inspection.recordedByName && (
+              <p className="text-gray-400">Geregistreerd door {inspection.recordedByName}</p>
+            )}
           </div>
         </div>
       )}

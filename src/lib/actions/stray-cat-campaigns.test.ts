@@ -61,6 +61,8 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/db/schema", () => ({
   strayCatCampaigns: Symbol("strayCatCampaigns"),
   strayCatCampaignInspections: Symbol("strayCatCampaignInspections"),
+  strayCatCampaignInspectionCages: Symbol("strayCatCampaignInspectionCages"),
+  strayCatCampaignMedicalInspections: Symbol("strayCatCampaignMedicalInspections"),
 }));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: "eq", args })),
@@ -495,5 +497,117 @@ describe("addInspectionAction (Story 10.9)", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toBe("Ongeldige invoer");
+  });
+});
+
+describe("addInspectionAction — vangst per kooi en invuller (Story 10.60)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupAuth();
+    mockInsertReturning.mockResolvedValue([
+      { id: 99, campaignId: 1, inspectionDate: "2026-04-21", wasSuccessful: true, notes: null },
+    ]);
+  });
+
+  it("leidt 'er was vangst' af uit de aangevinkte kooien", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, cageNumbers: "K1,K7,K12" });
+
+    await addInspectionAction({
+      campaignId: 1,
+      inspectionDate: "2026-04-21",
+      wasSuccessful: false, // het losse vinkje staat uit
+      caughtCages: ["K7"],
+      notes: "",
+    });
+
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ wasSuccessful: true }),
+    );
+  });
+
+  it("bewaart één rij per uitgezette kooi, met vangst waar aangevinkt", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, cageNumbers: "K1,K7" });
+
+    await addInspectionAction({
+      campaignId: 1,
+      inspectionDate: "2026-04-21",
+      caughtCages: ["K7"],
+      notes: "",
+    });
+
+    expect(mockInsertValues).toHaveBeenCalledWith([
+      { inspectionId: 99, cageCode: "K1", caught: false },
+      { inspectionId: 99, cageCode: "K7", caught: true },
+    ]);
+  });
+
+  it("negeert een kooi die niet bij deze campagne hoort", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, cageNumbers: "K1" });
+
+    await addInspectionAction({
+      campaignId: 1,
+      inspectionDate: "2026-04-21",
+      caughtCages: ["K9"],
+      notes: "",
+    });
+
+    expect(mockInsertValues).toHaveBeenCalledWith([
+      { inspectionId: 99, cageCode: "K1", caught: false },
+    ]);
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ wasSuccessful: false }),
+    );
+  });
+
+  it("valt terug op het losse vinkje wanneer de campagne nog geen kooien heeft", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, cageNumbers: null });
+
+    await addInspectionAction({
+      campaignId: 1,
+      inspectionDate: "2026-04-21",
+      wasSuccessful: true,
+      caughtCages: [],
+      notes: "",
+    });
+
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ wasSuccessful: true }),
+    );
+    // geen kooirijen om te bewaren
+    expect(mockInsertValues).toHaveBeenCalledTimes(1);
+  });
+
+  it("bewaart wie de ronde registreerde", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, cageNumbers: "K1" });
+
+    await addInspectionAction({
+      campaignId: 1,
+      inspectionDate: "2026-04-21",
+      caughtCages: [],
+      notes: "",
+    });
+
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ recordedBy: 1 }),
+    );
+  });
+
+  it("zet de kooien met vangst in het logboek", async () => {
+    mockGetCampaignById.mockResolvedValue({ id: 1, cageNumbers: "K1,K7" });
+
+    await addInspectionAction({
+      campaignId: 1,
+      inspectionDate: "2026-04-21",
+      caughtCages: ["K7"],
+      notes: "",
+    });
+
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      "stray_cat_campaign.inspection_log_added",
+      "stray_cat_campaign",
+      1,
+      null,
+      expect.objectContaining({ caughtCages: ["K7"] }),
+    );
   });
 });
