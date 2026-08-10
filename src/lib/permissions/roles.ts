@@ -25,6 +25,7 @@ export const ROLE_PERMISSIONS: PermissionMap = {
     "workflow:write",
     "website:read",
     "animalshelter:read",
+    "staff:read",
   ],
 
   dierenarts: [
@@ -57,5 +58,7 @@ export const ROLE_PERMISSIONS: PermissionMap = {
     "website:read",
     "website:write",
     "animalshelter:read",
+    "staff:read",
+    "staff:write",
   ],
 };

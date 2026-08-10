@@ -12,6 +12,8 @@ export const BEHEERDER_NAV_ITEMS: readonly NavItem[] = [
   { label: "Dashboard", href: "/beheerder", icon: "📊", requiredPermission: null },
   { label: "Kalender", href: "/beheerder/kalender", icon: "📅", requiredPermission: null },
   { label: "Evenementen", href: "/beheerder/evenementen", icon: "🎉", requiredPermission: "event:read" },
+  // Epic 14 — wie komt welke dag.
+  { label: "Personeel", href: "/beheerder/personeel", icon: "🧑‍🤝‍🧑", requiredPermission: "staff:read" },
   { label: "Zwerfkatten", href: "/beheerder/dieren/zwerfkattenbeleid", icon: "🐈", requiredPermission: "stray_cat:read" },
   { label: "Dieren", href: "/beheerder/dieren", icon: "🐾", requiredPermission: "animal:read" },
   { label: "Medisch", href: "/beheerder/medisch", icon: "🏥", requiredPermission: "medical:read" },

@@ -35,6 +35,10 @@ export const ALL_PERMISSIONS = [
   // Epic 13 — evenementen (draaiboek, kosten, evaluatie).
   "event:read",
   "event:write",
+  // Epic 14 — personeelsplanning. Lezen = het overzicht zien én jezelf
+  // inschrijven; schrijven = iemand anders in- of uitschrijven.
+  "staff:read",
+  "staff:write",
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];

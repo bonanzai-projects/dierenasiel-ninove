@@ -885,6 +885,36 @@ export const strayCatCampaignInspectionCages = pgTable("stray_cat_campaign_inspe
   index("idx_stray_cat_campaign_inspection_cages_inspection_id").on(table.inspectionId),
 ]);
 
+/**
+ * Epic 14, story 14.1 — wie komt welke dag.
+ *
+ * Eén rij per persoon per dag. `userId` is gevuld voor wie een account heeft
+ * (die schrijft zichzelf in); `guestName` voor een vrijwilliger zonder login,
+ * die door iemand van de leiding wordt ingeschreven. Precies één van de twee is
+ * gevuld — bewaakt in `src/lib/staff/attendance.ts`.
+ *
+ * De naam van een account wordt bij het uitlezen opgehaald en niet hier
+ * gekopieerd, zodat hij klopt na een naamswijziging (patroon van 10.54/10.55).
+ *
+ * Bewust géén dagdeel: Sven vroeg "wie komt welke dag". Komt iemand enkel
+ * 's voormiddags, dan past dat in `note` — een kolom erbij is later één
+ * `db:push`, een verkeerd gemodelleerd dagdeel is dat niet.
+ */
+export const staffAttendance = pgTable("staff_attendance", {
+  id: serial("id").primaryKey(),
+  date: date("date").notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  guestName: varchar("guest_name", { length: 200 }),
+  note: varchar("note", { length: 200 }),
+  /** Wie de inschrijving zette — jezelf of iemand van de leiding. */
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_staff_attendance_date").on(table.date),
+  // Twee keer dezelfde persoon op dezelfde dag heeft geen betekenis.
+  unique("uq_staff_attendance_date_user").on(table.date, table.userId),
+]);
+
 export const blacklistEntries = pgTable("blacklist_entries", {
   id: serial("id").primaryKey(),
   firstName: varchar("first_name", { length: 100 }).notNull(),

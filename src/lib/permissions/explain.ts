@@ -97,6 +97,14 @@ export const PERMISSION_AREAS: PermissionArea[] = [
     hint: "draaiboek, kosten en evaluatie",
   },
   {
+    key: "personeel",
+    label: "Personeelsplanning",
+    read: "staff:read",
+    write: "staff:write",
+    writeVerb: "anderen in- en uitschrijven",
+    hint: "wie komt welke dag; jezelf inschrijven kan met leesrecht",
+  },
+  {
     key: "rapporten",
     label: "Rapporten",
     read: "report:read",
