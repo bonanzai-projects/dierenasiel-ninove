@@ -2,7 +2,20 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/login", "/api", "/_next", "/favicon.ico", "/robots.txt", "/sitemap.xml", "/wandelaar-registratie", "/adoptie-aanvraag"];
+const PUBLIC_PATHS = [
+  "/login",
+  // Wie zijn wachtwoord kwijt is of een uitnodiging kreeg, is per definitie
+  // niet ingelogd — deze twee moeten dus vóór de sessiecheck door.
+  "/wachtwoord-vergeten",
+  "/wachtwoord-instellen",
+  "/api",
+  "/_next",
+  "/favicon.ico",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/wandelaar-registratie",
+  "/adoptie-aanvraag",
+];
 
 // All roles with access to /beheerder routes (defined locally — Edge Runtime safe)
 const BACKOFFICE_ROLES = [

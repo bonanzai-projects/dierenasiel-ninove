@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import LogoutButton from "@/components/layout/LogoutButton";
 
 interface UserMenuProps {
@@ -96,6 +97,14 @@ export default function UserMenu({ userName, userRole }: UserMenuProps) {
             </p>
           </div>
           <div className="p-1">
+            <Link
+              href="/beheerder/account"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              Wachtwoord wijzigen
+            </Link>
             <LogoutButton variant="menuitem" />
           </div>
         </div>

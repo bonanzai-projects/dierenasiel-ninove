@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
-import { createUser, updateUser, resetUserPassword } from "@/lib/actions/users";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { createUser, updateUser, sendUserInvite } from "@/lib/actions/users";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -25,13 +25,50 @@ interface Props {
   onClose: () => void;
 }
 
+/**
+ * De link zelf tonen wanneer de mail niet vertrok. Zonder dit staat een nieuwe
+ * medewerker met een account dat hij niet kan openen — precies wat er met
+ * Nathalie gebeurde.
+ */
+function InviteLinkFallback({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Geen klembord (of geen toestemming): de link staat er gewoon om te selecteren.
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+      <p className="text-xs font-medium text-amber-900">
+        De mail is niet vertrokken. Geef deze link zelf door — hij blijft 7 dagen geldig:
+      </p>
+      <p className="mt-2 break-all rounded border border-amber-200 bg-white px-2 py-1 font-mono text-xs text-gray-800">
+        {url}
+      </p>
+      <button
+        type="button"
+        onClick={copy}
+        className="mt-2 rounded-md border border-amber-600 px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100"
+      >
+        {copied ? "Gekopieerd" : "Kopieer link"}
+      </button>
+    </div>
+  );
+}
+
 export default function UserForm({ editUser, onClose }: Props) {
   const isEdit = !!editUser;
   const [state, formAction, isPending] = useActionState(
     isEdit ? updateUser : createUser,
     null,
   );
-  const [resetState, resetAction, resetPending] = useActionState(resetUserPassword, null);
+  const [inviteState, inviteAction, invitePending] = useActionState(sendUserInvite, null);
   const formRef = useRef<HTMLFormElement>(null);
   const prevStateRef = useRef(state);
 
@@ -51,14 +88,34 @@ export default function UserForm({ editUser, onClose }: Props) {
     return hasFieldError(field) ? `${base} text-red-600` : `${base} text-gray-700`;
   };
 
+  // Bij het aanmaken houden we het formulier open zolang de link nog getoond
+  // moet worden; anders verdwijnt hij samen met het scherm.
+  const inviteUrl =
+    (state?.success ? state.data?.inviteUrl : undefined) ??
+    (inviteState?.success ? inviteState.data?.inviteUrl : undefined);
+
   useEffect(() => {
-    if (state?.success) {
+    if (state?.success && !inviteUrl) {
       formRef.current?.reset();
       onClose();
     }
-  }, [state, onClose]);
+  }, [state, inviteUrl, onClose]);
 
-  // Scroll to first error field when validation fails
+  // React 19 wist de velden van een uncontrolled form na elke server action.
+  // De actie geeft de ingevulde waarden terug; die zetten we deterministisch terug.
+  useEffect(() => {
+    if (state && !state.success && state.values && formRef.current) {
+      const form = formRef.current;
+      for (const [name, value] of Object.entries(state.values)) {
+        const field = form.elements.namedItem(name);
+        if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) {
+          field.value = value;
+        }
+      }
+    }
+  }, [state]);
+
+  // Scroll naar het eerste foutveld na een mislukte submit
   useEffect(() => {
     if (
       state &&
@@ -73,7 +130,6 @@ export default function UserForm({ editUser, onClose }: Props) {
           name: "user-name",
           email: "user-email",
           role: "user-role",
-          password: "user-password",
         };
         const elementId = fieldIdMap[firstErrorField];
         if (elementId) {
@@ -155,24 +211,6 @@ export default function UserForm({ editUser, onClose }: Props) {
             )}
           </div>
 
-          {!isEdit && (
-            <div>
-              <label htmlFor="user-password" className={labelClassName("password")}>
-                Wachtwoord *
-              </label>
-              <input
-                id="user-password"
-                name="password"
-                type="password"
-                aria-invalid={hasFieldError("password") || undefined}
-                className={inputClassName("password")}
-              />
-              {state && !state.success && state.fieldErrors?.password && (
-                <p className="mt-1 text-xs text-red-600">{state.fieldErrors.password[0]}</p>
-              )}
-            </div>
-          )}
-
           {isEdit && (
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -193,6 +231,13 @@ export default function UserForm({ editUser, onClose }: Props) {
           )}
         </div>
 
+        {!isEdit && (
+          <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
+            Je kiest geen wachtwoord. De nieuwe gebruiker krijgt een mail met een link om er zelf
+            één in te stellen.
+          </p>
+        )}
+
         {state && !state.success && state.error && (
           <p className="text-sm text-red-600">{state.error}</p>
         )}
@@ -207,51 +252,45 @@ export default function UserForm({ editUser, onClose }: Props) {
             disabled={isPending}
             className="rounded-md bg-[#1b4332] px-5 py-2 text-sm font-medium text-white hover:bg-[#2d6a4f] disabled:opacity-50"
           >
-            {isPending ? "Opslaan..." : isEdit ? "Bijwerken" : "Aanmaken"}
+            {isPending ? "Opslaan..." : isEdit ? "Bijwerken" : "Aanmaken en uitnodigen"}
           </button>
           <button
             type="button"
             onClick={onClose}
             className="rounded-md border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            Annuleren
+            {inviteUrl ? "Sluiten" : "Annuleren"}
           </button>
         </div>
       </form>
 
-      {/* Password reset section for edit mode */}
       {isEdit && (
         <div className="mt-6 border-t border-gray-200 pt-4">
-          <h3 className="text-sm font-semibold text-gray-700">Wachtwoord resetten</h3>
-          <form action={resetAction} noValidate className="mt-2 flex items-end gap-3">
+          <h3 className="text-sm font-semibold text-gray-700">Toegang</h3>
+          <p className="mt-1 text-xs text-gray-600">
+            Kan deze persoon niet inloggen, of kreeg hij nooit een mail? Stuur een nieuwe
+            uitnodiging — daarmee stelt hij zelf een wachtwoord in.
+          </p>
+          <form action={inviteAction} className="mt-2">
             <input type="hidden" name="id" value={editUser.id} />
-            <div className="flex-1">
-              <label htmlFor="reset-password" className="mb-1 block text-xs font-medium text-gray-600">
-                Nieuw wachtwoord
-              </label>
-              <input
-                id="reset-password"
-                name="password"
-                type="password"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-              />
-            </div>
             <button
               type="submit"
-              disabled={resetPending}
-              className="rounded-md border border-amber-600 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+              disabled={invitePending}
+              className="rounded-md border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
             >
-              {resetPending ? "Resetten..." : "Reset"}
+              {invitePending ? "Versturen..." : "Uitnodiging versturen"}
             </button>
           </form>
-          {resetState && !resetState.success && resetState.error && (
-            <p className="mt-1 text-xs text-red-600">{resetState.error}</p>
+          {inviteState && !inviteState.success && inviteState.error && (
+            <p className="mt-1 text-xs text-red-600">{inviteState.error}</p>
           )}
-          {resetState?.success && (
-            <p className="mt-1 text-xs text-emerald-600">{resetState.message}</p>
+          {inviteState?.success && inviteState.message && (
+            <p className="mt-1 text-xs text-emerald-600">{inviteState.message}</p>
           )}
         </div>
       )}
+
+      {inviteUrl && <InviteLinkFallback url={inviteUrl} />}
     </div>
   );
 }

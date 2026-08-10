@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import WalkerRegistrationForm from "@/components/wandelaar/WalkerRegistrationForm";
 
 type LoginMode = "surfer" | "wandelaar" | "beheerder";
@@ -119,6 +120,16 @@ export default function LoginForm({
               {isLoading ? "Even geduld..." : `Inloggen als ${tab}`}
             </button>
           </div>
+
+          {/* Wachtwoord vergeten — geldt voor elke rol */}
+          <p className="text-center text-sm text-white/60">
+            <Link
+              href={email.trim() ? `/wachtwoord-vergeten?email=${encodeURIComponent(email.trim())}` : "/wachtwoord-vergeten"}
+              className="font-semibold text-white/90 underline underline-offset-2 hover:text-white"
+            >
+              Wachtwoord vergeten?
+            </Link>
+          </p>
 
           {/* Wandelaar: registratie link */}
           {tab === "wandelaar" && (

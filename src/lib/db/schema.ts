@@ -139,6 +139,22 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+/**
+ * Eenmalige links om een wachtwoord in te stellen: een uitnodiging voor een nieuw
+ * account (`invite`) of een herstellink na "wachtwoord vergeten" (`reset`).
+ * We bewaren enkel de hash van de token — wie de databank leest, kan er dus geen
+ * geldige link mee bouwen. Zie `src/lib/auth/tokens.ts`.
+ */
+export const userTokens = pgTable("user_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: varchar("token_hash", { length: 64 }).unique().notNull(),
+  purpose: varchar("purpose", { length: 20 }).notNull(), // invite | reset
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const animalAttachments = pgTable("animal_attachments", {
   id: serial("id").primaryKey(),
   animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
