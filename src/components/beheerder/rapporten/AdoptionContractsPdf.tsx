@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
-import { SPECIES_LABELS } from "@/lib/constants";
+import { PDF_LETTERHEAD, SPECIES_LABELS } from "@/lib/constants";
 import type { AdoptionContractReportRow } from "@/lib/queries/reports";
 
 const styles = StyleSheet.create({
@@ -38,8 +38,8 @@ export default function AdoptionContractsPdf({ contracts, filters, generatedAt }
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
           <Text style={styles.title}>Overzicht adoptiecontracten</Text>
         </View>
 
@@ -79,7 +79,7 @@ export default function AdoptionContractsPdf({ contracts, filters, generatedAt }
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R3: Overzicht adoptiecontracten
+          {PDF_LETTERHEAD.name} — Rapport R3: Overzicht adoptiecontracten
         </Text>
       </Page>
     </Document>

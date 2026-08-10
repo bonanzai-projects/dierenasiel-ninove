@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
+import { PDF_LETTERHEAD } from "@/lib/constants";
 import type { StrayCatCampaign } from "@/types";
 import type { CampaignReportStats } from "@/lib/queries/stray-cat-campaigns";
 import {
@@ -57,8 +58,8 @@ export default function StrayCatCampaignsPdf({
       <Page size="A4" orientation="landscape" style={styles.page}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
-            <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-            <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+            <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+            <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
             <Text style={styles.title}>R14 — Zwerfkattenbeleid</Text>
             <Text style={styles.subtitle}>
               {municipality ? `Gemeente: ${municipality}` : "Alle gemeentes"}
@@ -122,7 +123,7 @@ export default function StrayCatCampaignsPdf({
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R14: Zwerfkattenbeleid
+          {PDF_LETTERHEAD.name} — Rapport R14: Zwerfkattenbeleid
         </Text>
       </Page>
     </Document>

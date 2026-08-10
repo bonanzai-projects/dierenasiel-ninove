@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
+import { PDF_LETTERHEAD } from "@/lib/constants";
 import type { DraaiboekPrintModel } from "@/lib/events/draaiboek-print";
 
 /**
@@ -74,7 +75,7 @@ export default function DraaiboekPdf({ model }: { model: DraaiboekPrintModel }) 
   return (
     <Document title={`Draaiboek — ${model.titel}`}>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.org}>Dierenasiel Ninove VZW — draaiboek</Text>
+        <Text style={styles.org}>{PDF_LETTERHEAD.name} — draaiboek</Text>
         <Text style={styles.titel}>{model.titel}</Text>
         <Text style={styles.ondertitel}>{model.ondertitel}</Text>
 

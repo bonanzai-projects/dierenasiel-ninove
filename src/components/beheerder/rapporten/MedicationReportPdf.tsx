@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
-import { SPECIES_LABELS } from "@/lib/constants";
+import { PDF_LETTERHEAD, SPECIES_LABELS } from "@/lib/constants";
 import type { MedicationReportRow } from "@/lib/queries/reports";
 
 const styles = StyleSheet.create({
@@ -38,8 +38,8 @@ export default function MedicationReportPdf({ medications, filters, generatedAt 
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
           <Text style={styles.title}>Medicatie-opvolging</Text>
         </View>
 
@@ -79,7 +79,7 @@ export default function MedicationReportPdf({ medications, filters, generatedAt 
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R5: Medicatie-opvolging
+          {PDF_LETTERHEAD.name} — Rapport R5: Medicatie-opvolging
         </Text>
       </Page>
     </Document>

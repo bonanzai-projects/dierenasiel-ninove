@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
-import { SPECIES_LABELS } from "@/lib/constants";
+import { PDF_LETTERHEAD, SPECIES_LABELS } from "@/lib/constants";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
 import type { IBNDossierReportRow } from "@/lib/queries/reports";
 
@@ -57,8 +57,8 @@ export default function IBNDossiersPdf({ dossiers, filters, generatedAt }: Props
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
           <Text style={styles.title}>IBN-dossiers overzicht</Text>
         </View>
 
@@ -105,7 +105,7 @@ export default function IBNDossiersPdf({ dossiers, filters, generatedAt }: Props
         </Text>
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R12: IBN-dossiers
+          {PDF_LETTERHEAD.name} — Rapport R12: IBN-dossiers
         </Text>
       </Page>
     </Document>

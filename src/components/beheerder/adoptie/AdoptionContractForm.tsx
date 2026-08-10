@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, startTransition } from "react";
+import { PDF_LETTERHEAD } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { createAdoptionContract } from "@/lib/actions/adoption-contracts";
 
@@ -179,7 +180,7 @@ export default function AdoptionContractForm({
             <h2 className="font-heading text-base font-bold text-[#1b4332]">
               Adoptiecontract {speciesLabel}
             </h2>
-            <p className="text-xs text-gray-500">Dierenasiel Ninove VZW — Minnenhofstraat 24, 9400 Denderwindeke</p>
+            <p className="text-xs text-gray-500">{PDF_LETTERHEAD.name} — {PDF_LETTERHEAD.address}</p>
           </div>
           <div>
             <label htmlFor="contractDate" className={`block text-xs font-medium ${fieldErrors?.contractDate ? "text-red-700" : "text-gray-500"}`}>

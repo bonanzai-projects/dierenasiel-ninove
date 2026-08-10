@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
-import { SPECIES_LABELS, GENDER_LABELS, STATUS_LABELS } from "@/lib/constants";
+import { GENDER_LABELS, PDF_LETTERHEAD, SPECIES_LABELS, STATUS_LABELS } from "@/lib/constants";
 import type { Animal } from "@/types";
 
 const styles = StyleSheet.create({
@@ -38,8 +38,8 @@ export default function AdoptableAnimalsPdf({ animals, filters, generatedAt }: P
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
           <Text style={styles.title}>Te adopteren dieren</Text>
         </View>
 
@@ -79,7 +79,7 @@ export default function AdoptableAnimalsPdf({ animals, filters, generatedAt }: P
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R6: Te adopteren dieren
+          {PDF_LETTERHEAD.name} — Rapport R6: Te adopteren dieren
         </Text>
       </Page>
     </Document>

@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
+import { PDF_LETTERHEAD } from "@/lib/constants";
 import type { KennelOccupancyReportRow } from "@/lib/queries/reports";
 
 const styles = StyleSheet.create({
@@ -35,8 +36,8 @@ export default function KennelOccupancyPdf({ kennels, filters, generatedAt }: Pr
     <Document>
       <Page size="A4" orientation="portrait" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
           <Text style={styles.title}>Kennelbezetting</Text>
         </View>
 
@@ -74,7 +75,7 @@ export default function KennelOccupancyPdf({ kennels, filters, generatedAt }: Pr
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R8: Kennelbezetting
+          {PDF_LETTERHEAD.name} — Rapport R8: Kennelbezetting
         </Text>
       </Page>
     </Document>

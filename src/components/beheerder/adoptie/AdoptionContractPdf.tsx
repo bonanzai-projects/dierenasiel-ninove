@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 import "@/lib/pdf/setup";
+import { PDF_LETTERHEAD } from "@/lib/constants";
 const s = StyleSheet.create({
   page: { padding: 40, fontSize: 9, fontFamily: "Helvetica" },
   // Header
@@ -187,7 +188,7 @@ function HondenContract({ data }: { data: ContractData }) {
         </View>
       </View>
 
-      <Text style={s.footer}>Dierenasiel Ninove VZW — Adoptiecontract honden</Text>
+      <Text style={s.footer}>{PDF_LETTERHEAD.name} — Adoptiecontract honden</Text>
     </Page>
   );
 }
@@ -284,7 +285,7 @@ function KattenContract({ data }: { data: ContractData }) {
         </View>
       </View>
 
-      <Text style={s.footer}>Dierenasiel Ninove VZW — Adoptiecontract kittens/katten</Text>
+      <Text style={s.footer}>{PDF_LETTERHEAD.name} — Adoptiecontract kittens/katten</Text>
     </Page>
   );
 }
@@ -375,7 +376,7 @@ function AndereDierenContract({ data }: { data: ContractData }) {
         </View>
       </View>
 
-      <Text style={s.footer}>Dierenasiel Ninove VZW — Adoptie andere dieren</Text>
+      <Text style={s.footer}>{PDF_LETTERHEAD.name} — Adoptie andere dieren</Text>
     </Page>
   );
 }

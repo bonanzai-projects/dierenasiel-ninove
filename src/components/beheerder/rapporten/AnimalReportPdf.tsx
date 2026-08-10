@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
-import { GENDER_LABELS } from "@/lib/constants";
+import { GENDER_LABELS, PDF_LETTERHEAD } from "@/lib/constants";
 import {
   formatDateBE,
   sterielLabel,
@@ -59,8 +59,8 @@ export default function AnimalReportPdf({ animals, filters, generatedAt }: Props
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
           <Text style={styles.title}>Overzicht dieren in asiel</Text>
         </View>
 
@@ -118,7 +118,7 @@ export default function AnimalReportPdf({ animals, filters, generatedAt }: Props
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R1: Overzicht dieren in asiel
+          {PDF_LETTERHEAD.name} — Rapport R1: Overzicht dieren in asiel
         </Text>
       </Page>
     </Document>

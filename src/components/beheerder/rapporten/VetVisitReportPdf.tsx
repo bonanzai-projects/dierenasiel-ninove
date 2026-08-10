@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
-import { SPECIES_LABELS } from "@/lib/constants";
+import { PDF_LETTERHEAD, SPECIES_LABELS } from "@/lib/constants";
 import type { VetVisitReportRow } from "@/lib/queries/reports";
 
 const LOCATION_LABELS: Record<string, string> = {
@@ -43,8 +43,8 @@ export default function VetVisitReportPdf({ visits, filters, generatedAt }: Prop
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
           <Text style={styles.title}>Dierenarts-bezoeken</Text>
         </View>
 
@@ -84,7 +84,7 @@ export default function VetVisitReportPdf({ visits, filters, generatedAt }: Prop
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R2: Dierenarts-bezoeken
+          {PDF_LETTERHEAD.name} — Rapport R2: Dierenarts-bezoeken
         </Text>
       </Page>
     </Document>

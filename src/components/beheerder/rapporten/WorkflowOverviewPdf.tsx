@@ -1,7 +1,7 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
-import { SPECIES_LABELS } from "@/lib/constants";
+import { PDF_LETTERHEAD, SPECIES_LABELS } from "@/lib/constants";
 import type { WorkflowOverviewReportRow } from "@/lib/queries/reports";
 
 const styles = StyleSheet.create({
@@ -70,8 +70,8 @@ export default function WorkflowOverviewPdf({ animals, filters, generatedAt }: P
     <Document>
       <Page size="A4" orientation="portrait" style={styles.page}>
         <View style={styles.header}>
-          <Text style={styles.org}>Dierenasiel Ninove VZW</Text>
-          <Text style={styles.org}>Minnenhofstraat 24, 9400 Denderwindeke</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
+          <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
           <Text style={styles.title}>Workflow-overzicht</Text>
         </View>
 
@@ -109,7 +109,7 @@ export default function WorkflowOverviewPdf({ animals, filters, generatedAt }: P
         )}
 
         <Text style={styles.footer}>
-          Dierenasiel Ninove VZW — Rapport R13: Workflow-overzicht
+          {PDF_LETTERHEAD.name} — Rapport R13: Workflow-overzicht
         </Text>
       </Page>
     </Document>

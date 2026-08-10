@@ -83,6 +83,23 @@ export const SHELTER_LOCATIONS = {
   },
 } as const;
 
+/**
+ * Briefhoofd van elk officieel document (PDF's, contracten, rapporten).
+ *
+ * Stond in zeventien componenten letterlijk overgetypt. Bij een verhuis of een
+ * naamswijziging zou je ze allemaal moeten vinden — en één vergeten rapport
+ * draagt dan jarenlang het verkeerde adres.
+ *
+ * Het adres is dat van de hondenvestiging (`SHELTER_LOCATIONS.dogs`), zonder de
+ * toevoeging "(Ninove)" die op de website wél gebruikt wordt: op een brief hoort
+ * de postgemeente te staan. Een test bewaakt dat straat en huisnummer met
+ * `SHELTER_LOCATIONS` blijven overeenkomen.
+ */
+export const PDF_LETTERHEAD = {
+  name: SITE_NAME,
+  address: `${SHELTER_LOCATIONS.dogs.address}, 9400 Denderwindeke`,
+} as const;
+
 export const CONTACT = {
   phone: "054/32 16 79",
   phoneHref: "tel:+3254321679",
