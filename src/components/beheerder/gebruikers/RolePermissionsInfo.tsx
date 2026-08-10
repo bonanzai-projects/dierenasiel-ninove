@@ -80,7 +80,7 @@ export default function RolePermissionsInfo({ open = false }: { open?: boolean }
                       <td
                         key={role}
                         className={`px-3 py-2.5 ${
-                          access === "geen" ? "text-gray-300" : "text-gray-700"
+                          access === "geen" ? "text-gray-500" : "text-gray-700"
                         }`}
                       >
                         {accessLabel(access, area)}
