@@ -60,7 +60,7 @@ export default function StrayCatCampaignsPdf({
           <View style={styles.headerLeft}>
             <Text style={styles.org}>{PDF_LETTERHEAD.name}</Text>
             <Text style={styles.org}>{PDF_LETTERHEAD.address}</Text>
-            <Text style={styles.title}>R14 — Zwerfkattenbeleid</Text>
+            <Text style={styles.title}>Zwerfkattenbeleid</Text>
             <Text style={styles.subtitle}>
               {municipality ? `Gemeente: ${municipality}` : "Alle gemeentes"}
               {"  ·  "}Periode: {formatPeriod(dateFrom, dateTo)}
@@ -123,7 +123,7 @@ export default function StrayCatCampaignsPdf({
         )}
 
         <Text style={styles.footer}>
-          {PDF_LETTERHEAD.name} — Rapport R14: Zwerfkattenbeleid
+          {PDF_LETTERHEAD.name} — Zwerfkattenbeleid
         </Text>
       </Page>
     </Document>

@@ -105,7 +105,9 @@ export async function GET(request: NextRequest) {
 
     const dateStr = new Date().toISOString().split("T")[0];
     const safeMunicipality = rawMunicipality?.replace(/[^a-zA-Z0-9_-]/g, "_") ?? "alle";
-    const filename = `R14-zwerfkatten-${safeMunicipality}-${dateStr}.pdf`;
+    // Geen "R14" in de naam: dat is onze interne codering en het bestand gaat
+    // naar een gemeentebestuur (Sven, 2026-08-10).
+    const filename = `zwerfkattenbeleid-${safeMunicipality}-${dateStr}.pdf`;
 
     return new Response(new Uint8Array(buffer), {
       headers: {

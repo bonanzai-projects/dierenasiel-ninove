@@ -46,7 +46,7 @@ export default async function ZwerfkattenRapportPage({ searchParams }: Props) {
             &larr; Terug naar rapporten
           </Link>
           <h1 className="mt-1 text-2xl font-bold text-gray-900">
-            R14 — Zwerfkattenbeleid
+            Zwerfkattenbeleid
           </h1>
           <p className="text-sm text-gray-500">{stats.total} campagnes</p>
         </div>
