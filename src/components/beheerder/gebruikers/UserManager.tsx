@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import UserTable from "./UserTable";
 import UserForm from "./UserForm";
+import RolePermissionsInfo from "./RolePermissionsInfo";
 
 interface User {
   id: number;
@@ -55,6 +56,8 @@ export default function UserManager({ users }: Props) {
       )}
 
       <UserTable users={users} onEdit={handleEdit} />
+
+      <RolePermissionsInfo />
     </div>
   );
 }

@@ -3,14 +3,8 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createUser, updateUser, sendUserInvite } from "@/lib/actions/users";
 import { BACKOFFICE_ROLES } from "@/lib/constants";
-
-const ROLE_LABELS: Record<string, string> = {
-  beheerder: "Beheerder",
-  medewerker: "Medewerker",
-  dierenarts: "Dierenarts",
-  adoptieconsulent: "Adoptieconsulent",
-  "coördinator": "Coördinator",
-};
+import { ROLE_LABELS } from "@/lib/permissions/explain";
+import RoleSummary from "./RoleSummary";
 
 interface User {
   id: number;
@@ -71,6 +65,9 @@ export default function UserForm({ editUser, onClose }: Props) {
   const [inviteState, inviteAction, invitePending] = useActionState(sendUserInvite, null);
   const formRef = useRef<HTMLFormElement>(null);
   const prevStateRef = useRef(state);
+  // Enkel om de samenvatting onder het keuzelijstje te tonen — het veld zelf
+  // blijft uncontrolled, zodat de herstel-useEffect hieronder blijft werken.
+  const [gekozenRol, setGekozenRol] = useState(editUser?.role ?? "");
 
   const hasFieldError = (field: string): boolean =>
     !!(state && !state.success && state.fieldErrors?.[field]?.length);
@@ -112,6 +109,9 @@ export default function UserForm({ editUser, onClose }: Props) {
           field.value = value;
         }
       }
+      // Het veld terugzetten via de DOM vuurt geen onChange, dus de samenvatting
+      // zou anders bij de vorige rol blijven staan.
+      if (state.values.role !== undefined) setGekozenRol(state.values.role);
     }
   }, [state]);
 
@@ -196,6 +196,7 @@ export default function UserForm({ editUser, onClose }: Props) {
               id="user-role"
               name="role"
               defaultValue={editUser?.role ?? ""}
+              onChange={(event) => setGekozenRol(event.target.value)}
               aria-invalid={hasFieldError("role") || undefined}
               className={inputClassName("role")}
             >
@@ -209,6 +210,7 @@ export default function UserForm({ editUser, onClose }: Props) {
             {state && !state.success && state.fieldErrors?.role && (
               <p className="mt-1 text-xs text-red-600">{state.fieldErrors.role[0]}</p>
             )}
+            <RoleSummary role={gekozenRol} />
           </div>
 
           {isEdit && (
