@@ -44,16 +44,12 @@ export default function RolePermissionsInfo({ open = false }: { open?: boolean }
         <div className="overflow-x-auto">
           <table className="w-full min-w-[46rem] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-100">
-                <th scope="col" className="py-2 pl-3 pr-4 font-semibold text-gray-800">
+              <tr className="bg-[#1b4332] text-white">
+                <th scope="col" className="py-2.5 pl-3 pr-4 font-semibold">
                   Onderdeel
                 </th>
                 {BACKOFFICE_ROLES.map((role) => (
-                  <th
-                    key={role}
-                    scope="col"
-                    className="px-3 py-2 font-semibold text-gray-800"
-                  >
+                  <th key={role} scope="col" className="px-3 py-2.5 font-semibold">
                     {ROLE_LABELS[role]}
                   </th>
                 ))}
@@ -64,7 +60,7 @@ export default function RolePermissionsInfo({ open = false }: { open?: boolean }
                 <tr key={area.key} className="border-b border-gray-100 align-top">
                   <th
                     scope="row"
-                    className="bg-gray-50 py-2.5 pl-3 pr-4 font-medium text-gray-800"
+                    className="bg-gray-100 py-2.5 pl-3 pr-4 font-medium text-gray-900"
                   >
                     {area.label}
                     {area.hint && (
