@@ -3,10 +3,13 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requirePermission } from "@/lib/permissions";
 import { getCampaignReport, getDistinctMunicipalities } from "@/lib/queries/stray-cat-campaigns";
-import { CAMPAIGN_OUTCOME_LABELS, FIV_FELV_STATUS_LABELS } from "@/lib/constants";
 import ReportExportBar from "@/components/beheerder/rapporten/ReportExportBar";
-import CampaignStatusBadge from "@/components/beheerder/zwerfkatten/CampaignStatusBadge";
 import CampaignFilters from "@/components/beheerder/zwerfkatten/CampaignFilters";
+import {
+  STRAY_CAT_REPORT_COLUMNS,
+  strayCatReportRow,
+  strayCatSummaryTiles,
+} from "@/lib/reports/stray-cat-report";
 import { exportStrayCatCsvWrapper } from "./actions";
 
 interface Props {
@@ -61,69 +64,60 @@ export default async function ZwerfkattenRapportPage({ searchParams }: Props) {
         <CampaignFilters municipalities={municipalities} />
       </Suspense>
 
-      {/* Statistieken */}
+      {/* Samenvatting — zelfde tegels als op de PDF */}
       {stats.total > 0 && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Samenvatting</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Totaal campagnes" value={stats.total} />
-            <StatCard label="Afgeronde campagnes" value={stats.completedCampaigns} />
-            <StatCard label="FIV positief" value={`${stats.fivPositive} (${stats.fivPercentage}%)`} />
-            <StatCard label="FeLV positief" value={`${stats.felvPositive} (${stats.felvPercentage}%)`} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {strayCatSummaryTiles(stats).map((tile) => (
+              <StatCard key={tile.key} label={tile.label} value={tile.value} />
+            ))}
           </div>
-          {Object.keys(stats.outcomes).length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-3">
-              {Object.entries(stats.outcomes).map(([key, count]) => (
-                <StatCard
-                  key={key}
-                  label={CAMPAIGN_OUTCOME_LABELS[key as keyof typeof CAMPAIGN_OUTCOME_LABELS] ?? key}
-                  value={count}
-                />
-              ))}
-            </div>
-          )}
         </div>
       )}
 
-      {/* Detail tabel */}
+      {/* Detail tabel — zelfde tien kolommen als op de PDF */}
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Datum</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Gemeente</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Adres</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">FIV</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">FeLV</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Uitkomst</th>
+              {STRAY_CAT_REPORT_COLUMNS.map((column) => (
+                <th
+                  key={column.key}
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                >
+                  {column.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {campaigns.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-500">
+                <td
+                  colSpan={STRAY_CAT_REPORT_COLUMNS.length}
+                  className="px-4 py-8 text-center text-sm text-gray-500"
+                >
                   Geen campagnes gevonden voor deze filters.
                 </td>
               </tr>
             ) : (
-              campaigns.map((campaign) => (
-                <tr key={campaign.id} className="hover:bg-gray-50">
-                  <td className="whitespace-nowrap px-4 py-2 text-sm text-gray-600">{campaign.requestDate}</td>
-                  <td className="px-4 py-2 text-sm text-gray-600">{campaign.municipality}</td>
-                  <td className="max-w-xs truncate px-4 py-2 text-sm text-gray-600">{campaign.address}</td>
-                  <td className="px-4 py-2 text-sm">
-                    <CampaignStatusBadge status={campaign.status} />
-                  </td>
-                  <td className="px-4 py-2 text-sm text-gray-600">{campaign.fivStatus ? (FIV_FELV_STATUS_LABELS[campaign.fivStatus as keyof typeof FIV_FELV_STATUS_LABELS] ?? campaign.fivStatus) : "-"}</td>
-                  <td className="px-4 py-2 text-sm text-gray-600">{campaign.felvStatus ? (FIV_FELV_STATUS_LABELS[campaign.felvStatus as keyof typeof FIV_FELV_STATUS_LABELS] ?? campaign.felvStatus) : "-"}</td>
-                  <td className="px-4 py-2 text-sm text-gray-600">
-                    {campaign.outcome
-                      ? CAMPAIGN_OUTCOME_LABELS[campaign.outcome as keyof typeof CAMPAIGN_OUTCOME_LABELS] ?? campaign.outcome
-                      : "-"}
-                  </td>
-                </tr>
-              ))
+              campaigns.map((campaign) => {
+                const row = strayCatReportRow(campaign);
+                return (
+                  <tr key={campaign.id} className="hover:bg-gray-50">
+                    {STRAY_CAT_REPORT_COLUMNS.map((column) => (
+                      <td
+                        key={column.key}
+                        className="whitespace-pre-line px-4 py-2 align-top text-sm text-gray-600"
+                      >
+                        {row[column.key]}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

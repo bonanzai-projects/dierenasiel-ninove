@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
+import "@/lib/pdf/setup";
 const s = StyleSheet.create({
   page: { padding: 40, fontSize: 9, fontFamily: "Helvetica" },
   // Header

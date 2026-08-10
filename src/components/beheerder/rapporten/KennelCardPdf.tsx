@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Svg, Polyline } from "@react-pdf/renderer";
+import "@/lib/pdf/setup";
 import type { KennelCardModel, KennelCardOption } from "@/lib/animals/kennel-card";
 
 /**

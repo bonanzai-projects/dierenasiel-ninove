@@ -1,7 +1,13 @@
 import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import "@/lib/pdf/setup";
 import type { StrayCatCampaign } from "@/types";
 import type { CampaignReportStats } from "@/lib/queries/stray-cat-campaigns";
-import { CAMPAIGN_OUTCOME_LABELS, FIV_FELV_STATUS_LABELS } from "@/lib/constants";
+import {
+  STRAY_CAT_REPORT_COLUMNS,
+  formatPeriod,
+  strayCatReportRow,
+  strayCatSummaryTiles,
+} from "@/lib/reports/stray-cat-report";
 
 const styles = StyleSheet.create({
   page: { padding: 30, fontSize: 9, fontFamily: "Helvetica" },
@@ -23,49 +29,9 @@ const styles = StyleSheet.create({
   tableRow: { flexDirection: "row", borderBottom: "0.5 solid #eee", paddingVertical: 3, paddingHorizontal: 4 },
   headerText: { fontSize: 7, fontFamily: "Helvetica-Bold", color: "#374151" },
   cellText: { fontSize: 7 },
-  colDate: { width: "8%" },
-  colMunicipality: { width: "10%" },
-  colAddress: { width: "16%" },
-  colCage: { width: "12%" },
-  colInspection: { width: "8%" },
-  colCat: { width: "13%" },
-  colVet: { width: "10%" },
-  colFiv: { width: "7%" },
-  colOutcome: { width: "9%" },
-  colRemarks: { width: "7%" },
   footer: { position: "absolute", bottom: 20, left: 30, right: 30, textAlign: "center", fontSize: 7, color: "#999" },
   empty: { fontSize: 9, color: "#999", fontStyle: "italic", paddingVertical: 8, textAlign: "center" },
 });
-
-function fivFelvLabel(value: string | null): string {
-  if (!value) return "-";
-  return FIV_FELV_STATUS_LABELS[value as keyof typeof FIV_FELV_STATUS_LABELS] ?? value;
-}
-
-function outcomeLabel(value: string | null): string {
-  if (!value) return "-";
-  return CAMPAIGN_OUTCOME_LABELS[value as keyof typeof CAMPAIGN_OUTCOME_LABELS] ?? value;
-}
-
-function formatPeriod(dateFrom: string | undefined, dateTo: string | undefined): string {
-  if (dateFrom && dateTo) return `${dateFrom} t/m ${dateTo}`;
-  if (dateFrom) return `vanaf ${dateFrom}`;
-  if (dateTo) return `tot ${dateTo}`;
-  return "Alle periodes";
-}
-
-function combineCageInfo(campaign: StrayCatCampaign): string {
-  const parts: string[] = [];
-  if (campaign.cageDeploymentDate) parts.push(campaign.cageDeploymentDate);
-  if (campaign.cageNumbers) parts.push(`#${campaign.cageNumbers}`);
-  return parts.length > 0 ? parts.join(" ") : "-";
-}
-
-function combineFivFelv(campaign: StrayCatCampaign): string {
-  const fiv = fivFelvLabel(campaign.fivStatus);
-  const felv = fivFelvLabel(campaign.felvStatus);
-  return `FIV: ${fiv}\nFeLV: ${felv}`;
-}
 
 interface Props {
   campaigns: StrayCatCampaign[];
@@ -114,26 +80,10 @@ export default function StrayCatCampaignsPdf({
 
         {/* Compacte samenvatting */}
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Totaal</Text>
-            <Text style={styles.statValue}>{stats.total}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Afgerond</Text>
-            <Text style={styles.statValue}>{stats.completedCampaigns}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>FIV positief</Text>
-            <Text style={styles.statValue}>{stats.fivPositive} ({stats.fivPercentage}%)</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>FeLV positief</Text>
-            <Text style={styles.statValue}>{stats.felvPositive} ({stats.felvPercentage}%)</Text>
-          </View>
-          {Object.entries(stats.outcomes).slice(0, 3).map(([key, count]) => (
-            <View key={key} style={styles.statCard}>
-              <Text style={styles.statLabel}>{outcomeLabel(key)}</Text>
-              <Text style={styles.statValue}>{count}</Text>
+          {strayCatSummaryTiles(stats).map((tile) => (
+            <View key={tile.key} style={styles.statCard}>
+              <Text style={styles.statLabel}>{tile.label}</Text>
+              <Text style={styles.statValue}>{tile.value}</Text>
             </View>
           ))}
         </View>
@@ -144,31 +94,30 @@ export default function StrayCatCampaignsPdf({
         ) : (
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <Text style={[styles.colDate, styles.headerText]}>Datum</Text>
-              <Text style={[styles.colMunicipality, styles.headerText]}>Gemeente</Text>
-              <Text style={[styles.colAddress, styles.headerText]}>Adres</Text>
-              <Text style={[styles.colCage, styles.headerText]}>Kooi-uitzetting</Text>
-              <Text style={[styles.colInspection, styles.headerText]}>Inspectie</Text>
-              <Text style={[styles.colCat, styles.headerText]}>Kat (beschrijving)</Text>
-              <Text style={[styles.colVet, styles.headerText]}>Dierenarts</Text>
-              <Text style={[styles.colFiv, styles.headerText]}>FIV / FeLV</Text>
-              <Text style={[styles.colOutcome, styles.headerText]}>Uitkomst</Text>
-              <Text style={[styles.colRemarks, styles.headerText]}>Opm.</Text>
+              {STRAY_CAT_REPORT_COLUMNS.map((column) => (
+                <Text
+                  key={column.key}
+                  style={[{ width: column.pdfWidth }, styles.headerText]}
+                >
+                  {column.label}
+                </Text>
+              ))}
             </View>
-            {campaigns.map((campaign) => (
-              <View key={campaign.id} style={styles.tableRow}>
-                <Text style={[styles.colDate, styles.cellText]}>{campaign.requestDate}</Text>
-                <Text style={[styles.colMunicipality, styles.cellText]}>{campaign.municipality}</Text>
-                <Text style={[styles.colAddress, styles.cellText]}>{campaign.address}</Text>
-                <Text style={[styles.colCage, styles.cellText]}>{combineCageInfo(campaign)}</Text>
-                <Text style={[styles.colInspection, styles.cellText]}>{campaign.inspectionDate ?? "-"}</Text>
-                <Text style={[styles.colCat, styles.cellText]}>{campaign.catDescription ?? "-"}</Text>
-                <Text style={[styles.colVet, styles.cellText]}>{campaign.vetName ?? "-"}</Text>
-                <Text style={[styles.colFiv, styles.cellText]}>{combineFivFelv(campaign)}</Text>
-                <Text style={[styles.colOutcome, styles.cellText]}>{outcomeLabel(campaign.outcome)}</Text>
-                <Text style={[styles.colRemarks, styles.cellText]}>{campaign.remarks ?? "-"}</Text>
-              </View>
-            ))}
+            {campaigns.map((campaign) => {
+              const row = strayCatReportRow(campaign);
+              return (
+                <View key={campaign.id} style={styles.tableRow}>
+                  {STRAY_CAT_REPORT_COLUMNS.map((column) => (
+                    <Text
+                      key={column.key}
+                      style={[{ width: column.pdfWidth }, styles.cellText]}
+                    >
+                      {row[column.key]}
+                    </Text>
+                  ))}
+                </View>
+              );
+            })}
           </View>
         )}
 

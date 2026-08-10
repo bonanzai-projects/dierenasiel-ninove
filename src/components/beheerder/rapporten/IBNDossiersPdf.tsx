@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import "@/lib/pdf/setup";
 import { SPECIES_LABELS } from "@/lib/constants";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
 import type { IBNDossierReportRow } from "@/lib/queries/reports";

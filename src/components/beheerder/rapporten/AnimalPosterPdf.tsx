@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import "@/lib/pdf/setup";
 import { genderLabel } from "@/lib/utils";
 import { animalTraitLines, type AnimalTraits } from "@/lib/animals/animal-traits";
 import { posterSterielLabel, posterAgeLine } from "@/lib/posters/poster-format";

@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import "@/lib/pdf/setup";
 import type { DraaiboekPrintModel } from "@/lib/events/draaiboek-print";
 
 /**

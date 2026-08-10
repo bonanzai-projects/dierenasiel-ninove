@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import "@/lib/pdf/setup";
 import { SPECIES_LABELS, GENDER_LABELS, STATUS_LABELS } from "@/lib/constants";
 import type { Animal } from "@/types";
 

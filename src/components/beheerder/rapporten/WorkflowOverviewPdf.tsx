@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import "@/lib/pdf/setup";
 import { PHASE_LABELS } from "@/lib/workflow/stepbar";
 import { SPECIES_LABELS } from "@/lib/constants";
 import type { WorkflowOverviewReportRow } from "@/lib/queries/reports";
