@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import fixture from "./__fixtures__/animals.json";
+import bommel from "./__fixtures__/bommel.json";
 import { animalShelterAnimalSchema, parseAnimalList } from "./types";
 
 /**
@@ -69,5 +70,43 @@ describe("parseAnimalList", () => {
 
   it("gooit wanneer één dier in de lijst niet klopt — liever niets dan half", () => {
     expect(() => parseAnimalList([rocky, { id: "geen getal" }])).toThrow();
+  });
+});
+
+/**
+ * Story 11.9 — productiebug van 2026-09-05. Het dier "Bommel" kwam binnen met
+ * `"properties": []`. PHP's `json_encode` maakt van een lege associatieve array
+ * een lege JSON-array, geen leeg object. Dat is geen schemawijziging aan hun
+ * kant, alleen een andere schrijfwijze van "niets".
+ */
+describe("properties — de lege-array-vorm van AnimalShelter (Story 11.9)", () => {
+  it("aanvaardt de echte respons van Bommel en leest de lege array als geen properties", () => {
+    const parsed = animalShelterAnimalSchema.parse(bommel);
+    expect(parsed.id).toBe(1908097);
+    expect(parsed.properties).toBeNull();
+  });
+
+  it("behandelt [] en null als hetzelfde", () => {
+    const uitArray = animalShelterAnimalSchema.parse({ ...bommel, properties: [] });
+    const uitNull = animalShelterAnimalSchema.parse({ ...bommel, properties: null });
+    expect(uitArray.properties).toEqual(uitNull.properties);
+  });
+
+  it("laat een gevulde array wél vallen — die vorm kennen we niet en raden we niet", () => {
+    expect(() => animalShelterAnimalSchema.parse({ ...bommel, properties: ["kindvriendelijk"] })).toThrow();
+  });
+
+  it("blijft een echte sleutel-waardetabel gewoon lezen", () => {
+    const parsed = animalShelterAnimalSchema.parse({
+      ...bommel,
+      properties: { kindvriendelijk: "ja", andere_honden: null },
+    });
+    expect(parsed.properties).toEqual({ kindvriendelijk: "ja", andere_honden: null });
+  });
+
+  it("parseert de categorie `other` van 2026-09-05 volledig", () => {
+    const dieren = parseAnimalList([fixture[2], bommel]);
+    expect(dieren).toHaveLength(2);
+    expect(dieren.map((d) => d.naam)).toEqual(["Varken (vondeling)", "Bommel"]);
   });
 });

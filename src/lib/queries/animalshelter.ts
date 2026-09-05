@@ -13,7 +13,7 @@ import {
   type LocalAnimalRecord,
   type OverviewModel,
 } from "@/lib/animalshelter/overview";
-import type { AnimalShelterAnimal } from "@/lib/animalshelter/types";
+import { AnimalShelterShapeError, type AnimalShelterAnimal } from "@/lib/animalshelter/types";
 
 /**
  * Story 11.4 — de gegevens voor het AnimalShelter-scherm.
@@ -28,7 +28,7 @@ import type { AnimalShelterAnimal } from "@/lib/animalshelter/types";
  */
 
 export type AnimalShelterFetchError = {
-  code: "disabled" | "auth_failed" | "unreachable";
+  code: "disabled" | "auth_failed" | "unreachable" | "invalid_response";
   message: string;
 };
 
@@ -47,8 +47,24 @@ export type ComparisonResult =
     }
   | { ok: false; error: AnimalShelterFetchError };
 
-function toFetchError(error: unknown): AnimalShelterFetchError {
+export function toFetchError(error: unknown): AnimalShelterFetchError {
+  // Story 11.9: een vormfout in hún gegevens is geen storing. Wie "straks
+  // opnieuw" probeert, krijgt dan eindeloos hetzelfde — de melding moet zeggen
+  // waar het echt over gaat.
+  if (error instanceof AnimalShelterShapeError) {
+    return {
+      code: "invalid_response",
+      message: `AnimalShelter stuurde onverwachte gegevens, waardoor het overzicht niet opgebouwd kon worden. ${error.message}`,
+    };
+  }
+
   if (error instanceof AnimalShelterError) {
+    if (error.code === "invalid_response") {
+      return {
+        code: "invalid_response",
+        message: "AnimalShelter stuurde onverwachte gegevens die wij niet konden lezen.",
+      };
+    }
     if (error.code === "disabled") {
       return {
         code: "disabled",

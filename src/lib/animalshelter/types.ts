@@ -16,6 +16,22 @@ import { z } from "zod";
 const nullableString = z.string().nullish().transform((v) => v ?? null);
 const nullableNumber = z.number().nullish().transform((v) => v ?? null);
 
+/**
+ * `properties` komt in twee schrijfwijzen binnen voor hetzelfde "niets" (Story 11.9).
+ *
+ * AnimalShelter draait op PHP, en `json_encode` van een lege associatieve array
+ * levert `[]` in plaats van `{}`. Voor het dier "Bommel" (id 1908097) gebeurde
+ * dat in productie, waarop het hele scherm viel. We lezen die lege array dus als
+ * "geen properties" — precies zoals `null`.
+ *
+ * Een gevúlde array laten we wél vallen: dat zou een echte vormwijziging zijn en
+ * die willen we zien, niet gokken.
+ */
+const propertiesField = z.preprocess(
+  (value) => (Array.isArray(value) && value.length === 0 ? null : value),
+  z.record(z.string(), z.string().nullable()).nullish().transform((v) => v ?? null),
+);
+
 export const animalShelterCategorySchema = z.enum(["dogs", "cats", "other"]);
 
 export const animalShelterImageSchema = z.object({
@@ -49,15 +65,52 @@ export const animalShelterAnimalSchema = z.looseObject({
   checkout_reason: nullableString,
   korte_beschrijving_nl: nullableString,
   beschrijving_nl: nullableString,
-  properties: z.record(z.string(), z.string().nullable()).nullish().transform((v) => v ?? null),
+  properties: propertiesField,
 });
 
 export type AnimalShelterAnimal = z.infer<typeof animalShelterAnimalSchema>;
 export type AnimalShelterCategory = z.infer<typeof animalShelterCategorySchema>;
 
+/**
+ * Story 11.9 — één eigen fouttype voor "hun antwoord heeft een vorm die wij niet
+ * kennen". Zonder dat onderscheid werd een vormfout in het scherm vertaald naar
+ * "AnimalShelter is momenteel niet bereikbaar", wat naar de verkeerde oorzaak
+ * wijst: hun API antwoordde perfect, alleen anders dan verwacht.
+ */
+export class AnimalShelterShapeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AnimalShelterShapeError";
+  }
+}
+
+/** Genoeg om het dier bij AnimalShelter terug te vinden, ook als de rest onleesbaar is. */
+function describeItem(item: unknown): string {
+  if (typeof item !== "object" || item === null) return "een dier";
+  const { id, naam } = item as { id?: unknown; naam?: unknown };
+  const delen = [
+    typeof id === "number" || typeof id === "string" ? `id ${id}` : null,
+    typeof naam === "string" && naam ? `"${naam}"` : null,
+  ].filter(Boolean);
+  return delen.length > 0 ? `dier ${delen.join(" ")}` : "een dier";
+}
+
 export function parseAnimalList(payload: unknown): AnimalShelterAnimal[] {
   if (!Array.isArray(payload)) {
-    throw new Error("AnimalShelter gaf geen lijst van dieren terug.");
+    throw new AnimalShelterShapeError("AnimalShelter gaf geen lijst van dieren terug.");
   }
-  return payload.map((item) => animalShelterAnimalSchema.parse(item));
+  return payload.map((item) => {
+    const resultaat = animalShelterAnimalSchema.safeParse(item);
+    if (!resultaat.success) {
+      const velden = [...new Set(resultaat.error.issues.map((i) => i.path.join(".")))]
+        .filter(Boolean)
+        .join(", ");
+      throw new AnimalShelterShapeError(
+        `AnimalShelter gaf ${describeItem(item)} in een onverwachte vorm terug${
+          velden ? ` (veld: ${velden})` : ""
+        }.`,
+      );
+    }
+    return resultaat.data;
+  });
 }
