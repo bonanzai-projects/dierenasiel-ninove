@@ -3,6 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { requirePermission } from "@/lib/permissions";
 import { getVetInspectionReportsFiltered } from "@/lib/queries/reports";
 import InspectionListPdf from "@/components/beheerder/rapporten/InspectionListPdf";
+import { pdfContentDisposition, wantsPdfDownload } from "@/lib/pdf/disposition";
 import { createElement } from "react";
 
 export async function GET(request: NextRequest) {
@@ -37,7 +38,8 @@ export async function GET(request: NextRequest) {
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        // Story 10.71: standaard in het programma tonen; downloaden met ?download=1.
+        "Content-Disposition": pdfContentDisposition(filename, wantsPdfDownload(params)),
       },
     });
   } catch (err) {

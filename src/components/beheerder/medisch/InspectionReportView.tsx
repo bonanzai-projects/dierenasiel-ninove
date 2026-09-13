@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import PdfViewerButton from "@/components/beheerder/shared/PdfViewer";
 import { signVetInspectionReport, deleteVetInspectionReport } from "@/lib/actions/vet-inspection-reports";
 import type { VetInspectionReport, TreatedAnimalEntry, EuthanizedAnimalEntry, AbnormalBehaviorEntry } from "@/types";
 
@@ -47,12 +47,14 @@ export default function InspectionReportView({ report }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/api/rapporten/bezoekrapport/${report.id}/pdf`}
+          {/* Story 10.71 — in het programma bekijken; downloaden kan in het venster. */}
+          <PdfViewerButton
+            src={`/api/rapporten/bezoekrapport/${report.id}/pdf`}
+            title={`Bezoekrapport ${report.visitDate} — ${report.vetName}`}
             className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
           >
-            PDF downloaden
-          </Link>
+            PDF bekijken
+          </PdfViewerButton>
           {!isSigned && (
             <>
               <form action={signAction}>

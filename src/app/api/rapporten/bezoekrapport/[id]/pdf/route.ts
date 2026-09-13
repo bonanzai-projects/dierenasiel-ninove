@@ -3,10 +3,11 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { requirePermission } from "@/lib/permissions";
 import { getVetInspectionReportById } from "@/lib/queries/vet-inspection-reports";
 import InspectionReportPdf from "@/components/beheerder/medisch/InspectionReportPdf";
+import { pdfContentDisposition, wantsPdfDownload } from "@/lib/pdf/disposition";
 import { createElement } from "react";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const permCheck = await requirePermission("medical:read");
@@ -35,7 +36,8 @@ export async function GET(
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      // Story 10.71: standaard in het programma tonen; downloaden met ?download=1.
+      "Content-Disposition": pdfContentDisposition(filename, wantsPdfDownload(request.nextUrl.searchParams)),
     },
   });
 }

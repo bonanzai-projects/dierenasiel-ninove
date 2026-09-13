@@ -6,6 +6,7 @@ import { getVetInspectionReportsFiltered } from "@/lib/queries/reports";
 import DateRangeFilter from "@/components/beheerder/rapporten/DateRangeFilter";
 import ReportExportBar from "@/components/beheerder/rapporten/ReportExportBar";
 import Pagination from "@/components/beheerder/dieren/Pagination";
+import PdfViewerButton from "@/components/beheerder/shared/PdfViewer";
 import type { TreatedAnimalEntry, EuthanizedAnimalEntry, AbnormalBehaviorEntry } from "@/types";
 
 const PAGE_SIZE = 50;
@@ -59,9 +60,12 @@ export default async function BezoekrapportenPage({ searchParams }: Props) {
           <p className="text-sm text-gray-500">{total} rapporten</p>
         </div>
         <Suspense>
+          {/* Story 10.71 — Sven: in het programma bekijken, niet downloaden. */}
           <ReportExportBar
             pdfUrl="/api/rapporten/bezoekrapporten/pdf"
             filenamePrefix="bezoekrapporten"
+            viewInApp
+            pdfTitle="R11 — Bezoekrapporten contractdierenarts"
           />
         </Suspense>
       </div>
@@ -116,14 +120,13 @@ export default async function BezoekrapportenPage({ searchParams }: Props) {
                       </span>
                     </td>
                     <td className="px-4 py-2 text-sm">
-                      <a
-                        href={`/api/rapporten/bezoekrapport/${report.id}/pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <PdfViewerButton
+                        src={`/api/rapporten/bezoekrapport/${report.id}/pdf`}
+                        title={`Bezoekrapport ${report.visitDate} — ${report.vetName}`}
                         className="text-emerald-700 hover:text-emerald-800 hover:underline text-xs font-medium"
                       >
                         Bekijken
-                      </a>
+                      </PdfViewerButton>
                     </td>
                   </tr>
                 );

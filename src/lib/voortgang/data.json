@@ -925,7 +925,14 @@
           "title": "Bezoekdagen op de adoptieaanvraag hond — dinsdag erbij, donderdag weg",
           "status": "done",
           "doneOn": "2026-09-13",
-          "doneAt": "2026-09-13T11:46:00.548Z"
+          "doneAt": "2026-09-13T11:47:35.820Z"
+        },
+        {
+          "id": "10.71",
+          "title": "R11-bezoekrapporten bekijken in het programma i.p.v. downloaden",
+          "status": "done",
+          "doneOn": "2026-09-13",
+          "doneAt": "2026-09-13T15:46:28.475Z"
         }
       ]
     },
