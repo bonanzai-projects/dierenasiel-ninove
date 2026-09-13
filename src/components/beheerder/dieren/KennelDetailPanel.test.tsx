@@ -73,3 +73,38 @@ describe("KennelDetailPanel — uitsnede van de dierfoto (Story 10.44)", () => {
     expect(foto.className).not.toContain("object-cover");
   });
 });
+
+describe("KennelDetailPanel — echte naam en schuilnaam (Story 10.67)", () => {
+  const marie = mockAnimal({ id: 7, name: "Marie", aliasName: "Feliz", breed: "Mechelse herder" });
+
+  it("toont de bewoner als 'echte naam/schuilnaam'", () => {
+    toonPaneel(marie);
+
+    expect(screen.getByText("Feliz/Marie")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Feliz/Marie verwijderen uit kennel" })).toBeInTheDocument();
+  });
+
+  it("gebruikt hetzelfde formaat in de voorvertoning", () => {
+    toonPaneel(marie);
+    fireEvent.click(screen.getByText("Feliz/Marie"));
+
+    const dialoog = screen.getByRole("dialog", { name: "Feliz/Marie voorvertoning" });
+    expect(dialoog.querySelector("h3")?.textContent).toBe("Feliz/Marie");
+  });
+
+  it("gebruikt hetzelfde formaat in de keuzelijst bij 'Dier toevoegen'", () => {
+    toonPaneel(marie);
+    fireEvent.click(screen.getByRole("button", { name: /Dier toevoegen aan kennel H14/ }));
+
+    const keuzes = Array.from(screen.getByRole("combobox").querySelectorAll("option")).map(
+      (o) => o.textContent,
+    );
+    expect(keuzes).toContain("Feliz/Marie — Mechelse herder");
+  });
+
+  it("toont enkel de schuilnaam wanneer er geen echte naam is", () => {
+    toonPaneel(mockAnimal({ name: "Fons", aliasName: null }));
+
+    expect(screen.getByText("Fons")).toBeInTheDocument();
+  });
+});

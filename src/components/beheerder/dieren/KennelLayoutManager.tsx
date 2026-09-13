@@ -7,6 +7,7 @@ import KennelSidebarList from "./KennelSidebarList";
 import KennelCreateForm from "./KennelCreateForm";
 import KennelDetailPanel from "./KennelDetailPanel";
 import { SPECIES_LABELS } from "@/lib/constants";
+import { kennelAnimalName } from "@/lib/kennels/animal-name";
 import type { Animal, Kennel } from "@/types";
 import type { KennelWithOccupancy } from "@/lib/queries/kennels";
 
@@ -45,10 +46,12 @@ export default function KennelLayoutManager({
   }, [kennels]);
 
   // Story 10.24: alfabetisch gesorteerde dieren-lijst voor dropdown.
+  // Story 10.67: gesorteerd op wat er getoond wordt ("echte naam/schuilnaam"),
+  // anders staat "Feliz/Marie" tussen de M'en.
   const sortedAnimals = useMemo(() => {
-    return [...allAnimals].sort((a, b) =>
-      a.name.localeCompare(b.name, "nl", { sensitivity: "base" }),
-    );
+    return allAnimals
+      .map((animal) => ({ animal, naam: kennelAnimalName(animal) }))
+      .sort((a, b) => a.naam.localeCompare(b.naam, "nl", { sensitivity: "base" }));
   }, [allAnimals]);
 
   const filteredKennels = kennels.filter((k) => (k.layer ?? 1) === activeLayer);
@@ -175,9 +178,9 @@ export default function KennelLayoutManager({
             className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-emerald-500"
           >
             <option value="">— Kies dier —</option>
-            {sortedAnimals.map((a) => (
+            {sortedAnimals.map(({ animal: a, naam }) => (
               <option key={a.id} value={a.id}>
-                {a.name} ({SPECIES_LABELS[a.species] ?? a.species})
+                {naam} ({SPECIES_LABELS[a.species] ?? a.species})
               </option>
             ))}
           </select>

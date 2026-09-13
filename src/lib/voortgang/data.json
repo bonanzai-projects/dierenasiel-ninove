@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12",
+  "generatedAt": "2026-09-13",
   "epics": [
     {
       "id": 1,
@@ -897,7 +897,14 @@
           "title": "Etiket voor het boekje (DYMO) met ontwormingen en sterilisatie",
           "status": "done",
           "doneOn": "2026-09-12",
-          "doneAt": "2026-09-12T14:40:56.176Z"
+          "doneAt": "2026-09-12T15:10:33.252Z"
+        },
+        {
+          "id": "10.67",
+          "title": "Bij kennels beide namen tonen — eerst echte naam, dan schuilnaam",
+          "status": "done",
+          "doneOn": "2026-09-13",
+          "doneAt": "2026-09-13T09:49:17.101Z"
         }
       ]
     },

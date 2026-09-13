@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Kennel, Animal } from "@/types";
 import type { KennelWithOccupancy } from "@/lib/queries/kennels";
 import { resolveKennelTilePhotos } from "@/lib/kennels/tile-photos";
+import { kennelAnimalName } from "@/lib/kennels/animal-name";
 import { ANIMAL_PHOTO_FOCUS } from "@/lib/kennels/photo-framing";
 
 interface KennelFloorPlanProps {
@@ -174,7 +175,8 @@ function KennelTile({ kennel, count, animals, isEditing, isSelected, isHighlight
   // Story 10.50: de naam hoort bij de foto die op dat moment te zien is. Zit er
   // een dier zónder foto in het hok, dan is er niets om af te wisselen en tonen
   // we gewoon de eerste bewoner.
-  const bewonerNaam = currentPhoto?.name ?? animals[0]?.name ?? "";
+  // Story 10.67: "echte naam/schuilnaam" — de foto's dragen die naam al mee.
+  const bewonerNaam = currentPhoto?.name ?? (animals[0] ? kennelAnimalName(animals[0]) : "");
 
   return (
     <button

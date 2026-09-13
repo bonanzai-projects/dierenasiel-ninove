@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { assignKennel } from "@/lib/actions/kennels";
 import { ANIMAL_PHOTO_FOCUS } from "@/lib/kennels/photo-framing";
+import { kennelAnimalName } from "@/lib/kennels/animal-name";
 import type { Animal, Kennel } from "@/types";
 
 function getZoneLabel(zone: string): string {
@@ -75,10 +76,12 @@ function AnimalRow({ animal, kennelCode }: { animal: Animal; kennelCode: string 
   const [error, setError] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  // Story 10.67: "echte naam/schuilnaam", zoals op het grondplan.
+  const naam = kennelAnimalName(animal);
 
   function handleRemove(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!confirm(`${animal.name} verwijderen uit kennel ${kennelCode}?`)) return;
+    if (!confirm(`${naam} verwijderen uit kennel ${kennelCode}?`)) return;
     setError(null);
     startTransition(async () => {
       const result = await assignKennel(animal.id, null);
@@ -107,7 +110,7 @@ function AnimalRow({ animal, kennelCode }: { animal: Animal; kennelCode: string 
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={animal.imageUrl}
-              alt={animal.name}
+              alt={naam}
               className="h-10 w-10 rounded-full object-cover"
               // Zelfde reden als op het grondplan: in een rond kadertje van 40px
               // valt bij een staande foto het midden in beeld — de kop niet.
@@ -119,7 +122,7 @@ function AnimalRow({ animal, kennelCode }: { animal: Animal; kennelCode: string 
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <span className="text-sm font-medium text-[#1b4332]">{animal.name}</span>
+            <span className="text-sm font-medium text-[#1b4332]">{naam}</span>
             <p className="text-xs text-gray-500">
               {animal.breed || animal.species} — {animal.gender}
             </p>
@@ -129,7 +132,7 @@ function AnimalRow({ animal, kennelCode }: { animal: Animal; kennelCode: string 
             type="button"
             onClick={handleRemove}
             disabled={isPending}
-            aria-label={`${animal.name} verwijderen uit kennel`}
+            aria-label={`${naam} verwijderen uit kennel`}
             title="Uit kennel verwijderen"
             className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
           >
@@ -157,13 +160,15 @@ function AnimalPreviewModal({ animal, onClose }: { animal: Animal; onClose: () =
   }, []);
   if (!mounted) return null;
 
+  const naam = kennelAnimalName(animal);
+
   const content = (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={`${animal.name} voorvertoning`}
+      aria-label={`${naam} voorvertoning`}
     >
       <div
         className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-2xl"
@@ -173,7 +178,7 @@ function AnimalPreviewModal({ animal, onClose }: { animal: Animal; onClose: () =
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={animal.imageUrl}
-            alt={animal.name}
+            alt={naam}
             // In een voorvertoning hoort niets weg te vallen: de hele foto past
             // in het kader (Sven zag hier enkel het achterwerk van Beauty). Het
             // kader groeit mee met een staande foto tot 60% van de schermhoogte.
@@ -187,7 +192,7 @@ function AnimalPreviewModal({ animal, onClose }: { animal: Animal; onClose: () =
         <div className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="font-heading text-xl font-bold text-[#1b4332]">{animal.name}</h3>
+              <h3 className="font-heading text-xl font-bold text-[#1b4332]">{naam}</h3>
               <p className="mt-0.5 text-sm text-gray-500">
                 {animal.breed || animal.species} — {animal.gender}
               </p>
@@ -330,7 +335,7 @@ function AddAnimalSection({
         <option value="">Kies een dier...</option>
         {animals.map((a) => (
           <option key={a.id} value={a.id}>
-            {a.name}
+            {kennelAnimalName(a)}
             {a.breed ? ` — ${a.breed}` : a.species ? ` — ${a.species}` : ""}
           </option>
         ))}

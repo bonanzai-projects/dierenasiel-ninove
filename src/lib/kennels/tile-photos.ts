@@ -1,5 +1,8 @@
+import { kennelAnimalName } from "./animal-name";
+
 export interface KennelTilePhoto {
   id: number;
+  /** Zoals het vak hem toont: "echte naam/schuilnaam" (Story 10.67). */
   name: string;
   url: string;
 }
@@ -7,6 +10,7 @@ export interface KennelTilePhoto {
 interface AnimalPhotoSource {
   id: number;
   name: string;
+  aliasName?: string | null;
   imageUrl?: string | null;
   images?: string[] | null;
 }
@@ -23,7 +27,7 @@ export function resolveKennelTilePhotos(animals: AnimalPhotoSource[]): KennelTil
   return animals
     .map((a) => ({
       id: a.id,
-      name: a.name,
+      name: kennelAnimalName(a),
       url: a.imageUrl || a.images?.find((src) => !!src) || null,
     }))
     .filter((p): p is KennelTilePhoto => typeof p.url === "string" && p.url.length > 0);

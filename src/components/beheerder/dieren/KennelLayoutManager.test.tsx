@@ -134,6 +134,33 @@ describe("KennelLayoutManager — zoekdropdown rendering (Story 10.24)", () => {
   });
 });
 
+describe("KennelLayoutManager — zoeklijst met echte naam en schuilnaam (Story 10.67)", () => {
+  it("toont 'echte naam/schuilnaam' en sorteert op wat er getoond wordt", () => {
+    const animals = [
+      mockAnimal({ id: 1, name: "Marie", aliasName: "Feliz", species: "hond" }),
+      mockAnimal({ id: 2, name: "Gaston", species: "hond" }),
+      mockAnimal({ id: 3, name: "Anna", species: "kat" }),
+    ];
+
+    render(
+      <KennelLayoutManager
+        kennels={[]}
+        occupancy={[]}
+        animalsByKennel={{}}
+        allAnimals={animals}
+      />,
+    );
+
+    const select = screen.getByLabelText("Zoek:") as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.text)).toEqual([
+      "— Kies dier —",
+      "Anna (Kat)",
+      "Feliz/Marie (Hond)",
+      "Gaston (Hond)",
+    ]);
+  });
+});
+
 describe("KennelLayoutManager — happy path zoeken op dier (Story 10.24)", () => {
   it("kiest dier op andere laag → switcht activeLayer + selecteert kennel + opent detail-paneel", () => {
     const kennelLayer2 = mockKennel({ id: 42, code: "K42", layer: 2 });

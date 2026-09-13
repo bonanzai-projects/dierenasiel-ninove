@@ -232,3 +232,45 @@ describe("KennelFloorPlan — naam van het dier op de tegel (Story 10.50)", () =
     expect(screen.getByText("Beauty").className).toContain("text-sm");
   });
 });
+
+describe("KennelFloorPlan — echte naam en schuilnaam op de tegel (Story 10.67)", () => {
+  // Sven 2026-09-12: "kennel 24 Felize/Marie & Gust/Fons" — eerst de echte naam.
+  const marie = mockAnimal({ id: 1, name: "Marie", aliasName: "Feliz", imageUrl: "/marie.jpg" });
+  const fons = mockAnimal({ id: 2, name: "Fons", aliasName: null, imageUrl: "/fons.jpg" });
+
+  function toonH24(animals: Animal[]) {
+    return render(
+      <KennelFloorPlan
+        occupancy={[{ kennel: mockKennel({ code: "H24" }), count: animals.length } as KennelWithOccupancy]}
+        animalsByKennel={{ 1: animals }}
+      />,
+    );
+  }
+
+  it("toont 'echte naam/schuilnaam' van het dier waarvan de foto te zien is", () => {
+    toonH24([marie, fons]);
+
+    expect(screen.getByText("Feliz/Marie")).toBeInTheDocument();
+    // Meewisselen met de foto (keuze Johan): niet alle bewoners tegelijk.
+    expect(screen.queryByText("Fons")).toBeNull();
+  });
+
+  it("toont enkel de schuilnaam wanneer er geen echte naam is", () => {
+    toonH24([fons]);
+
+    expect(screen.getByText("Fons")).toBeInTheDocument();
+  });
+
+  it("gebruikt hetzelfde formaat voor een dier zonder foto", () => {
+    toonH24([{ ...marie, imageUrl: null, images: null } as Animal]);
+
+    expect(screen.getByText("Feliz/Marie")).toBeInTheDocument();
+  });
+
+  it("zet dezelfde naam in de tooltip van het vak", () => {
+    toonH24([marie]);
+
+    const vak = screen.getByRole("button", { name: /Kennel H24/ });
+    expect(vak.getAttribute("title")).toContain("Feliz/Marie");
+  });
+});
