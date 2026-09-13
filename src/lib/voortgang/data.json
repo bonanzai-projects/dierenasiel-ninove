@@ -918,7 +918,14 @@
           "title": "E-mailadres verplicht op de adoptieaanvraag",
           "status": "done",
           "doneOn": "2026-09-13",
-          "doneAt": "2026-09-13T11:24:36.742Z"
+          "doneAt": "2026-09-13T11:26:09.566Z"
+        },
+        {
+          "id": "10.70",
+          "title": "Bezoekdagen op de adoptieaanvraag hond — dinsdag erbij, donderdag weg",
+          "status": "done",
+          "doneOn": "2026-09-13",
+          "doneAt": "2026-09-13T11:46:00.548Z"
         }
       ]
     },

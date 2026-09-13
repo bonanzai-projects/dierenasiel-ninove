@@ -109,3 +109,43 @@ describe("PublicAdoptionForm — e-mailadres verplicht (Story 10.69)", () => {
     });
   }
 });
+
+// Story 10.70 — Sven: "bij keuze dagen moet bij formulier hond 'donderdag' weg en mag
+// 'dinsdag' erbij 'van 10u30 tot 12u00'". Enkel hond (keuze Johan).
+describe("PublicAdoptionForm — dagen om langs te komen (Story 10.70)", () => {
+  const WEEKDAG = /^(maan|dins|woens|donder|vrij|zater|zon)dag/i;
+
+  function dagkeuzes(): string[] {
+    return screen
+      .getAllByRole("checkbox")
+      .map((c) => (c.closest("label")?.textContent ?? "").trim())
+      .filter((tekst) => WEEKDAG.test(tekst));
+  }
+
+  it("hond: dinsdag in de voormiddag erbij, donderdag weg", () => {
+    render(<PublicAdoptionForm species="hond" adoptableAnimals={honden} />);
+    expect(dagkeuzes()).toEqual([
+      "Maandag (10u30 tot 15u30)",
+      "Dinsdag (10u30 tot 12u00)",
+      "Woensdag (10u30 tot 15u30)",
+      "Vrijdag (10u30 tot 15u30)",
+      "Zaterdag (10u30 tot 15u30)",
+    ]);
+  });
+
+  it("hond: de vraag somt dezelfde dagen op", () => {
+    render(<PublicAdoptionForm species="hond" adoptableAnimals={honden} />);
+    expect(
+      screen.getByText(
+        "Op welke dagen kan je langskomen? Dit kan op maandag, dinsdag, woensdag, vrijdag en zaterdag",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("kat: blijft ongewijzigd — Sven vroeg het enkel voor honden", () => {
+    render(<PublicAdoptionForm species="kat" adoptableAnimals={honden} />);
+    const keuzes = dagkeuzes();
+    expect(keuzes).toContain("Donderdag (13 tot 16u)");
+    expect(keuzes.some((k) => k.startsWith("Dinsdag"))).toBe(false);
+  });
+});

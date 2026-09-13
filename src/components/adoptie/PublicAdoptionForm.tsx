@@ -279,13 +279,15 @@ const DOG_QUESTIONS: Question[] = [
     label: "Is er nog belangrijker info die u wenst mee te geven die in u voordeel kan spreken om de adoptie aan u toe te kennen?",
   },
   {
+    // Story 10.70 — Sven: bij honden donderdag weg, dinsdag erbij van 10u30 tot 12u00.
+    // Het kattenformulier houdt (voorlopig) zijn eigen dagen.
     type: "checkbox",
     key: "beschikbareDagen",
-    label: "Op welke dagen kan je langskomen? Dit kan op maandag, woensdag, donderdag, vrijdag en zaterdag",
+    label: "Op welke dagen kan je langskomen? Dit kan op maandag, dinsdag, woensdag, vrijdag en zaterdag",
     options: [
       "Maandag (10u30 tot 15u30)",
+      "Dinsdag (10u30 tot 12u00)",
       "Woensdag (10u30 tot 15u30)",
-      "Donderdag (13 tot 16u)",
       "Vrijdag (10u30 tot 15u30)",
       "Zaterdag (10u30 tot 15u30)",
     ],
