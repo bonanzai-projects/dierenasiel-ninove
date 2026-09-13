@@ -905,6 +905,13 @@
           "status": "done",
           "doneOn": "2026-09-13",
           "doneAt": "2026-09-13T09:51:01.320Z"
+        },
+        {
+          "id": "10.68",
+          "title": "Foto van het gekozen dier op de adoptieaanvraag",
+          "status": "done",
+          "doneOn": "2026-09-13",
+          "doneAt": "2026-09-13T10:58:13.948Z"
         }
       ]
     },
@@ -1129,7 +1136,7 @@
           "title": "Adres bij de leverancier (straat, nr, postcode, gemeente)",
           "status": "done",
           "doneOn": "2026-09-13",
-          "doneAt": "2026-09-13T10:06:56.027Z"
+          "doneAt": "2026-09-13T10:08:29.924Z"
         },
         {
           "id": "13.17",

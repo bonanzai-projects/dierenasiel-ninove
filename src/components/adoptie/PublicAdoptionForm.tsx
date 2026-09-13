@@ -4,12 +4,13 @@ import { useActionState, useState, useRef, useCallback } from "react";
 import { submitPublicAdoptionRequest } from "@/lib/actions/public-adoption";
 import type { PublicAdoptionResult } from "@/lib/actions/public-adoption";
 import AdoptionPhotoUpload from "./AdoptionPhotoUpload";
+import type { AdoptionChoice } from "@/lib/animals/adoption-choice";
 
 type Species = "hond" | "kat" | "andere";
 
 interface Props {
   species: Species;
-  adoptableAnimals?: string[];
+  adoptableAnimals?: AdoptionChoice[];
 }
 
 // --- Question configs per species ---
@@ -609,6 +610,9 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
   };
 
   const speciesLabel = species === "hond" ? "hond" : species === "kat" ? "kat/kitten" : "dier";
+  // Story 10.68: het gekozen dier, voor de foto onder de keuzelijst. Wie bij "Andere:"
+  // typt, maakt de keuze leeg — dan is er ook geen foto.
+  const gekozenDier = adoptableAnimals.find((a) => a.name === selectedAnimal);
   const title = species === "hond"
     ? "Adoptieaanvraag hond"
     : species === "kat"
@@ -654,10 +658,27 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
                 aria-invalid={!!errors.requestedAnimalName}
               >
                 <option value="">-- Maak een keuze --</option>
-                {adoptableAnimals.map((name) => (
-                  <option key={name} value={name}>{name}</option>
+                {adoptableAnimals.map((a) => (
+                  <option key={a.name} value={a.name}>{a.name}</option>
                 ))}
               </select>
+              {/*
+                Story 10.68 — Sven: "dat ze goed zien voor welk dier ze invullen". De hele
+                foto, geen uitsnede: bij een staande foto viel anders net de kop weg.
+              */}
+              {gekozenDier?.photoUrl && (
+                <figure className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={gekozenDier.photoUrl}
+                    alt={`Foto van ${gekozenDier.name}`}
+                    className="mx-auto max-h-72 w-full object-contain"
+                  />
+                  <figcaption className="px-3 py-1.5 text-center text-sm font-medium text-[#1b4332]">
+                    {gekozenDier.name}
+                  </figcaption>
+                </figure>
+              )}
               <label htmlFor="customAnimalName" className="block text-sm font-medium text-gray-700 mt-4">Andere:</label>
               <input
                 type="text"
