@@ -1,12 +1,15 @@
-import { contactLinks, type SupplierContactInfo } from "@/lib/events/suppliers";
+import { contactLinks, type SupplierAddress, type SupplierContactInfo } from "@/lib/events/suppliers";
 
-const ICOON = { gsm: "☎", mail: "✉", website: "🌐" } as const;
+const ICOON = { gsm: "☎", mail: "✉", website: "🌐", adres: "📍" } as const;
 
 interface Props {
-  supplier: Pick<SupplierContactInfo, "phone" | "email" | "website"> | null;
+  supplier: (Pick<SupplierContactInfo, "phone" | "email" | "website"> & SupplierAddress) | null;
 }
 
-/** Story 13.16 — gsm, mail en website van een leverancier, klikbaar onder een regel. */
+/**
+ * Story 13.16 — gsm, mail en website van een leverancier, klikbaar onder een regel.
+ * Story 13.18 — en het adres, als link naar Google Maps.
+ */
 export default function SupplierContact({ supplier }: Props) {
   if (!supplier) return null;
   const links = contactLinks(supplier);
@@ -18,7 +21,9 @@ export default function SupplierContact({ supplier }: Props) {
         <a
           key={l.kind}
           href={l.href}
-          {...(l.kind === "website" ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          {...(l.kind === "website" || l.kind === "adres"
+            ? { target: "_blank", rel: "noopener noreferrer" }
+            : {})}
           className="text-[#2d6a4f] hover:underline"
         >
           <span aria-hidden="true">{ICOON[l.kind]} </span>

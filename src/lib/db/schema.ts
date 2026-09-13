@@ -678,6 +678,11 @@ export const suppliers = pgTable("suppliers", {
   email: varchar("email", { length: 200 }),
   website: varchar("website", { length: 300 }),
   notes: text("notes"),
+  // Story 13.18 — Sven: "adres: straat + nr + postcode + gemeente (aparte velden aub)".
+  street: varchar("street", { length: 120 }),
+  houseNumber: varchar("house_number", { length: 20 }),
+  postalCode: varchar("postal_code", { length: 10 }),
+  city: varchar("city", { length: 80 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

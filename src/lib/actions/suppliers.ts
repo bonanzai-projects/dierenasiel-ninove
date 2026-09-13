@@ -22,6 +22,10 @@ function readForm(formData: FormData) {
     email: (formData.get("email") as string) || "",
     website: (formData.get("website") as string) || "",
     notes: (formData.get("notes") as string) || "",
+    street: (formData.get("street") as string) || "",
+    houseNumber: (formData.get("houseNumber") as string) || "",
+    postalCode: (formData.get("postalCode") as string) || "",
+    city: (formData.get("city") as string) || "",
   };
 }
 

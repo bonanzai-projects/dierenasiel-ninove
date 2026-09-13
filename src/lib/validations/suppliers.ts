@@ -26,6 +26,12 @@ export const supplierSchema = z.object({
     .optional()
     .transform((v) => normalizeWebsite(v)),
   notes: z.string().trim().optional().transform(leegIsNull),
+  // Story 13.18 — het adres in vier aparte velden. Geen formaatcontrole op de postcode:
+  // een leverancier over de grens mag.
+  street: z.string().trim().max(120, "Maximaal 120 tekens").optional().transform(leegIsNull),
+  houseNumber: z.string().trim().max(20, "Maximaal 20 tekens").optional().transform(leegIsNull),
+  postalCode: z.string().trim().max(10, "Maximaal 10 tekens").optional().transform(leegIsNull),
+  city: z.string().trim().max(80, "Maximaal 80 tekens").optional().transform(leegIsNull),
 });
 
 export type SupplierInput = z.infer<typeof supplierSchema>;

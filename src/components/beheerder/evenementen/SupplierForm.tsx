@@ -13,7 +13,16 @@ const INPUT =
   "mt-0.5 block w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:ring-emerald-500";
 const LABEL = "block text-xs font-medium text-gray-600";
 
-type Veld = "name" | "phone" | "email" | "website" | "notes";
+type Veld =
+  | "name"
+  | "phone"
+  | "email"
+  | "website"
+  | "notes"
+  | "street"
+  | "houseNumber"
+  | "postalCode"
+  | "city";
 
 /** Story 13.16 — één leverancier toevoegen of bijwerken. */
 export default function SupplierForm({ supplier, onDone }: Props) {
@@ -36,7 +45,9 @@ export default function SupplierForm({ supplier, onDone }: Props) {
   const waarde = (veld: Veld) => terug?.[veld] ?? supplier?.[veld] ?? "";
   const sleutel = supplier?.id ?? "nieuw";
 
-  function Fout({ veld }: { veld: Veld }) {
+  // Een gewone functie i.p.v. een component: een component die tijdens de render
+  // ontstaat, is bij elke render een nieuw component.
+  function fout(veld: Veld) {
     const f = fieldErrors?.[veld];
     return f ? <p className="mt-1 text-sm text-red-600">{f[0]}</p> : null;
   }
@@ -63,7 +74,7 @@ export default function SupplierForm({ supplier, onDone }: Props) {
             className={INPUT}
             placeholder="Bijv. Brouwerij De Ryck"
           />
-          <Fout veld="name" />
+          {fout("name")}
         </div>
 
         <div className="sm:col-span-3">
@@ -78,7 +89,7 @@ export default function SupplierForm({ supplier, onDone }: Props) {
             className={INPUT}
             placeholder="Bijv. 0470 12 34 56"
           />
-          <Fout veld="phone" />
+          {fout("phone")}
         </div>
 
         <div className="sm:col-span-3">
@@ -93,7 +104,7 @@ export default function SupplierForm({ supplier, onDone }: Props) {
             className={INPUT}
             placeholder="Bijv. info@deryck.be"
           />
-          <Fout veld="email" />
+          {fout("email")}
         </div>
 
         <div className="sm:col-span-3">
@@ -107,7 +118,64 @@ export default function SupplierForm({ supplier, onDone }: Props) {
             className={INPUT}
             placeholder="Bijv. deryck.be"
           />
-          <Fout veld="website" />
+          {fout("website")}
+        </div>
+
+        {/* Story 13.18 — Sven: "straat + nr + postcode + gemeente (aparte velden aub)". */}
+        <div className="sm:col-span-4">
+          <label htmlFor={`street-${sleutel}`} className={LABEL}>
+            Straat
+          </label>
+          <input
+            id={`street-${sleutel}`}
+            name="street"
+            defaultValue={waarde("street")}
+            className={INPUT}
+            placeholder="Bijv. Kerkstraat"
+          />
+          {fout("street")}
+        </div>
+
+        <div className="sm:col-span-2">
+          <label htmlFor={`houseNumber-${sleutel}`} className={LABEL}>
+            Nr
+          </label>
+          <input
+            id={`houseNumber-${sleutel}`}
+            name="houseNumber"
+            defaultValue={waarde("houseNumber")}
+            className={INPUT}
+            placeholder="Bijv. 12"
+          />
+          {fout("houseNumber")}
+        </div>
+
+        <div className="sm:col-span-2">
+          <label htmlFor={`postalCode-${sleutel}`} className={LABEL}>
+            Postcode
+          </label>
+          <input
+            id={`postalCode-${sleutel}`}
+            name="postalCode"
+            defaultValue={waarde("postalCode")}
+            className={INPUT}
+            placeholder="Bijv. 9400"
+          />
+          {fout("postalCode")}
+        </div>
+
+        <div className="sm:col-span-4">
+          <label htmlFor={`city-${sleutel}`} className={LABEL}>
+            Gemeente
+          </label>
+          <input
+            id={`city-${sleutel}`}
+            name="city"
+            defaultValue={waarde("city")}
+            className={INPUT}
+            placeholder="Bijv. Ninove"
+          />
+          {fout("city")}
         </div>
 
         <div className="sm:col-span-6">

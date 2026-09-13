@@ -904,7 +904,7 @@
           "title": "Bij kennels beide namen tonen — eerst echte naam, dan schuilnaam",
           "status": "done",
           "doneOn": "2026-09-13",
-          "doneAt": "2026-09-13T09:49:17.101Z"
+          "doneAt": "2026-09-13T09:51:01.320Z"
         }
       ]
     },
@@ -1123,6 +1123,13 @@
           "status": "done",
           "doneOn": "2026-09-12",
           "doneAt": "2026-09-11T22:48:19.261Z"
+        },
+        {
+          "id": "13.18",
+          "title": "Adres bij de leverancier (straat, nr, postcode, gemeente)",
+          "status": "done",
+          "doneOn": "2026-09-13",
+          "doneAt": "2026-09-13T10:06:56.027Z"
         },
         {
           "id": "13.17",

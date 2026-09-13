@@ -19,7 +19,15 @@ export function normalizeWebsite(raw: string | null | undefined): string | null 
   return /^https?:\/\//i.test(schoon) ? schoon : `https://${schoon}`;
 }
 
-export interface SupplierContactInfo {
+/** Story 13.18 — het adres, in vier aparte velden (Sven: "aparte velden aub"). */
+export interface SupplierAddress {
+  street?: string | null;
+  houseNumber?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+}
+
+export interface SupplierContactInfo extends SupplierAddress {
   name: string;
   phone: string | null;
   email: string | null;
@@ -27,14 +35,22 @@ export interface SupplierContactInfo {
 }
 
 export interface ContactLink {
-  kind: "gsm" | "mail" | "website";
+  kind: "gsm" | "mail" | "website" | "adres";
   label: string;
   href: string;
 }
 
-/** De klikbare gegevens van een leverancier, altijd in de volgorde gsm · mail · website. */
+/** "Kerkstraat 12, 9400 Ninove". Ontbrekende delen vallen weg; zonder adres null. */
+export function formatAddress(a: SupplierAddress): string | null {
+  const samen = (...delen: (string | null | undefined)[]) =>
+    delen.map((d) => d?.trim()).filter(Boolean).join(" ");
+  const regel = [samen(a.street, a.houseNumber), samen(a.postalCode, a.city)].filter(Boolean).join(", ");
+  return regel || null;
+}
+
+/** De klikbare gegevens van een leverancier, altijd in de volgorde gsm · mail · website · adres. */
 export function contactLinks(
-  s: Pick<SupplierContactInfo, "phone" | "email" | "website">,
+  s: Pick<SupplierContactInfo, "phone" | "email" | "website"> & SupplierAddress,
 ): ContactLink[] {
   const links: ContactLink[] = [];
 
@@ -49,6 +65,13 @@ export function contactLinks(
   if (site) {
     const label = site.replace(/^https?:\/\//i, "").replace(/\/$/, "");
     links.push({ kind: "website", label, href: site });
+  }
+
+  // Wie materiaal gaat ophalen of terugbrengt, heeft met één klik de route.
+  const adres = formatAddress(s);
+  if (adres) {
+    const href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adres)}`;
+    links.push({ kind: "adres", label: adres, href });
   }
 
   return links;

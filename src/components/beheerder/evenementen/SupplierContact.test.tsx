@@ -24,6 +24,29 @@ describe("SupplierContact", () => {
     expect(site.getAttribute("rel")).toContain("noopener");
   });
 
+  it("toont het adres als link naar Google Maps (Story 13.18)", () => {
+    render(
+      <SupplierContact
+        supplier={{
+          phone: null,
+          email: null,
+          website: null,
+          street: "Kerkstraat",
+          houseNumber: "12",
+          postalCode: "9400",
+          city: "Ninove",
+        }}
+      />,
+    );
+    const adres = screen.getByRole("link", { name: "Kerkstraat 12, 9400 Ninove" });
+    expect(adres).toHaveAttribute(
+      "href",
+      "https://www.google.com/maps/search/?api=1&query=Kerkstraat%2012%2C%209400%20Ninove",
+    );
+    expect(adres).toHaveAttribute("target", "_blank");
+    expect(adres.getAttribute("rel")).toContain("noopener");
+  });
+
   it("toont niets zonder leverancier of zonder gegevens", () => {
     const { container, rerender } = render(<SupplierContact supplier={null} />);
     expect(container).toBeEmptyDOMElement();

@@ -16,6 +16,10 @@ const lev = (over: Record<string, unknown> & { id: number; name: string }) => ({
   email: null,
   website: null,
   notes: null,
+  street: null,
+  houseNumber: null,
+  postalCode: null,
+  city: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   eventCount: 0,
@@ -61,5 +65,40 @@ describe("SuppliersManager", () => {
   it("toont een uitnodiging wanneer de lijst leeg is", () => {
     render(<SuppliersManager suppliers={[]} canWrite />);
     expect(screen.getByText(/Nog geen leveranciers/)).toBeInTheDocument();
+  });
+});
+
+// Story 13.18 — Sven: "adres: straat + nr + postcode + gemeente (aparte velden aub)".
+describe("SuppliersManager — adres", () => {
+  const verhuur = lev({
+    id: 4,
+    name: "Verhuur Van Damme",
+    street: "Kerkstraat",
+    houseNumber: "12",
+    postalCode: "9400",
+    city: "Ninove",
+  });
+
+  it("het formulier heeft straat, nr, postcode en gemeente als aparte velden", () => {
+    render(<SuppliersManager suppliers={lijst} canWrite />);
+    fireEvent.click(screen.getByRole("button", { name: "+ Nieuwe leverancier" }));
+    for (const label of ["Straat", "Nr", "Postcode", "Gemeente"]) {
+      expect(screen.getByLabelText(label)).toHaveValue("");
+    }
+  });
+
+  it("vult bij bewerken het bestaande adres in", () => {
+    render(<SuppliersManager suppliers={[verhuur]} canWrite />);
+    fireEvent.click(screen.getByRole("button", { name: "Bewerken" }));
+    expect(screen.getByLabelText("Straat")).toHaveValue("Kerkstraat");
+    expect(screen.getByLabelText("Nr")).toHaveValue("12");
+    expect(screen.getByLabelText("Postcode")).toHaveValue("9400");
+    expect(screen.getByLabelText("Gemeente")).toHaveValue("Ninove");
+  });
+
+  it("toont het adres in de lijst, bij de contactgegevens", () => {
+    render(<SuppliersManager suppliers={[verhuur]} canWrite={false} />);
+    const rij = screen.getByRole("row", { name: /Verhuur Van Damme/ });
+    expect(within(rij).getByRole("link", { name: "Kerkstraat 12, 9400 Ninove" })).toBeInTheDocument();
   });
 });

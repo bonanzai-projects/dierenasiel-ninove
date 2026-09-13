@@ -190,6 +190,30 @@ describe("updateSupplier (Story 13.16)", () => {
   });
 });
 
+describe("adres van de leverancier (Story 13.18)", () => {
+  const metAdres = { ...geldig, street: "Kerkstraat", houseNumber: "12", postalCode: "9400", city: "Ninove" };
+  const adres = { street: "Kerkstraat", houseNumber: "12", postalCode: "9400", city: "Ninove" };
+
+  it("bewaart het adres in vier aparte velden", async () => {
+    const res = await createSupplier(null, fd(metAdres));
+    expect(res.success).toBe(true);
+    expect(mockInsertValues.mock.calls[0][0]).toMatchObject(adres);
+  });
+
+  it("werkt het adres bij", async () => {
+    mockSelectLimit.mockResolvedValueOnce([{ id: 3, name: "Brouwerij De Ryck" }]);
+    const res = await updateSupplier(null, fd({ id: "3", ...metAdres }));
+    expect(res.success).toBe(true);
+    expect(mockUpdateSet.mock.calls[0][0]).toMatchObject(adres);
+  });
+
+  it("geeft het adres terug bij een fout, zodat het formulier het niet verliest", async () => {
+    const res = await createSupplier(null, fd({ ...metAdres, email: "info@" }));
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.values).toMatchObject(adres);
+  });
+});
+
 describe("deleteSupplier (Story 13.16)", () => {
   it("verwijdert enkel de leverancier; de regels houden hun naam", async () => {
     mockSelectLimit.mockResolvedValueOnce([{ id: 3, name: "De Ryck" }]);

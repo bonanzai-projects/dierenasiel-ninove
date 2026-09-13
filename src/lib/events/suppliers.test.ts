@@ -3,6 +3,7 @@ import {
   supplierKey,
   normalizeWebsite,
   contactLinks,
+  formatAddress,
   findSupplier,
   eventCountBySupplier,
   missingSupplierNames,
@@ -66,6 +67,42 @@ describe("contactLinks", () => {
     expect(contactLinks({ phone: "", email: null, website: null })).toEqual([]);
     const kinds = contactLinks({ phone: "0470", email: "a@b.be", website: "b.be" }).map((l) => l.kind);
     expect(kinds).toEqual(["gsm", "mail", "website"]);
+  });
+});
+
+// Story 13.18 — het adres in vier aparte velden, getoond als één regel.
+describe("formatAddress", () => {
+  it("zet straat en nr, dan postcode en gemeente", () => {
+    expect(
+      formatAddress({ street: "Kerkstraat", houseNumber: "12", postalCode: "9400", city: "Ninove" }),
+    ).toBe("Kerkstraat 12, 9400 Ninove");
+  });
+
+  it("laat ontbrekende delen weg", () => {
+    expect(formatAddress({ street: null, houseNumber: null, postalCode: "9400", city: "Ninove" })).toBe(
+      "9400 Ninove",
+    );
+    expect(formatAddress({ street: "Kerkstraat", houseNumber: " ", postalCode: null, city: "Ninove" })).toBe(
+      "Kerkstraat, Ninove",
+    );
+    expect(formatAddress({ city: "Ninove" })).toBe("Ninove");
+  });
+
+  it("geeft null zonder adres", () => {
+    expect(formatAddress({})).toBeNull();
+    expect(formatAddress({ street: "", houseNumber: null, postalCode: "  " })).toBeNull();
+  });
+});
+
+describe("contactLinks — adres (Story 13.18)", () => {
+  it("zet het adres als laatste, met een link naar Google Maps", () => {
+    const links = contactLinks({ phone: "0470", email: null, website: null, postalCode: "9400", city: "Ninove" });
+    expect(links.map((l) => l.kind)).toEqual(["gsm", "adres"]);
+    expect(links[1]).toEqual({
+      kind: "adres",
+      label: "9400 Ninove",
+      href: "https://www.google.com/maps/search/?api=1&query=9400%20Ninove",
+    });
   });
 });
 
