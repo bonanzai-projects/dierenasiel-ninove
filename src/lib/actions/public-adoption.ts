@@ -15,7 +15,14 @@ const publicAdoptionSchema = z.object({
   address: z.string().min(1, "Adres is verplicht").max(300),
   postalCode: z.string().min(1, "Postcode en gemeente is verplicht").max(100),
   phone: z.string().min(1, "Gsm nummer is verplicht").max(20),
-  email: z.string().email("Ongeldig e-mailadres").max(200).optional().or(z.literal("")),
+  // Story 10.69 — verplicht voor elke soort (Sven). Vroeger mocht het leeg blijven en
+  // bewaarden we een nepadres; dan kon het asiel de aanvrager niet mailen.
+  email: z
+    .string({ error: "E-mailadres is verplicht" })
+    .trim()
+    .min(1, "E-mailadres is verplicht")
+    .email("Ongeldig e-mailadres")
+    .max(200),
   questionnaireAnswers: z.record(z.string(), z.unknown()),
 });
 
@@ -53,7 +60,7 @@ export async function submitPublicAdoptionRequest(
       .values({
         firstName: parsed.data.firstName,
         lastName: parsed.data.lastName,
-        email: parsed.data.email || `noemail-${Date.now()}@placeholder.local`,
+        email: parsed.data.email,
         phone: parsed.data.phone,
         address: `${parsed.data.address}, ${parsed.data.postalCode}`,
         animalId: null,

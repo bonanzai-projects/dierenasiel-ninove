@@ -492,7 +492,8 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
     if (!address.trim()) newErrors.address = "Straat en huisnummer is verplicht";
     if (!postalCode.trim()) newErrors.postalCode = "Postcode en gemeente is verplicht";
     if (!phone.trim()) newErrors.phone = "Gsm nummer is verplicht";
-    if (species === "kat" && !email.trim()) newErrors.email = "E-mailadres is verplicht";
+    // Story 10.69: verplicht voor elke soort, niet enkel voor katten.
+    if (!email.trim()) newErrors.email = "E-mailadres is verplicht";
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = "Ongeldig e-mailadres";
 
     // Validate questionnaire fields
@@ -530,7 +531,7 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
       address,
       postalCode,
       phone,
-      email: email || "",
+      email,
       questionnaireAnswers: { ...answers } as Record<string, unknown>,
     };
 
@@ -772,7 +773,7 @@ export default function PublicAdoptionForm({ species, adoptableAnimals = [] }: P
               aria-invalid={!!errors.phone}
             />
           </BaseField>
-          <BaseField label="E-mailadres" error={errors.email} required={species === "kat"}>
+          <BaseField label="E-mailadres" error={errors.email} required>
             <input
               type="email"
               id="email"
