@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requirePermission } from "@/lib/permissions";
 import { getAdoptableAnimalsReport } from "@/lib/queries/reports";
-import { speciesLabel, genderLabel, statusLabel } from "@/lib/utils";
+import { R6_COLUMNS, r6Row } from "@/lib/reports/adoptable-report";
 import ReportExportBar from "@/components/beheerder/rapporten/ReportExportBar";
 import Pagination from "@/components/beheerder/dieren/Pagination";
 import SpeciesFilter from "./SpeciesFilter";
@@ -68,44 +68,54 @@ export default async function AdopterenRapportPage({ searchParams }: Props) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Naam</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Soort</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Ras</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Geslacht</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Chipnr</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">Intake datum</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Beschrijving</th>
+              {/* Story 10.73: kolommen uit `adoptable-report`, gedeeld met de PDF. */}
+              {R6_COLUMNS.map((k) => (
+                <th key={k.key} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
+                  {k.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {animals.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-500">
+                <td colSpan={R6_COLUMNS.length} className="px-4 py-8 text-center text-sm text-gray-500">
                   Geen te adopteren dieren gevonden met de opgegeven filters.
                 </td>
               </tr>
             ) : (
-              animals.map((animal) => (
-                <tr key={animal.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                    <Link href={`/beheerder/dieren/${animal.id}`} className="text-emerald-700 hover:underline">
-                      {animal.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2 text-sm text-gray-600">{speciesLabel(animal.species)}</td>
-                  <td className="px-4 py-2 text-sm text-gray-600">{animal.breed ?? "-"}</td>
-                  <td className="px-4 py-2 text-sm text-gray-600">{genderLabel(animal.gender)}</td>
-                  <td className="px-4 py-2 text-sm">
-                    <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-                      {statusLabel(animal.status ?? "")}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-sm text-gray-600">{animal.identificationNr ?? "-"}</td>
-                  <td className="px-4 py-2 text-sm text-gray-600 whitespace-nowrap">{animal.intakeDate ?? "-"}</td>
-                  <td className="px-4 py-2 text-sm text-gray-600 max-w-xs truncate">{animal.shortDescription ?? "-"}</td>
-                </tr>
-              ))
+              animals.map((animal) => {
+                const rij = r6Row(animal);
+                return (
+                  <tr key={animal.id} className="hover:bg-gray-50">
+                    {R6_COLUMNS.map((k) => {
+                      if (k.key === "name") {
+                        return (
+                          <td key={k.key} className="px-4 py-2 text-sm font-medium text-gray-900">
+                            <Link href={`/beheerder/dieren/${animal.id}`} className="text-emerald-700 hover:underline">
+                              {rij.name}
+                            </Link>
+                          </td>
+                        );
+                      }
+                      if (k.key === "status") {
+                        return (
+                          <td key={k.key} className="px-4 py-2 text-sm">
+                            <span className="inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                              {rij.status}
+                            </span>
+                          </td>
+                        );
+                      }
+                      return (
+                        <td key={k.key} className="px-4 py-2 text-sm text-gray-600 whitespace-nowrap">
+                          {rij[k.key]}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

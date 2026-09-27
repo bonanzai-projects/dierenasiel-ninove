@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
-import { GENDER_LABELS, PDF_LETTERHEAD, SPECIES_LABELS, STATUS_LABELS } from "@/lib/constants";
+import { PDF_LETTERHEAD } from "@/lib/constants";
+import { R6_COLUMNS, r6Row, type R6Key } from "@/lib/reports/adoptable-report";
 import type { Animal } from "@/types";
 
 const styles = StyleSheet.create({
@@ -15,17 +16,21 @@ const styles = StyleSheet.create({
   tableRow: { flexDirection: "row", borderBottom: "0.5 solid #eee", paddingVertical: 3, paddingHorizontal: 6 },
   headerText: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#374151" },
   cellText: { fontSize: 8 },
-  colName: { width: "16%" },
-  colSpecies: { width: "10%" },
-  colBreed: { width: "16%" },
-  colGender: { width: "10%" },
-  colStatus: { width: "12%" },
-  colChip: { width: "16%" },
-  colIntake: { width: "12%" },
-  colDescription: { width: "8%" },
   footer: { position: "absolute", bottom: 30, left: 40, right: 40, textAlign: "center", fontSize: 8, color: "#999" },
   empty: { fontSize: 9, color: "#999", fontStyle: "italic", paddingVertical: 8, textAlign: "center" },
 });
+
+/** Kolombreedtes (samen 100 %); kolommen en waarden komen uit `adoptable-report` (story 10.73). */
+const BREEDTE: Record<R6Key, string> = {
+  name: "15%",
+  species: "8%",
+  breed: "19%",
+  gender: "9%",
+  status: "11%",
+  chip: "13%",
+  intakeDate: "11%",
+  intakeReason: "14%",
+};
 
 interface Props {
   animals: Animal[];
@@ -54,27 +59,20 @@ export default function AdoptableAnimalsPdf({ animals, filters, generatedAt }: P
         ) : (
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <Text style={[styles.colName, styles.headerText]}>Naam</Text>
-              <Text style={[styles.colSpecies, styles.headerText]}>Soort</Text>
-              <Text style={[styles.colBreed, styles.headerText]}>Ras</Text>
-              <Text style={[styles.colGender, styles.headerText]}>Geslacht</Text>
-              <Text style={[styles.colStatus, styles.headerText]}>Status</Text>
-              <Text style={[styles.colChip, styles.headerText]}>Chipnr</Text>
-              <Text style={[styles.colIntake, styles.headerText]}>Intake</Text>
-              <Text style={[styles.colDescription, styles.headerText]}>Beschrijving</Text>
+              {R6_COLUMNS.map((k) => (
+                <Text key={k.key} style={[{ width: BREEDTE[k.key] }, styles.headerText]}>{k.label}</Text>
+              ))}
             </View>
-            {animals.map((animal) => (
-              <View key={animal.id} style={styles.tableRow}>
-                <Text style={[styles.colName, styles.cellText]}>{animal.name}</Text>
-                <Text style={[styles.colSpecies, styles.cellText]}>{SPECIES_LABELS[animal.species] ?? animal.species}</Text>
-                <Text style={[styles.colBreed, styles.cellText]}>{animal.breed ?? "-"}</Text>
-                <Text style={[styles.colGender, styles.cellText]}>{GENDER_LABELS[animal.gender] ?? animal.gender}</Text>
-                <Text style={[styles.colStatus, styles.cellText]}>{STATUS_LABELS[animal.status ?? ""] ?? animal.status}</Text>
-                <Text style={[styles.colChip, styles.cellText]}>{animal.identificationNr ?? "-"}</Text>
-                <Text style={[styles.colIntake, styles.cellText]}>{animal.intakeDate ?? "-"}</Text>
-                <Text style={[styles.colDescription, styles.cellText]}>{animal.shortDescription ?? "-"}</Text>
-              </View>
-            ))}
+            {animals.map((animal) => {
+              const rij = r6Row(animal);
+              return (
+                <View key={animal.id} style={styles.tableRow}>
+                  {R6_COLUMNS.map((k) => (
+                    <Text key={k.key} style={[{ width: BREEDTE[k.key] }, styles.cellText]}>{rij[k.key]}</Text>
+                  ))}
+                </View>
+              );
+            })}
           </View>
         )}
 
