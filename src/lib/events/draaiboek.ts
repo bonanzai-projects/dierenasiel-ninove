@@ -93,6 +93,49 @@ export function groupTasksByPhase<T extends Taak>(
   }));
 }
 
+export type MoveDirection = "up" | "down";
+
+/** Zelfde datum én zelfde uur (allebei leeg telt ook): daar beslist niet de datum, maar de eigen volgorde. */
+function zelfdeMoment(a: Taak, b: Taak): boolean {
+  return a.date === b.date && a.time === b.time;
+}
+
+/**
+ * Story 13.19 (Sven: "volgorde aan kunnen passen ... tenzij dat dit door de datum
+ * bepaald wordt"). Mag de taak op plaats `index` van een gesorteerde fase één plaats
+ * omhoog of omlaag? Enkel naast een taak met hetzelfde moment — de datum gaat voor.
+ */
+export function canMoveTask(sorted: readonly Taak[], index: number, direction: MoveDirection): boolean {
+  const taak = sorted[index];
+  const buur = sorted[direction === "up" ? index - 1 : index + 1];
+  return Boolean(taak && buur) && zelfdeMoment(taak, buur);
+}
+
+/**
+ * Wisselt een taak met haar buur binnen haar fase en nummert die fase opnieuw
+ * (0, 1, 2 …). Geeft enkel de taken terug waarvan de volgorde-waarde verandert,
+ * of null als verplaatsen daar niet kan.
+ */
+export function reorderTask<T extends Taak>(
+  tasks: readonly T[],
+  id: number,
+  direction: MoveDirection,
+): { id: number; sortOrder: number }[] | null {
+  const fase = groupTasksByPhase(tasks).find((g) => g.tasks.some((t) => t.id === id));
+  if (!fase) return null;
+
+  const lijst = [...fase.tasks];
+  const i = lijst.findIndex((t) => t.id === id);
+  if (!canMoveTask(lijst, i, direction)) return null;
+
+  const j = direction === "up" ? i - 1 : i + 1;
+  [lijst[i], lijst[j]] = [lijst[j], lijst[i]];
+  return lijst
+    .map((t, plaats) => ({ id: t.id, sortOrder: plaats, oud: t.sortOrder }))
+    .filter((w) => w.sortOrder !== w.oud)
+    .map(({ id: taakId, sortOrder }) => ({ id: taakId, sortOrder }));
+}
+
 export function draaiboekProgress(
   tasks: readonly { done: boolean }[],
 ): { done: number; total: number; pct: number } {

@@ -1000,7 +1000,9 @@
         {
           "id": "10.82",
           "title": "Intakereden \"Zwerfkat\" — ook overneembaar uit AnimalShelter",
-          "status": "review"
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T19:07:51.071Z"
         },
         {
           "id": "10.76",
@@ -1238,6 +1240,11 @@
           "id": "13.17",
           "title": "Een mail (.eml) aan een kostenregel hangen — afgeschermd",
           "status": "backlog"
+        },
+        {
+          "id": "13.19",
+          "title": "Volgorde van draaiboektaken zelf aanpassen (de datum gaat voor)",
+          "status": "review"
         }
       ]
     },

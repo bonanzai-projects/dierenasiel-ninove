@@ -5,7 +5,7 @@ const {
   mockUpdateReturning, mockUpdateWhere, mockUpdateSet, mockUpdate,
   mockDeleteWhere, mockDelete,
   mockSelectLimit, mockSelectWhere, mockSelectFrom, mockSelect,
-  mockEventAccess, mockGetSession, mockLogAudit, mockRevalidate,
+  mockEventAccess, mockGetSession, mockLogAudit, mockRevalidate, mockBatch,
 } = vi.hoisted(() => {
   const mockInsertReturning = vi.fn();
   const mockInsertValues = vi.fn().mockReturnValue({ returning: mockInsertReturning });
@@ -30,12 +30,12 @@ const {
     mockDeleteWhere, mockDelete,
     mockSelectLimit, mockSelectWhere, mockSelectFrom, mockSelect,
     mockEventAccess: vi.fn(), mockGetSession: vi.fn(),
-    mockLogAudit: vi.fn(), mockRevalidate: vi.fn(),
+    mockLogAudit: vi.fn(), mockRevalidate: vi.fn(), mockBatch: vi.fn(),
   };
 });
 
 vi.mock("@/lib/db", () => ({
-  db: { insert: mockInsert, update: mockUpdate, delete: mockDelete, select: mockSelect },
+  db: { insert: mockInsert, update: mockUpdate, delete: mockDelete, select: mockSelect, batch: mockBatch },
 }));
 vi.mock("@/lib/db/schema", () => ({ eventTasks: Symbol("eventTasks") }));
 vi.mock("@/lib/events/event-access", () => ({ requireEventDraaiboekAccess: mockEventAccess }));
@@ -48,6 +48,7 @@ import {
   updateEventTask,
   deleteEventTask,
   toggleEventTask,
+  moveEventTask,
 } from "./event-tasks";
 
 function fd(data: Record<string, string>): FormData {
@@ -217,5 +218,72 @@ describe("deleteEventTask", () => {
     expect(res.success).toBe(false);
     expect(mockEventAccess).toHaveBeenCalledWith(4);
     expect(mockDeleteWhere).not.toHaveBeenCalled();
+  });
+});
+
+// Story 13.19 — Sven: "de taak kunnen verplaatsen in volgorde en daarna een datum aan koppelen".
+describe("moveEventTask", () => {
+  const taak = (id: number, over: Record<string, unknown> = {}) => ({
+    id, eventId: 4, phase: "voorbereiding", title: `Taak ${id}`, date: null, time: null, sortOrder: id, done: false, ...over,
+  });
+  const fase = [taak(1), taak(2), taak(3), taak(9, { date: "2026-10-01" })];
+
+  /** Eerst de taak zelf (select … limit 1), dan alle taken van het evenement (select … where). */
+  function metTaken(gezocht: ReturnType<typeof taak> | undefined, alle = fase) {
+    mockSelectWhere.mockReturnValueOnce({ limit: mockSelectLimit });
+    mockSelectLimit.mockResolvedValueOnce(gezocht ? [gezocht] : []);
+    mockSelectWhere.mockReturnValueOnce(Promise.resolve(alle));
+  }
+
+  beforeEach(() => {
+    mockSelectWhere.mockReset();
+    mockSelectWhere.mockReturnValue({ limit: mockSelectLimit });
+    mockSelectLimit.mockReset();
+    mockBatch.mockResolvedValue([]);
+  });
+
+  it("wisselt de taak met die erboven, in één keer bewaard", async () => {
+    metTaken(fase[2]);
+    const res = await moveEventTask(3, "up");
+    expect(res.success).toBe(true);
+    expect(mockBatch).toHaveBeenCalledTimes(1);
+    // Gesorteerd: 9 (met datum), 1, 2, 3 → na het wisselen 9, 1, 3, 2 → enkel 9, 3 en 2 veranderen.
+    expect(mockUpdateSet.mock.calls.map((c) => c[0])).toEqual([{ sortOrder: 0 }, { sortOrder: 2 }, { sortOrder: 3 }]);
+    expect(mockBatch.mock.calls[0][0]).toHaveLength(3);
+    expect(mockLogAudit).toHaveBeenCalledWith("move_event_task", "event_task", 3, expect.anything(), expect.anything());
+    expect(mockRevalidate).toHaveBeenCalledWith("/beheerder/evenementen/4");
+  });
+
+  it("controleert de rechten op het evenement van de bestaande taak", async () => {
+    metTaken(fase[2]);
+    mockEventAccess.mockResolvedValue(GEWEIGERD);
+    const res = await moveEventTask(3, "up");
+    expect(mockEventAccess).toHaveBeenCalledWith(4);
+    expect(res).toEqual(GEWEIGERD);
+    expect(mockBatch).not.toHaveBeenCalled();
+  });
+
+  it("weigert waar de datum de volgorde bepaalt", async () => {
+    metTaken(fase[3]);
+    const res = await moveEventTask(9, "up");
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/datum/);
+    expect(mockBatch).not.toHaveBeenCalled();
+  });
+
+  it("weigert een onbekende taak, een ongeldig id of een ongeldige richting", async () => {
+    metTaken(undefined);
+    expect((await moveEventTask(77, "up")).success).toBe(false);
+    expect((await moveEventTask(0, "up")).success).toBe(false);
+    expect((await moveEventTask(3, "opzij" as "up")).success).toBe(false);
+    expect(mockBatch).not.toHaveBeenCalled();
+  });
+
+  it("geeft een nette fout als bewaren mislukt", async () => {
+    metTaken(fase[2]);
+    mockBatch.mockRejectedValue(new Error("Connection refused"));
+    const res = await moveEventTask(3, "up");
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toMatch(/Er ging iets mis/);
   });
 });

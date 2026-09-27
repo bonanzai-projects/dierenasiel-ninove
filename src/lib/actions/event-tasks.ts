@@ -7,6 +7,7 @@ import { requireEventDraaiboekAccess } from "@/lib/events/event-access";
 import { getSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { eventTaskSchema } from "@/lib/validations/event-tasks";
+import { reorderTask, type MoveDirection } from "@/lib/events/draaiboek";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 
@@ -158,5 +159,45 @@ export async function deleteEventTask(id: number): Promise<ActionResult<{ id: nu
     return { success: true, data: { id } };
   } catch {
     return { success: false, error: "Er ging iets mis bij het verwijderen van de taak." };
+  }
+}
+
+/**
+ * Story 13.19 — een taak één plaats omhoog of omlaag in haar fase. De datum gaat
+ * voor: enkel naast een taak met hetzelfde moment (`reorderTask`). De fase wordt
+ * opnieuw genummerd in één batch, zodat een halve volgorde niet kan blijven hangen.
+ */
+export async function moveEventTask(
+  id: number,
+  direction: MoveDirection,
+): Promise<ActionResult<{ id: number }>> {
+  if (!Number.isInteger(id) || id <= 0) return { success: false, error: "Ongeldige taak" };
+  if (direction !== "up" && direction !== "down") return { success: false, error: "Ongeldige richting" };
+
+  try {
+    const [old] = await db.select().from(eventTasks).where(eq(eventTasks.id, id)).limit(1);
+    if (!old) return { success: false, error: "Taak niet gevonden" };
+
+    const toegang = await requireEventDraaiboekAccess(old.eventId);
+    if (toegang) return toegang;
+
+    const taken = await db.select().from(eventTasks).where(eq(eventTasks.eventId, old.eventId));
+    const wijzigingen = reorderTask(taken, id, direction);
+    if (!wijzigingen) {
+      return { success: false, error: "Hier bepaalt de datum de volgorde; pas de datum aan om de taak te verplaatsen." };
+    }
+
+    if (wijzigingen.length > 0) {
+      const [eerste, ...rest] = wijzigingen.map((w) =>
+        db.update(eventTasks).set({ sortOrder: w.sortOrder }).where(eq(eventTasks.id, w.id)),
+      );
+      await db.batch([eerste, ...rest]);
+    }
+
+    await logAudit("move_event_task", "event_task", id, { sortOrder: old.sortOrder }, { direction });
+    revalidatePath(fichePad(old.eventId));
+    return { success: true, data: { id } };
+  } catch {
+    return { success: false, error: "Er ging iets mis bij het verplaatsen van de taak." };
   }
 }

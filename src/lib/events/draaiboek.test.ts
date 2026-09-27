@@ -5,6 +5,8 @@ import {
   draaiboekPhaseLabel,
   groupTasksByPhase,
   draaiboekProgress,
+  canMoveTask,
+  reorderTask,
 } from "./draaiboek";
 
 type Taak = Parameters<typeof groupTasksByPhase>[0][number];
@@ -108,5 +110,103 @@ describe("draaiboekProgress", () => {
 
   it("geeft 0% terug voor een leeg draaiboek zonder te delen door nul", () => {
     expect(draaiboekProgress([])).toEqual({ done: 0, total: 0, pct: 0 });
+  });
+});
+
+// Story 13.19 — Sven: "volgorde aan kunnen passen ... tenzij dat dit door de datum bepaald wordt".
+// Keuze Johan: de datum gaat voor; verplaatsen enkel naast een taak met hetzelfde moment.
+describe("canMoveTask", () => {
+  const fase = groupTasksByPhase([
+    taak({ id: 1, date: "2026-10-01" }),
+    taak({ id: 2, date: "2026-10-05", time: "10:00", sortOrder: 1 }),
+    taak({ id: 3, date: "2026-10-05", time: "10:00", sortOrder: 2 }),
+    taak({ id: 4, sortOrder: 1 }),
+    taak({ id: 5, sortOrder: 2 }),
+    taak({ id: 6, sortOrder: 3 }),
+  ])[0].tasks;
+
+  it("staat de taken in de verwachte volgorde", () => {
+    expect(fase.map((t) => t.id)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("laat taken zonder datum onderling verschuiven", () => {
+    expect(canMoveTask(fase, 3, "up")).toBe(false); // taak 4 niet boven een taak met datum
+    expect(canMoveTask(fase, 3, "down")).toBe(true);
+    expect(canMoveTask(fase, 4, "up")).toBe(true);
+    expect(canMoveTask(fase, 5, "down")).toBe(false); // de laatste
+  });
+
+  it("laat taken op dezelfde dag en hetzelfde uur onderling verschuiven", () => {
+    expect(canMoveTask(fase, 1, "down")).toBe(true);
+    expect(canMoveTask(fase, 2, "up")).toBe(true);
+    expect(canMoveTask(fase, 2, "down")).toBe(false); // daaronder: geen datum
+  });
+
+  it("laat de datum beslissen tussen verschillende momenten", () => {
+    expect(canMoveTask(fase, 0, "up")).toBe(false);
+    expect(canMoveTask(fase, 0, "down")).toBe(false);
+    expect(canMoveTask(fase, 1, "up")).toBe(false);
+  });
+
+  it("ziet een ander uur op dezelfde dag als een ander moment", () => {
+    const dag = groupTasksByPhase([
+      taak({ id: 1, date: "2026-10-05", time: "09:00" }),
+      taak({ id: 2, date: "2026-10-05", time: "10:00" }),
+    ])[0].tasks;
+    expect(canMoveTask(dag, 0, "down")).toBe(false);
+  });
+});
+
+describe("reorderTask", () => {
+  const taken = [
+    taak({ id: 10, sortOrder: 1759000000 }),
+    taak({ id: 11, sortOrder: 1759000100 }),
+    taak({ id: 12, sortOrder: 1759000200 }),
+    taak({ id: 20, phase: "afbraak", sortOrder: 5 }),
+  ];
+
+  it("wisselt een taak met die erboven en nummert de fase opnieuw", () => {
+    const wijzigingen = reorderTask(taken, 12, "up")!;
+    expect(wijzigingen).toEqual(
+      expect.arrayContaining([
+        { id: 10, sortOrder: 0 },
+        { id: 12, sortOrder: 1 },
+        { id: 11, sortOrder: 2 },
+      ]),
+    );
+    const nieuw = taken.map((t) => ({ ...t, sortOrder: wijzigingen.find((w) => w.id === t.id)?.sortOrder ?? t.sortOrder }));
+    expect(groupTasksByPhase(nieuw)[0].tasks.map((t) => t.id)).toEqual([10, 12, 11]);
+  });
+
+  it("wisselt een taak met die eronder", () => {
+    const wijzigingen = reorderTask(taken, 10, "down")!;
+    const nieuw = taken.map((t) => ({ ...t, sortOrder: wijzigingen.find((w) => w.id === t.id)?.sortOrder ?? t.sortOrder }));
+    expect(groupTasksByPhase(nieuw)[0].tasks.map((t) => t.id)).toEqual([11, 10, 12]);
+  });
+
+  it("raakt de andere fasen niet aan", () => {
+    expect(reorderTask(taken, 12, "up")!.map((w) => w.id)).not.toContain(20);
+  });
+
+  it("geeft enkel wat verandert", () => {
+    const fase = [taak({ id: 1, sortOrder: 0 }), taak({ id: 2, sortOrder: 1 }), taak({ id: 3, sortOrder: 2 })];
+    expect(reorderTask(fase, 3, "up")).toEqual([
+      { id: 3, sortOrder: 1 },
+      { id: 2, sortOrder: 2 },
+    ]);
+  });
+
+  it("werkt ook als taken dezelfde volgorde-waarde hebben", () => {
+    const gelijk = [taak({ id: 1 }), taak({ id: 2 }), taak({ id: 3 })];
+    const wijzigingen = reorderTask(gelijk, 3, "up")!;
+    const nieuw = gelijk.map((t) => ({ ...t, sortOrder: wijzigingen.find((w) => w.id === t.id)?.sortOrder ?? t.sortOrder }));
+    expect(groupTasksByPhase(nieuw)[0].tasks.map((t) => t.id)).toEqual([1, 3, 2]);
+  });
+
+  it("weigert waar de datum beslist, aan de rand, of voor een onbekende taak", () => {
+    const gemengd = [taak({ id: 1, date: "2026-10-01" }), taak({ id: 2 })];
+    expect(reorderTask(gemengd, 2, "up")).toBeNull();
+    expect(reorderTask(gemengd, 1, "up")).toBeNull();
+    expect(reorderTask(gemengd, 99, "down")).toBeNull();
   });
 });

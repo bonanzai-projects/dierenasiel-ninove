@@ -1,20 +1,25 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import DraaiboekPanel from "./DraaiboekPanel";
 import type { EventTaskRow } from "@/lib/actions/event-tasks";
 
-const { mockToggle } = vi.hoisted(() => ({ mockToggle: vi.fn() }));
+const { mockToggle, mockMove, mockRefresh } = vi.hoisted(() => ({
+  mockToggle: vi.fn(),
+  mockMove: vi.fn(),
+  mockRefresh: vi.fn(),
+}));
 
 vi.mock("@/lib/actions/event-tasks", () => ({
   createEventTask: vi.fn(),
   updateEventTask: vi.fn(),
   deleteEventTask: vi.fn(),
   toggleEventTask: mockToggle,
+  moveEventTask: mockMove,
 }));
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mockRefresh, push: vi.fn() }) }));
 
 const taak = (over: Partial<EventTaskRow> & { id: number }): EventTaskRow =>
   ({
@@ -180,5 +185,56 @@ describe("DraaiboekPanel", () => {
       );
       expect(screen.queryByText(/te laat/)).not.toBeInTheDocument();
     });
+  });
+});
+
+// Story 13.19 — Sven: "de taak kunnen verplaatsen in volgorde en daarna een datum aan koppelen".
+describe("DraaiboekPanel — volgorde aanpassen (Story 13.19)", () => {
+  const taken = [
+    taak({ id: 1, title: "Vergunning", date: "2026-10-01" }),
+    taak({ id: 2, title: "Affiches", sortOrder: 1 }),
+    taak({ id: 3, title: "Snoep kopen", sortOrder: 2 }),
+  ];
+
+  beforeEach(() => {
+    mockMove.mockResolvedValue({ success: true, data: { id: 3 } });
+  });
+
+  it("toont pijltjes waar verplaatsen kan", () => {
+    render(<DraaiboekPanel eventId={4} tasks={taken} canWrite />);
+    expect(screen.getByRole("button", { name: "Affiches omlaag" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Snoep kopen omhoog" })).toBeInTheDocument();
+  });
+
+  it("laat de datum beslissen: geen pijltje over een taak met een andere datum heen", () => {
+    render(<DraaiboekPanel eventId={4} tasks={taken} canWrite />);
+    expect(screen.queryByRole("button", { name: "Affiches omhoog" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Vergunning om/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Snoep kopen omlaag" })).toBeNull();
+  });
+
+  it("verplaatst via de actie en ververst", async () => {
+    render(<DraaiboekPanel eventId={4} tasks={taken} canWrite />);
+    fireEvent.click(screen.getByRole("button", { name: "Snoep kopen omhoog" }));
+    await waitFor(() => expect(mockMove).toHaveBeenCalledWith(3, "up"));
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalled());
+  });
+
+  it("toont de fout als verplaatsen niet lukt", async () => {
+    mockMove.mockResolvedValue({ success: false, error: "Hier bepaalt de datum de volgorde" });
+    render(<DraaiboekPanel eventId={4} tasks={taken} canWrite />);
+    fireEvent.click(screen.getByRole("button", { name: "Affiches omlaag" }));
+    expect(await screen.findByText(/Hier bepaalt de datum de volgorde/)).toBeInTheDocument();
+  });
+
+  it("legt uit hoe de volgorde werkt", () => {
+    render(<DraaiboekPanel eventId={4} tasks={taken} canWrite />);
+    expect(screen.getByText(/Taken met een datum staan in tijdsvolgorde/)).toBeInTheDocument();
+  });
+
+  it("toont geen pijltjes zonder schrijfrecht", () => {
+    render(<DraaiboekPanel eventId={4} tasks={taken} canWrite={false} />);
+    expect(screen.queryByRole("button", { name: /omhoog|omlaag/ })).toBeNull();
+    expect(screen.queryByText(/Taken met een datum staan in tijdsvolgorde/)).toBeNull();
   });
 });

@@ -4,11 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   deleteEventTask,
+  moveEventTask,
   toggleEventTask,
   type EventTaskRow,
 } from "@/lib/actions/event-tasks";
 import { addStandardTasks } from "@/lib/actions/event-copy";
-import { groupTasksByPhase, draaiboekProgress } from "@/lib/events/draaiboek";
+import { groupTasksByPhase, draaiboekProgress, canMoveTask, type MoveDirection } from "@/lib/events/draaiboek";
 import { describeDeadline, REMINDER_HORIZON_DAYS } from "@/lib/events/reminders";
 import EventTaskForm from "./EventTaskForm";
 
@@ -61,6 +62,16 @@ export default function DraaiboekPanel({
     });
   }
 
+  // Story 13.19 — één plaats omhoog/omlaag; de datum gaat voor (zie canMoveTask).
+  function onMove(task: EventTaskRow, direction: MoveDirection) {
+    setFout(null);
+    startTransition(async () => {
+      const res = await moveEventTask(task.id, direction);
+      if (res.success) router.refresh();
+      else setFout(res.error ?? "Verplaatsen mislukt");
+    });
+  }
+
   function onDelete(task: EventTaskRow) {
     if (!window.confirm(`Taak "${task.title}" verwijderen?`)) return;
     setFout(null);
@@ -86,6 +97,13 @@ export default function DraaiboekPanel({
           </div>
         )}
       </div>
+
+      {canWrite && tasks.length > 1 && (
+        <p className="mt-1 text-xs text-gray-500">
+          Taken met een datum staan in tijdsvolgorde. Taken zonder datum (of op hetzelfde moment) zet je met ↑ ↓
+          zelf in de juiste volgorde; geef je er later een datum aan, dan schuiven ze naar hun plek.
+        </p>
+      )}
 
       {fout && <p className="mt-2 text-sm text-red-600">{fout}</p>}
 
@@ -122,7 +140,7 @@ export default function DraaiboekPanel({
               {groep.tasks.length === 0 && (
                 <li className="py-2 text-sm text-gray-400">Nog geen taken in deze fase.</li>
               )}
-              {groep.tasks.map((task) =>
+              {groep.tasks.map((task, index) =>
                 bewerktId === task.id ? (
                   <li key={task.id} className="py-2">
                     <EventTaskForm
@@ -166,6 +184,23 @@ export default function DraaiboekPanel({
                     </div>
                     {canWrite && (
                       <div className="flex shrink-0 items-center gap-1">
+                        {/* Vaste breedte, zodat de knoppen ernaast netjes onder elkaar blijven staan. */}
+                        <span className="flex w-12 justify-end gap-0.5">
+                          {(["up", "down"] as const).map((richting) =>
+                            canMoveTask(groep.tasks, index, richting) ? (
+                              <button
+                                key={richting}
+                                type="button"
+                                aria-label={`${task.title} ${richting === "up" ? "omhoog" : "omlaag"}`}
+                                title={richting === "up" ? "Eén plaats omhoog" : "Eén plaats omlaag"}
+                                onClick={() => onMove(task, richting)}
+                                className="rounded px-1.5 py-0.5 text-xs text-gray-600 hover:bg-gray-100"
+                              >
+                                {richting === "up" ? "↑" : "↓"}
+                              </button>
+                            ) : null,
+                          )}
+                        </span>
                         <button
                           type="button"
                           onClick={() => {
