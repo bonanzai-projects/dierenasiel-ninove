@@ -993,6 +993,13 @@
         {
           "id": "10.81",
           "title": "Dierenartsenlijst — fiches bijhouden, kiezen in het R11-bezoekrapport met volledige gegevens",
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T19:00:30.384Z"
+        },
+        {
+          "id": "10.82",
+          "title": "Intakereden \"Zwerfkat\" — ook overneembaar uit AnimalShelter",
           "status": "review"
         },
         {

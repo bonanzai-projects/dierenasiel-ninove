@@ -30,18 +30,19 @@ describe("AnimalFilters — intake reason filter (Story 10.21)", () => {
   });
 
   // Story 10.30: "Tijdelijke opvang" toegevoegd als vierde reden.
-  it("rendert een filter-dropdown met 5 opties (Alle + 4 hoofdwaarden)", () => {
+  it("rendert een filter-dropdown met 6 opties (Alle + 5 hoofdwaarden)", () => {
     render(<AnimalFilters />);
     const select = getIntakeReasonSelect();
     const values = Array.from(select.options).map((o) => o.value);
     const labels = Array.from(select.options).map((o) => o.text);
 
-    expect(values).toEqual(["", "afstand", "ibn", "zwerfhond", "tijdelijke_opvang"]);
+    expect(values).toEqual(["", "afstand", "ibn", "zwerfhond", "zwerfkat", "tijdelijke_opvang"]);
     expect(labels).toEqual([
       "Alle redenen",
       "Afstand door eigenaar",
       "Inbeslagname (IBN)",
       "Vondeling",
+      "Zwerfkat",
       "Tijdelijke opvang",
     ]);
   });

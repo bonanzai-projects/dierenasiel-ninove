@@ -181,7 +181,12 @@ describe("buildAnimalInsert", () => {
   });
 
   it("neemt geen intakereden over die wij niet kennen", () => {
-    const waarden = buildAnimalInsert({ ...felix, checkin_reason: "zwerfkat" }, {}, "felix");
+    const waarden = buildAnimalInsert({ ...felix, checkin_reason: "iets nieuws" }, {}, "felix");
     expect(waarden.intakeReason).toBeNull();
+  });
+
+  it("neemt de intakereden zwerfkat over (Story 10.82)", () => {
+    const waarden = buildAnimalInsert({ ...felix, checkin_reason: "zwerfkat" }, {}, "felix");
+    expect(waarden.intakeReason).toBe("zwerfkat");
   });
 });

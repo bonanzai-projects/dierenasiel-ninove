@@ -19,18 +19,19 @@ function getReasonSelect(): HTMLSelectElement {
 
 describe("IntakeForm — intake reason dropdown (Story 10.21)", () => {
   // Story 10.30: "Tijdelijke opvang" toegevoegd als vierde reden.
-  it("toont exact 4 opties (+ placeholder) met de juiste labels", () => {
+  it("toont exact 5 opties (+ placeholder) met de juiste labels", () => {
     render(<IntakeForm />);
     const select = getReasonSelect();
     const optionValues = Array.from(select.options).map((o) => o.value);
     const optionLabels = Array.from(select.options).map((o) => o.text);
 
-    expect(optionValues).toEqual(["", "afstand", "ibn", "zwerfhond", "tijdelijke_opvang"]);
+    expect(optionValues).toEqual(["", "afstand", "ibn", "zwerfhond", "zwerfkat", "tijdelijke_opvang"]);
     expect(optionLabels).toEqual([
       "Selecteer reden...",
       "Afstand door eigenaar",
       "Inbeslagname (IBN)",
       "Vondeling",
+      "Zwerfkat",
       "Tijdelijke opvang",
     ]);
   });

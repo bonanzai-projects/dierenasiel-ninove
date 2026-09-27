@@ -77,14 +77,15 @@ describe("geslacht", () => {
 });
 
 describe("intakereden", () => {
-  it("mapt de drie redenen die wij ook kennen", () => {
+  it("mapt de vier redenen die wij ook kennen", () => {
     expect(mapIntakeReason("afgestaan")).toBe("afstand");
     expect(mapIntakeReason("inbeslagname")).toBe("ibn");
     expect(mapIntakeReason("gevondendier")).toBe("zwerfhond");
+    // Story 10.82 — Sven: "mag bijgevoegd worden".
+    expect(mapIntakeReason("zwerfkat")).toBe("zwerfkat");
   });
 
-  it("mapt 'zwerfkat' niet — die reden bestaat bij ons niet", () => {
-    expect(mapIntakeReason("zwerfkat")).toBeNull();
+  it("mapt een reden die wij niet kennen niet", () => {
     expect(mapIntakeReason("iets nieuws")).toBeNull();
   });
 });
@@ -193,9 +194,15 @@ describe("FIELD_DEFINITIONS — de gedeelde velden (klasse B)", () => {
     expect(fieldDefinition("gender").notTakeable(varken)).toMatch(/onbekend|geslacht/i);
     // soort "other".
     expect(fieldDefinition("species").notTakeable(varken)).toMatch(/soort/i);
-    // zwerfkat als intakereden.
+    // een intakereden die wij niet kennen.
+    const onbekend = { ...felix, checkin_reason: "iets nieuws" };
+    expect(fieldDefinition("intakeReason").notTakeable(onbekend)).toMatch(/iets nieuws/i);
+  });
+
+  it("laat de intakereden zwerfkat overnemen (Story 10.82)", () => {
     const zwerfkat = { ...felix, checkin_reason: "zwerfkat" };
-    expect(fieldDefinition("intakeReason").notTakeable(zwerfkat)).toMatch(/zwerfkat/i);
+    expect(fieldDefinition("intakeReason").notTakeable(zwerfkat)).toBeNull();
+    expect(fieldDefinition("intakeReason").remote(zwerfkat)).toBe("zwerfkat");
   });
 
   it("laat een geslacht dat wél mapt gewoon overneembaar", () => {

@@ -15,6 +15,12 @@ describe("shouldCollectMelderDetails", () => {
     ).toBe(true);
   });
 
+  it("toont de melder-velden bij een zwerfkat, zoals bij een vondeling (Story 10.82)", () => {
+    expect(
+      shouldCollectMelderDetails({ intakeReason: "zwerfkat", isPickedUpByShelter: false }),
+    ).toBe(true);
+  });
+
   it("toont de melder-velden zodra het asiel het dier is gaan ophalen", () => {
     expect(
       shouldCollectMelderDetails({ intakeReason: "afstand", isPickedUpByShelter: true }),

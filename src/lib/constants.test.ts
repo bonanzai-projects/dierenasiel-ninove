@@ -4,12 +4,14 @@ import { INTAKE_REASONS, getIntakeReasonLabel, genderOptionsForSpecies, GENDER_L
 describe("INTAKE_REASONS", () => {
   // Story 10.30: "Tijdelijke opvang" toegevoegd — komt overeen met "tijd opv"
   // in Sven's as-is asielrapport.
-  it("bevat exact 4 opties in de juiste volgorde", () => {
-    expect(INTAKE_REASONS).toHaveLength(4);
+  // Story 10.82: "Zwerfkat" toegevoegd (Sven: "mag bijgevoegd worden").
+  it("bevat exact 5 opties in de juiste volgorde", () => {
+    expect(INTAKE_REASONS).toHaveLength(5);
     expect(INTAKE_REASONS.map((r) => r.value)).toEqual([
       "afstand",
       "ibn",
       "zwerfhond",
+      "zwerfkat",
       "tijdelijke_opvang",
     ]);
   });
@@ -21,6 +23,7 @@ describe("INTAKE_REASONS", () => {
     expect(byValue.afstand).toBe("Afstand door eigenaar");
     expect(byValue.ibn).toBe("Inbeslagname (IBN)");
     expect(byValue.zwerfhond).toBe("Vondeling");
+    expect(byValue.zwerfkat).toBe("Zwerfkat");
     expect(byValue.tijdelijke_opvang).toBe("Tijdelijke opvang");
   });
 });
@@ -30,6 +33,7 @@ describe("getIntakeReasonLabel", () => {
     expect(getIntakeReasonLabel("afstand")).toBe("Afstand door eigenaar");
     expect(getIntakeReasonLabel("ibn")).toBe("Inbeslagname (IBN)");
     expect(getIntakeReasonLabel("zwerfhond")).toBe("Vondeling");
+    expect(getIntakeReasonLabel("zwerfkat")).toBe("Zwerfkat");
     expect(getIntakeReasonLabel("tijdelijke_opvang")).toBe("Tijdelijke opvang");
   });
 

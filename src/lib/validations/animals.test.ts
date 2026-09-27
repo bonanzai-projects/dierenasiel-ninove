@@ -105,8 +105,8 @@ describe("animalIntakeSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts the 3 valid intake reasons (Story 10.21: afstand, ibn, zwerfhond)", () => {
-    for (const reason of ["afstand", "zwerfhond"]) {
+  it("accepts every valid intake reason (Story 10.21/10.30/10.82)", () => {
+    for (const reason of ["afstand", "zwerfhond", "zwerfkat", "tijdelijke_opvang"]) {
       const result = animalIntakeSchema.safeParse({ ...validIntake, intakeReason: reason });
       expect(result.success).toBe(true);
     }
@@ -433,8 +433,8 @@ describe("animalUpdateSchema", () => {
     }
   });
 
-  it("accepts the 3 valid intake reasons + empty string (Story 10.21)", () => {
-    for (const reason of ["afstand", "ibn", "zwerfhond", ""]) {
+  it("accepts every valid intake reason + empty string (Story 10.21/10.82)", () => {
+    for (const reason of ["afstand", "ibn", "zwerfhond", "zwerfkat", "tijdelijke_opvang", ""]) {
       const result = animalUpdateSchema.safeParse({ ...validUpdate, intakeReason: reason });
       expect(result.success).toBe(true);
     }

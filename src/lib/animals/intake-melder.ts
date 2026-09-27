@@ -7,6 +7,7 @@
  *  - een inbeslagname (IBN) — melder + betrokken instanties;
  *  - een vondeling — óók wanneer iemand het dier zelf komt brengen, niet enkel
  *    wanneer het asiel het gaat ophalen (Sven-feedback 2026-07-24);
+ *  - een zwerfkat — zelfde situatie als een vondeling (Story 10.82);
  *  - elke intake die het asiel zelf is gaan ophalen (checkbox "opgehaald").
  */
 export function shouldCollectMelderDetails(params: {
@@ -17,6 +18,7 @@ export function shouldCollectMelderDetails(params: {
   return (
     isPickedUpByShelter ||
     intakeReason === "ibn" ||
-    intakeReason === "zwerfhond"
+    intakeReason === "zwerfhond" ||
+    intakeReason === "zwerfkat"
   );
 }

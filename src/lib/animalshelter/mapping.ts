@@ -120,7 +120,7 @@ const INTAKE_REASON_MAP: Record<string, string> = {
   afgestaan: "afstand",
   inbeslagname: "ibn",
   gevondendier: "zwerfhond", // ons label is "Vondeling"
-  // "zwerfkat" bestaat bewust niet: die reden staat niet in INTAKE_REASONS (§6.2.3).
+  zwerfkat: "zwerfkat", // Story 10.82 — Sven: "mag bijgevoegd worden"
 };
 
 export function mapIntakeReason(reason: string | null | undefined): string | null {

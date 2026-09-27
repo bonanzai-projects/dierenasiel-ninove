@@ -381,11 +381,16 @@ export const INTAKE_REASONS = [
   { value: "afstand", label: "Afstand door eigenaar" },
   { value: "ibn", label: "Inbeslagname (IBN)" },
   { value: "zwerfhond", label: "Vondeling" },
+  // Story 10.82: AnimalShelter kent "zwerfkat"; Sven: "mag bijgevoegd worden".
+  { value: "zwerfkat", label: "Zwerfkat" },
   // Story 10.30: komt overeen met "tijd opv" in Sven's as-is asielrapport.
   { value: "tijdelijke_opvang", label: "Tijdelijke opvang" },
 ] as const;
 
 export type IntakeReason = (typeof INTAKE_REASONS)[number]["value"];
+
+/** De waarden voor de validatie — één lijst, zodat keuzelijst en validatie niet uit elkaar lopen. */
+export const INTAKE_REASON_VALUES = INTAKE_REASONS.map((r) => r.value) as [IntakeReason, ...IntakeReason[]];
 
 export function getIntakeReasonLabel(
   value: string | null | undefined,

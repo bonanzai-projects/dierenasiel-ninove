@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { INTAKE_REASON_VALUES } from "@/lib/constants";
 
 /**
  * Maximum lengte van de korte beschrijving. Spiegelt de DB-restrictie
@@ -23,7 +24,7 @@ export const animalIntakeSchema = z.object({
   identificationNr: z.string().optional(),
   passportNr: z.string().optional(),
   intakeDate: z.string().min(1, "Intake datum is verplicht"),
-  intakeReason: z.enum(["afstand", "ibn", "zwerfhond", "tijdelijke_opvang"]).optional(),
+  intakeReason: z.enum(INTAKE_REASON_VALUES).optional(),
   description: z.string().optional(),
   shortDescription: shortDescriptionField,
   // Story 10.29: tri-state — true/false/null (= onbekend, "??" in R1).
@@ -60,7 +61,7 @@ export const animalUpdateSchema = z.object({
   dateOfBirth: z.string().optional(),
   intakeDate: z.string().optional(),
   intakeReason: z
-    .enum(["afstand", "ibn", "zwerfhond", "tijdelijke_opvang"])
+    .enum(INTAKE_REASON_VALUES)
     .optional()
     .or(z.literal("")),
   dossierNr: z.string().optional(),
