@@ -29,7 +29,7 @@ export function ibnDossierEmail(p: IbnDossierEmailParams): IbnDossierEmail {
 
   const inleiding = `In bijlage vindt u het IBN-dossier van ${p.animalName} (${p.speciesLabel})${
     nummers.length ? `, ${nummers.join(", ")}` : ""
-  }: de gegevens van het dier, de inbeslagname en het verwaarlozingsrapport.`;
+  }: de gegevens van het dier, de inbeslagname, het verwaarlozingsrapport en het gewichtsverloop.`;
   const afsluiter = `Vragen over dit dossier? Antwoord op deze mail, bel ${CONTACT.phone} of mail naar ${CONTACT.emailGeneral}.`;
 
   const html = `<!DOCTYPE html>

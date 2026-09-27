@@ -106,6 +106,39 @@ export function weightSummary<T extends Weighing>(weighings: T[]): WeightSummary
   };
 }
 
+/**
+ * Story 10.79 (Sven: "de curve mag zeker bijgehouden worden voor dossier IBN") —
+ * het gewicht bij aankomst uit het verwaarlozingsrapport als eerste punt van de
+ * curve. Een virtueel punt, geen kopie in `animal_weights`: het rapport blijft de
+ * enige bron, zodat een aanpassing daar meteen overal klopt.
+ */
+export type IntakeWeighing = Weighing & { isIntake: true };
+
+/** id 0: bij een weging op dezelfde dag geldt het intakepunt als het oudste. */
+export const INTAKE_WEIGHING_ID = 0;
+
+export function intakeWeighing(
+  neglect: { date: string | null; weightOnArrival: string | null } | null,
+  intakeDate: string | null,
+): IntakeWeighing | null {
+  if (!neglect) return null;
+  const kg = parseWeightInput(neglect.weightOnArrival ?? "");
+  const date = neglect.date || intakeDate;
+  if (kg === null || !date) return null;
+  return { id: INTAKE_WEIGHING_ID, date, weightKg: String(kg), isIntake: true };
+}
+
+export function withIntakeWeighing<T extends Weighing>(
+  weighings: T[],
+  intake: IntakeWeighing | null,
+): (T | IntakeWeighing)[] {
+  return intake ? [...weighings, intake] : weighings;
+}
+
+export function isIntakeWeighing(w: Weighing): w is IntakeWeighing {
+  return (w as Partial<IntakeWeighing>).isIntake === true;
+}
+
 export type WeightChartDot = { x: number; y: number; weightKg: number; date: string };
 export type WeightChart = {
   path: string;

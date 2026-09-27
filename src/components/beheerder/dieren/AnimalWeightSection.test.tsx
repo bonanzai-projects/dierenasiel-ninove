@@ -92,3 +92,35 @@ describe("AnimalWeightSection", () => {
     expect(screen.getByText(/Sven/)).toBeInTheDocument();
   });
 });
+
+// Story 10.79 — het gewicht bij aankomst (verwaarlozingsrapport) als eerste punt van de curve.
+describe("AnimalWeightSection — intakegewicht", () => {
+  const intake = { id: 0, date: "2025-12-15", weightKg: "8", isIntake: true as const };
+
+  it("telt het gewicht bij aankomst mee als eerste punt", () => {
+    render(<AnimalWeightSection animalId={42} weighings={reeks} intake={intake} />);
+    expect(screen.getByLabelText("Huidig gewicht")).toHaveTextContent("12 kg");
+    expect(screen.getByText(/\+4 kg sinds de eerste weging \(2025-12-15\)/)).toBeInTheDocument();
+  });
+
+  it("toont het intakepunt onderaan de lijst, zonder verwijderknop", () => {
+    render(<AnimalWeightSection animalId={42} weighings={reeks} intake={intake} />);
+    const rijen = screen.getAllByRole("listitem");
+    const laatste = rijen[rijen.length - 1];
+    expect(laatste).toHaveTextContent("2025-12-15");
+    expect(laatste).toHaveTextContent("8 kg");
+    expect(laatste).toHaveTextContent("Bij aankomst (verwaarlozingsrapport)");
+    expect(within(laatste).queryByRole("button", { name: /Verwijderen/ })).toBeNull();
+  });
+
+  it("tekent al een grafiekje met één weging plus het intakepunt", () => {
+    const { container } = render(<AnimalWeightSection animalId={42} weighings={[weging({ id: 1 })]} intake={intake} />);
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("toont enkel het intakepunt als er nog niet gewogen is", () => {
+    render(<AnimalWeightSection animalId={42} weighings={[]} intake={intake} />);
+    expect(screen.getByLabelText("Huidig gewicht")).toHaveTextContent("8 kg");
+    expect(screen.queryByText(/Nog geen wegingen/i)).toBeNull();
+  });
+});

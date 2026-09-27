@@ -8,6 +8,8 @@ import {
   weightSummary,
   buildWeightChart,
   MAX_WEIGHT_KG,
+  intakeWeighing,
+  withIntakeWeighing,
 } from "./weight";
 
 const weging = (date: string, weightKg: string, id = 1) => ({ id, date, weightKg });
@@ -197,5 +199,48 @@ describe("buildWeightChart", () => {
     const grafiek = buildWeightChart([], 300, 100);
     expect(grafiek.dots).toEqual([]);
     expect(grafiek.path).toBe("");
+  });
+});
+
+// Story 10.79 (Sven: "de curve mag zeker bijgehouden worden voor dossier IBN") —
+// het gewicht bij aankomst uit het verwaarlozingsrapport als eerste punt van de curve.
+describe("intakeWeighing", () => {
+  it("leest het gewicht bij aankomst en neemt de datum van het onderzoek", () => {
+    expect(intakeWeighing({ date: "2026-05-27", weightOnArrival: "12 kg" }, "2026-05-26")).toEqual({
+      id: 0, date: "2026-05-27", weightKg: "12", isIntake: true,
+    });
+    expect(intakeWeighing({ date: "2026-05-27", weightOnArrival: "14,2" }, null)?.weightKg).toBe("14.2");
+  });
+
+  it("valt terug op de intakedatum als het onderzoek geen datum heeft", () => {
+    expect(intakeWeighing({ date: null, weightOnArrival: "12,5 kg" }, "2026-05-26")?.date).toBe("2026-05-26");
+  });
+
+  it("telt niet mee zonder leesbaar gewicht, zonder datum of zonder rapport", () => {
+    expect(intakeWeighing({ date: "2026-05-27", weightOnArrival: "mager" }, null)).toBeNull();
+    expect(intakeWeighing({ date: "2026-05-27", weightOnArrival: null }, null)).toBeNull();
+    expect(intakeWeighing({ date: null, weightOnArrival: "12 kg" }, null)).toBeNull();
+    expect(intakeWeighing(null, "2026-05-26")).toBeNull();
+  });
+});
+
+describe("withIntakeWeighing", () => {
+  const intake = { id: 0, date: "2026-05-27", weightKg: "12", isIntake: true as const };
+
+  it("zet het intakepunt bij de wegingen, als oudste punt van de reeks", () => {
+    const reeks = withIntakeWeighing([weging("2026-06-20", "14.200", 5), weging("2026-06-01", "13.000", 4)], intake);
+    expect(weightSummary(reeks).first).toBe(intake);
+    expect(weightSummary(reeks).totalChange).toBeCloseTo(2.2);
+    expect(buildWeightChart(reeks, 100, 50).dots.map((d) => d.weightKg)).toEqual([12, 13, 14.2]);
+  });
+
+  it("laat de wegingen ongewijzigd zonder intakepunt", () => {
+    const reeks = [weging("2026-06-01", "13.000")];
+    expect(withIntakeWeighing(reeks, null)).toEqual(reeks);
+  });
+
+  it("zet het intakepunt vóór een weging op dezelfde dag", () => {
+    const reeks = withIntakeWeighing([weging("2026-05-27", "12.300", 7)], intake);
+    expect(sortWeighingsDesc(reeks).map((w) => w.id)).toEqual([7, 0]);
   });
 });

@@ -1,8 +1,9 @@
-import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, Text, View, Image, StyleSheet, Svg, Path, Circle } from "@react-pdf/renderer";
 
 import "@/lib/pdf/setup";
 import { CONTACT, HK_NUMBER, PDF_LETTERHEAD } from "@/lib/constants";
-import type { DossierRij, IbnDossierPdfData } from "@/lib/animals/ibn-dossier";
+import { IBN_WEIGHT_CHART, type DossierRij, type IbnDossierPdfData } from "@/lib/animals/ibn-dossier";
+import { formatWeight } from "@/lib/animals/weight";
 
 /**
  * Story 10.72 — het volledige IBN-dossier van één dier, voor politie of
@@ -11,6 +12,7 @@ import type { DossierRij, IbnDossierPdfData } from "@/lib/animals/ibn-dossier";
  */
 
 const ROOD = "#991b1b";
+const GROEN = "#1b4332";
 
 const s = StyleSheet.create({
   page: { padding: 40, paddingBottom: 50, fontSize: 9, fontFamily: "Helvetica", color: "#222" },
@@ -37,6 +39,15 @@ const s = StyleSheet.create({
   photoBox: { width: 250, height: 188, border: "0.5 solid #ccc", padding: 2 },
   photo: { width: "100%", height: "100%", objectFit: "contain" },
   note: { fontSize: 8, color: "#555", marginTop: 5 },
+  weightSummary: { fontSize: 9.5, fontFamily: "Helvetica-Bold", marginBottom: 6 },
+  chartBox: { marginBottom: 8 },
+  weightHead: { flexDirection: "row", paddingVertical: 2.5, borderBottom: "0.6 solid #999" },
+  weightRow: { flexDirection: "row", paddingVertical: 2.5, borderBottom: "0.4 solid #ddd" },
+  colDate: { width: 75, fontSize: 9 },
+  colWeight: { width: 70, fontSize: 9 },
+  colDelta: { width: 70, fontSize: 9 },
+  colNote: { flex: 1, fontSize: 9 },
+  headText: { fontSize: 8, color: "#555" },
   footer: { position: "absolute", bottom: 20, left: 40, right: 40, textAlign: "center", fontSize: 7, color: "#999" },
 });
 
@@ -116,6 +127,51 @@ export default function IbnDossierPdf({ data: d, mainPhoto, evidencePhotos, omit
           )}
         </View>
 
+        {/* Story 10.79 (Sven: "de curve mag zeker bijgehouden worden voor dossier IBN"). */}
+        <View style={s.section}>
+          {/* Titel, samenvatting en grafiek blijven samen: geen losse titel onderaan een pagina.
+              De tabel eronder mag wel over pagina's doorlopen. */}
+          <View wrap={false}>
+            <Text style={s.sectionTitle}>Gewichtsverloop</Text>
+            {d.weights.rows.length === 0 && <Text style={s.note}>Nog geen wegingen geregistreerd.</Text>}
+            {d.weights.summary && <Text style={s.weightSummary}>{d.weights.summary}</Text>}
+            {d.weights.chart && (
+              <View style={s.chartBox}>
+                <Svg
+                  width={IBN_WEIGHT_CHART.width + 12}
+                  height={IBN_WEIGHT_CHART.height + 12}
+                  viewBox={`-6 -6 ${IBN_WEIGHT_CHART.width + 12} ${IBN_WEIGHT_CHART.height + 12}`}
+                >
+                  <Path d={d.weights.chart.path} stroke={GROEN} strokeWidth={1.5} fill="none" />
+                  {d.weights.chart.dots.map((dot, i) => (
+                    <Circle key={i} cx={dot.x} cy={dot.y} r={2.5} fill={GROEN} />
+                  ))}
+                </Svg>
+                <Text style={s.note}>
+                  {`Laagste ${formatWeight(d.weights.chart.min)} · hoogste ${formatWeight(d.weights.chart.max)}`}
+                </Text>
+              </View>
+            )}
+          </View>
+          {d.weights.rows.length > 0 && (
+            <View>
+              <View style={s.weightHead}>
+                <Text style={[s.colDate, s.headText]}>Datum</Text>
+                <Text style={[s.colWeight, s.headText]}>Gewicht</Text>
+                <Text style={[s.colDelta, s.headText]}>Verschil</Text>
+                <Text style={[s.colNote, s.headText]}>Opmerking</Text>
+              </View>
+              {d.weights.rows.map((r, i) => (
+                <View key={i} style={s.weightRow} wrap={false}>
+                  <Text style={s.colDate}>{r.date}</Text>
+                  <Text style={s.colWeight}>{r.weight}</Text>
+                  <Text style={s.colDelta}>{r.delta || "—"}</Text>
+                  <Text style={s.colNote}>{r.note || "—"}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
         {(evidencePhotos.length > 0 || omittedPhotos > 0) && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Bewijsfoto&apos;s</Text>

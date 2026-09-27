@@ -106,8 +106,8 @@ export default function IbnDossierActions({ animalId, animalName, canMail, maili
             />
           </div>
           <p className="text-[11px] text-gray-500">
-            Het dossier (gegevens van het dier, de inbeslagname en het verwaarlozingsrapport met foto&apos;s) gaat als
-            PDF in bijlage mee.
+            Het dossier (gegevens van het dier, de inbeslagname, het verwaarlozingsrapport met foto&apos;s en het
+            gewichtsverloop) gaat als PDF in bijlage mee.
           </p>
           <div className="flex gap-2">
             <button

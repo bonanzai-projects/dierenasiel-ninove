@@ -92,3 +92,41 @@ describe("IbnDossierPdf", () => {
     expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
   }, 30_000);
 });
+
+// Story 10.79 — het gewichtsverloop in het IBN-dossier.
+describe("IbnDossierPdf — gewichtsverloop", () => {
+  const wegingen = [
+    { id: 5, date: "2026-06-20", weightKg: "14.200", notes: "na behandeling" },
+    { id: 4, date: "2026-06-01", weightKg: "13.000", notes: null },
+  ];
+  const rapportMetGewicht = { ...rapport, weightOnArrival: "12 kg" };
+
+  it("toont de samenvatting en de wegingen in de tijd", () => {
+    const t = tekstVan(
+      IbnDossierPdf({ data: buildIbnDossierPdfData(dier, rapportMetGewicht, nu, wegingen), evidencePhotos: [] }),
+    );
+    expect(t).toContain("Gewichtsverloop");
+    expect(t).toContain("Van 12 kg op 27/05/2026 naar 14,2 kg op 20/06/2026: +2,2 kg");
+    expect(t).toContain("Bij aankomst (verwaarlozingsrapport)");
+    expect(t).toContain("+1,2 kg");
+    expect(t).toContain("na behandeling");
+  });
+
+  it("zegt het als er nog niet gewogen is", () => {
+    const t = tekstVan(
+      IbnDossierPdf({ data: buildIbnDossierPdfData(dier, { ...rapport, weightOnArrival: null }, nu), evidencePhotos: [] }),
+    );
+    expect(t).toContain("Nog geen wegingen geregistreerd.");
+  });
+
+  it("rendert met een grafiekje als PDF", async () => {
+    const buffer = await renderToBuffer(
+      createElement(IbnDossierPdf, {
+        data: buildIbnDossierPdfData(dier, rapportMetGewicht, nu, wegingen),
+        evidencePhotos: [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any,
+    );
+    expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
+  }, 30_000);
+});

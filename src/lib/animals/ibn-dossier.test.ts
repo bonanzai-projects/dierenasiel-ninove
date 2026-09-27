@@ -161,3 +161,41 @@ describe("ibnDossierFilename", () => {
     expect(ibnDossierFilename({ name: "Bo", dossierNr: null })).toBe("ibn-dossier-Bo.pdf");
   });
 });
+
+// Story 10.79 (Sven: "de curve mag zeker bijgehouden worden voor dossier IBN").
+describe("buildIbnDossierPdfData — gewichtsverloop", () => {
+  const nu = new Date("2026-09-25T10:00:00Z");
+  const weging = (id: number, date: string, weightKg: string, notes: string | null = null) => ({ id, date, weightKg, notes });
+
+  it("zet de wegingen in de tijd, met het gewicht bij aankomst als eerste punt", () => {
+    const d = buildIbnDossierPdfData(dier, rapport, nu, [
+      weging(5, "2026-06-20", "14.200", "na behandeling"),
+      weging(4, "2026-06-01", "13.000"),
+    ]);
+    expect(d.weights.rows).toEqual([
+      { date: "27/05/2026", weight: "12 kg", delta: "", note: "Bij aankomst (verwaarlozingsrapport)" },
+      { date: "01/06/2026", weight: "13 kg", delta: "+1 kg", note: "" },
+      { date: "20/06/2026", weight: "14,2 kg", delta: "+1,2 kg", note: "na behandeling" },
+    ]);
+    expect(d.weights.summary).toBe("Van 12 kg op 27/05/2026 naar 14,2 kg op 20/06/2026: +2,2 kg");
+    expect(d.weights.chart?.dots).toHaveLength(3);
+  });
+
+  it("werkt zonder verwaarlozingsrapport, enkel met wegingen", () => {
+    const d = buildIbnDossierPdfData(dier, null, nu, [weging(4, "2026-06-01", "13.000"), weging(3, "2026-05-28", "13.500")]);
+    expect(d.weights.rows.map((r) => r.delta)).toEqual(["", "-0,5 kg"]);
+    expect(d.weights.summary).toBe("Van 13,5 kg op 28/05/2026 naar 13 kg op 01/06/2026: -0,5 kg");
+  });
+
+  it("geeft geen samenvatting of grafiek bij één punt", () => {
+    const d = buildIbnDossierPdfData(dier, rapport, nu, []);
+    expect(d.weights.rows).toHaveLength(1);
+    expect(d.weights.summary).toBeNull();
+    expect(d.weights.chart).toBeNull();
+  });
+
+  it("is leeg zonder wegingen en zonder leesbaar gewicht bij aankomst", () => {
+    const d = buildIbnDossierPdfData(dier, { ...rapport, weightOnArrival: "mager" }, nu);
+    expect(d.weights).toEqual({ rows: [], summary: null, chart: null });
+  });
+});

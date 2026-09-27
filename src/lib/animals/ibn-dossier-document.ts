@@ -3,6 +3,7 @@ import { createElement } from "react";
 import IbnDossierPdf from "@/components/beheerder/dieren/IbnDossierPdf";
 import { getAnimalById } from "@/lib/queries/animals";
 import { getNeglectReportByAnimalId } from "@/lib/queries/neglect-reports";
+import { getWeightsByAnimalId } from "@/lib/queries/animal-weights";
 import { fetchPdfPhoto } from "@/lib/reports/pdf-photo";
 import { SPECIES_LABELS } from "@/lib/constants";
 import { buildIbnDossierPdfData, ibnDossierFilename, ibnDossierPhotoUrls } from "./ibn-dossier";
@@ -37,7 +38,11 @@ export async function buildIbnDossierDocument(
   const animal = await getAnimalById(animalId);
   if (!animal || animal.intakeReason !== "ibn") return null;
 
-  const rapport = await getNeglectReportByAnimalId(animalId);
+  // Story 10.79: ook de wegingen, voor het gewichtsverloop.
+  const [rapport, wegingen] = await Promise.all([
+    getNeglectReportByAnimalId(animalId),
+    getWeightsByAnimalId(animalId),
+  ]);
   const urls = ibnDossierPhotoUrls(animal, rapport);
 
   const [mainPhoto, ...bewijs] = await Promise.all([
@@ -46,7 +51,7 @@ export async function buildIbnDossierDocument(
   ]);
 
   const element = createElement(IbnDossierPdf, {
-    data: buildIbnDossierPdfData(animal, rapport),
+    data: buildIbnDossierPdfData(animal, rapport, new Date(), wegingen),
     mainPhoto,
     evidencePhotos: bewijs.filter((src): src is string => !!src),
     omittedPhotos: urls.omitted,

@@ -26,6 +26,8 @@ describe("ibnDossierEmail", () => {
     const m = ibnDossierEmail(basis);
     for (const tekst of [m.html, m.text]) {
       expect(tekst).toContain("In bijlage vindt u het IBN-dossier van Bo (Hond)");
+      // Story 10.79: het gewichtsverloop zit er nu ook in.
+      expect(tekst).toContain("het verwaarlozingsrapport en het gewichtsverloop");
       expect(tekst).toContain("Sven De Smet");
       expect(tekst).toContain("Dierenasiel Ninove");
     }

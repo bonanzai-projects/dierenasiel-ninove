@@ -16,6 +16,7 @@ import FeedingPlanSection from "@/components/beheerder/dieren/FeedingPlanSection
 import VaccinationSection from "@/components/beheerder/dieren/VaccinationSection";
 import DewormingSection from "@/components/beheerder/dieren/DewormingSection";
 import AnimalWeightSection from "@/components/beheerder/dieren/AnimalWeightSection";
+import { intakeWeighing } from "@/lib/animals/weight";
 import VetVisitSection from "@/components/beheerder/dieren/VetVisitSection";
 import OperationSection from "@/components/beheerder/dieren/OperationSection";
 import MedicationSection from "@/components/beheerder/dieren/MedicationSection";
@@ -226,7 +227,12 @@ export default async function DierDetailPage({ params }: Props) {
               {/* Story 10.55 (Sven): gewicht op verschillende tijdstippen — nuttig bij
                   een IBN-dossier, maar evengoed bij het doseren van een ontworming. */}
               <SectionCard title="Gewicht">
-                <AnimalWeightSection animalId={animalId} weighings={weighings} />
+                {/* Story 10.79: het gewicht bij aankomst (verwaarlozingsrapport) telt als eerste punt. */}
+                <AnimalWeightSection
+                  animalId={animalId}
+                  weighings={weighings}
+                  intake={intakeWeighing(neglectReport, animal.intakeDate)}
+                />
               </SectionCard>
 
               <SectionCard title="Dierenarts-bezoeken">

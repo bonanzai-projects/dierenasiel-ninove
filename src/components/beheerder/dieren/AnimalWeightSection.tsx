@@ -8,6 +8,9 @@ import {
   withWeightDeltas,
   weightSummary,
   buildWeightChart,
+  withIntakeWeighing,
+  isIntakeWeighing,
+  type IntakeWeighing,
 } from "@/lib/animals/weight";
 import { todayInBrussels } from "@/lib/validations/animal-weights";
 import type { WeighingWithRecorder } from "@/lib/queries/animal-weights";
@@ -15,6 +18,8 @@ import type { WeighingWithRecorder } from "@/lib/queries/animal-weights";
 interface AnimalWeightSectionProps {
   animalId: number;
   weighings: WeighingWithRecorder[];
+  /** Story 10.79: gewicht bij aankomst uit het verwaarlozingsrapport, als eerste punt. */
+  intake?: IntakeWeighing | null;
 }
 
 const CHART_W = 320;
@@ -25,15 +30,17 @@ function FieldError({ errors }: { errors?: string[] }) {
   return <p role="alert" className="mt-1 text-sm text-red-600">{errors[0]}</p>;
 }
 
-export default function AnimalWeightSection({ animalId, weighings }: AnimalWeightSectionProps) {
+export default function AnimalWeightSection({ animalId, weighings, intake = null }: AnimalWeightSectionProps) {
   const [view, setView] = useState<"list" | "form">("list");
   const [createState, createAction, isPending] = useActionState(createAnimalWeight, null);
   const fieldErrors = createState && !createState.success ? createState.fieldErrors : undefined;
   const globalError = createState && !createState.success ? createState.error : undefined;
 
-  const rijen = withWeightDeltas(weighings);
-  const samenvatting = weightSummary(weighings);
-  const grafiek = buildWeightChart(weighings, CHART_W, CHART_H);
+  // Story 10.79: het intakepunt telt mee in de lijst, de samenvatting en de curve.
+  const reeks = withIntakeWeighing(weighings, intake);
+  const rijen = withWeightDeltas(reeks);
+  const samenvatting = weightSummary(reeks);
+  const grafiek = buildWeightChart(reeks, CHART_W, CHART_H);
 
   return (
     <div>
@@ -73,9 +80,21 @@ export default function AnimalWeightSection({ animalId, weighings }: AnimalWeigh
           aria-label="Verloop van het gewicht"
         >
           <path d={grafiek.path} fill="none" stroke="#1b4332" strokeWidth="2" />
-          {grafiek.dots.map((dot, i) => (
-            <circle key={i} cx={dot.x} cy={dot.y} r="3" fill="#1b4332" />
-          ))}
+          {grafiek.dots.map((dot, i) => {
+            // Het intakepunt (bij aankomst) als open bolletje.
+            const bijAankomst = intake !== null && i === 0 && dot.date === intake.date;
+            return (
+              <circle
+                key={i}
+                cx={dot.x}
+                cy={dot.y}
+                r="3"
+                fill={bijAankomst ? "#ffffff" : "#1b4332"}
+                stroke="#1b4332"
+                strokeWidth={bijAankomst ? 1.5 : 0}
+              />
+            );
+          })}
         </svg>
       )}
 
@@ -160,9 +179,13 @@ export default function AnimalWeightSection({ animalId, weighings }: AnimalWeigh
         </p>
       ) : (
         <ul className="space-y-2">
-          {rijen.map((rij) => (
-            <WeighingRow key={rij.id} weighing={rij} />
-          ))}
+          {rijen.map((rij) =>
+            isIntakeWeighing(rij) ? (
+              <IntakeRow key="intake" weighing={rij} />
+            ) : (
+              <WeighingRow key={rij.id} weighing={rij} />
+            ),
+          )}
         </ul>
       )}
     </div>
@@ -217,6 +240,23 @@ function WeighingRow({
           {isPending ? "..." : "Verwijderen"}
         </button>
       </form>
+    </li>
+  );
+}
+
+/** Story 10.79: het gewicht bij aankomst — aanpassen gebeurt in het verwaarlozingsrapport. */
+function IntakeRow({ weighing }: { weighing: IntakeWeighing & { delta: number | null } }) {
+  return (
+    <li className="flex items-start justify-between rounded-lg border border-dashed border-gray-300 px-4 py-2">
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-800">{weighing.date}</span>
+          <span className="text-sm font-semibold text-[#1b4332]">{formatWeight(weighing.weightKg)}</span>
+        </div>
+        <p className="mt-0.5 text-xs text-gray-500">
+          Bij aankomst (verwaarlozingsrapport) · aanpassen in het verwaarlozingsrapport
+        </p>
+      </div>
     </li>
   );
 }

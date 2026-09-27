@@ -1,5 +1,16 @@
 import { GENDER_LABELS, SPECIES_LABELS } from "@/lib/constants";
 import { formatBelgianDate } from "./owner-return";
+import {
+  buildWeightChart,
+  formatWeight,
+  formatWeightDelta,
+  intakeWeighing,
+  isIntakeWeighing,
+  weightSummary,
+  withIntakeWeighing,
+  withWeightDeltas,
+  type WeightChart,
+} from "./weight";
 
 /**
  * Story 10.72 — het volledige IBN-dossier van één dier, om te bekijken of te
@@ -64,6 +75,26 @@ export interface DossierRij {
   value: string;
 }
 
+/** Story 10.79 — een weging zoals het dossier ze nodig heeft. */
+export interface IbnDossierWeighing {
+  id: number;
+  date: string;
+  weightKg: string;
+  notes: string | null;
+}
+
+/** Afmetingen van het grafiekje in de PDF (punten). */
+export const IBN_WEIGHT_CHART = { width: 420, height: 70 } as const;
+
+export interface IbnWeightSection {
+  /** Oudste eerst: een dossier leest in de tijd. */
+  rows: { date: string; weight: string; delta: string; note: string }[];
+  /** "Van 12 kg op 27/05/2026 naar 14,2 kg op 20/06/2026: +2,2 kg"; null bij minder dan twee punten. */
+  summary: string | null;
+  /** Vanaf twee punten. */
+  chart: WeightChart | null;
+}
+
 export interface IbnDossierPdfData {
   animalName: string;
   dossierNr: string | null;
@@ -72,6 +103,43 @@ export interface IbnDossierPdfData {
   seizure: DossierRij[];
   /** null = er is (nog) geen verwaarlozingsrapport. */
   neglect: { facts: DossierRij[]; texts: DossierRij[] } | null;
+  weights: IbnWeightSection;
+}
+
+/**
+ * Story 10.79 (Sven: "de curve mag zeker bijgehouden worden voor dossier IBN") —
+ * het gewichtsverloop, met het gewicht bij aankomst als eerste punt.
+ */
+function gewichtsverloop(
+  weighings: IbnDossierWeighing[],
+  n: IbnDossierNeglect | null,
+  intakeDate: string | null,
+): IbnWeightSection {
+  const reeks = withIntakeWeighing(weighings, intakeWeighing(n, intakeDate));
+  if (reeks.length === 0) return { rows: [], summary: null, chart: null };
+
+  const rows = withWeightDeltas(reeks)
+    .reverse()
+    .map((w) => ({
+      date: formatBelgianDate(w.date),
+      weight: formatWeight(w.weightKg),
+      delta: formatWeightDelta(w.delta),
+      note: isIntakeWeighing(w) ? "Bij aankomst (verwaarlozingsrapport)" : (w as IbnDossierWeighing).notes ?? "",
+    }));
+
+  const s = weightSummary(reeks);
+  const summary =
+    s.first && s.latest && s.totalChange !== null
+      ? `Van ${formatWeight(s.first.weightKg)} op ${formatBelgianDate(s.first.date)} naar ${formatWeight(
+          s.latest.weightKg,
+        )} op ${formatBelgianDate(s.latest.date)}: ${formatWeightDelta(s.totalChange) || "geen verschil"}`
+      : null;
+
+  return {
+    rows,
+    summary,
+    chart: reeks.length > 1 ? buildWeightChart(reeks, IBN_WEIGHT_CHART.width, IBN_WEIGHT_CHART.height) : null,
+  };
 }
 
 const tekst = (v: string | null | undefined): string => {
@@ -118,6 +186,7 @@ export function buildIbnDossierPdfData(
   a: IbnDossierAnimal,
   n: IbnDossierNeglect | null,
   nu: Date = new Date(),
+  weighings: IbnDossierWeighing[] = [],
 ): IbnDossierPdfData {
   const m = melder(a.intakeMetadata);
   const geslacht = a.gender ? GENDER_LABELS[a.gender] ?? a.gender : null;
@@ -164,6 +233,7 @@ export function buildIbnDossierPdfData(
           ],
         }
       : null,
+    weights: gewichtsverloop(weighings, n, a.intakeDate),
   };
 }
 

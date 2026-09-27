@@ -974,7 +974,14 @@
           "title": "Gebruikers — filter op rol, per rol samen in de lijst",
           "status": "done",
           "doneOn": "2026-09-27",
-          "doneAt": "2026-09-27T14:25:32.361Z"
+          "doneAt": "2026-09-27T14:27:38.948Z"
+        },
+        {
+          "id": "10.79",
+          "title": "Gewichtscurve voor het IBN-dossier — intakegewicht als eerste punt, verloop in de PDF",
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T15:46:11.149Z"
         },
         {
           "id": "10.76",

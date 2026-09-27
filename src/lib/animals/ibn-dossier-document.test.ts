@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGetAnimalById, mockGetNeglect, mockRender } = vi.hoisted(() => ({
+const { mockGetAnimalById, mockGetNeglect, mockGetWeights, mockRender } = vi.hoisted(() => ({
   mockGetAnimalById: vi.fn(),
   mockGetNeglect: vi.fn(),
+  mockGetWeights: vi.fn(),
   mockRender: vi.fn(),
 }));
 
 vi.mock("@/lib/queries/animals", () => ({ getAnimalById: mockGetAnimalById }));
 vi.mock("@/lib/queries/neglect-reports", () => ({ getNeglectReportByAnimalId: mockGetNeglect }));
+vi.mock("@/lib/queries/animal-weights", () => ({ getWeightsByAnimalId: mockGetWeights }));
 vi.mock("@react-pdf/renderer", () => ({ renderToBuffer: mockRender }));
 vi.mock("@/components/beheerder/dieren/IbnDossierPdf", () => ({ default: () => null }));
 
@@ -36,6 +38,21 @@ beforeEach(() => {
   mockGetAnimalById.mockResolvedValue(dier);
   mockGetNeglect.mockResolvedValue(rapport);
   mockRender.mockResolvedValue(Buffer.from("%PDF-1.4"));
+  mockGetWeights.mockResolvedValue([]);
+});
+
+// Story 10.79 — de wegingen gaan mee in het dossier.
+describe("buildIbnDossierDocument — gewichtsverloop", () => {
+  it("laadt de wegingen van het dier en geeft ze door", async () => {
+    mockGetWeights.mockResolvedValue([
+      { id: 4, animalId: 315, date: "2026-06-01", weightKg: "13.000", notes: null, recordedBy: 1, recordedByName: "Sven" },
+      { id: 3, animalId: 315, date: "2026-05-28", weightKg: "12.500", notes: "eerste weging", recordedBy: 1, recordedByName: "Sven" },
+    ]);
+    await buildIbnDossierDocument(315, laadFoto);
+    expect(mockGetWeights).toHaveBeenCalledWith(315);
+    const props = mockRender.mock.calls[0][0].props;
+    expect(props.data.weights.rows.map((r: { weight: string }) => r.weight)).toEqual(["12,5 kg", "13 kg"]);
+  });
 });
 
 describe("buildIbnDossierDocument", () => {
