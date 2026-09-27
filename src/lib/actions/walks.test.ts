@@ -103,6 +103,8 @@ const mockWalker = {
   lastName: "Janssens",
   status: "approved",
   isApproved: true,
+  // Story 10.77: heeft de huidige versie van het wandelreglement aanvaard.
+  regulationsVersion: "2026-05-05",
 };
 
 const mockAnimal = {
@@ -145,6 +147,16 @@ describe("bookWalk", () => {
     });
 
     mockReturning.mockResolvedValue([mockCreatedWalk]);
+  });
+
+  it("Story 10.77: weigert te boeken zolang de huidige versie van het reglement niet aanvaard is", async () => {
+    mockSelectLimit.mockReset();
+    mockSelectLimit.mockResolvedValueOnce([{ ...mockWalker, regulationsVersion: null }]);
+
+    const result = await bookWalk(null, makeFormData(validFormFields));
+
+    expect(result).toEqual({ success: false, error: "Aanvaard eerst het wandelreglement." });
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 
   it("Story 10.13: weigert boeking als dag niet in walk_days", async () => {
@@ -339,6 +351,14 @@ describe("checkInWalk", () => {
     const result = await checkInWalk(10);
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error).toContain("ingelogd");
+  });
+
+  it("Story 10.77: weigert aan te melden zolang een oudere versie van het reglement aanvaard is", async () => {
+    mockSelectLimit.mockReset();
+    mockSelectLimit.mockResolvedValueOnce([{ ...mockWalker, regulationsVersion: "2025-01-01" }]);
+    const result = await checkInWalk(10);
+    expect(result).toEqual({ success: false, error: "Aanvaard eerst het wandelreglement." });
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it("returns error when walk not found", async () => {

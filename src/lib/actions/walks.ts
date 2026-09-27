@@ -8,12 +8,16 @@ import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { eq, sql } from "drizzle-orm";
 import { getWalkingClubThreshold, getWalkDays } from "@/lib/queries/shelter-settings";
+import { hasAcceptedCurrentRegulations } from "@/lib/walkers/regulations";
 import type { ActionResult } from "@/types";
 import type { Walk } from "@/types";
 
 function currentTime(): string {
   return new Date().toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
+
+/** Story 10.77: zonder aanvaarding van de huidige versie van het reglement geen wandeling. */
+const REGLEMENT_NIET_AANVAARD = "Aanvaard eerst het wandelreglement.";
 
 function calculateDuration(startTime: string, endTime: string): number {
   const [sh, sm] = startTime.split(":").map(Number);
@@ -49,6 +53,10 @@ export async function bookWalk(
 
   if (walker.status !== "approved") {
     return { success: false, error: "Uw registratie is nog niet goedgekeurd." };
+  }
+
+  if (!hasAcceptedCurrentRegulations(walker)) {
+    return { success: false, error: REGLEMENT_NIET_AANVAARD };
   }
 
   // Validate input
@@ -145,6 +153,11 @@ export async function checkInWalk(walkId: number): Promise<ActionResult<Walk>> {
     }
 
     const walker = walkerResults[0];
+
+    // Story 10.77: een wandeling die vóór een nieuwe versie geboekt werd, start pas na akkoord.
+    if (!hasAcceptedCurrentRegulations(walker)) {
+      return { success: false, error: REGLEMENT_NIET_AANVAARD };
+    }
 
     // Look up walk
     const walkResults = await db

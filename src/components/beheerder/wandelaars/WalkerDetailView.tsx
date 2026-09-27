@@ -1,4 +1,5 @@
 import type { Walker } from "@/types";
+import { regulationsStatusLabel } from "@/lib/walkers/regulations";
 
 interface Props {
   walker: Walker;
@@ -68,7 +69,8 @@ export default function WalkerDetailView({ walker }: Props) {
       <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <h3 className="font-heading text-sm font-bold text-[#1b4332]">Controle-informatie</h3>
         <dl className="mt-3 space-y-2">
-          <InfoRow label="Reglement gelezen" value={walker.regulationsRead ? "Ja" : "Nee"} />
+          {/* Story 10.77: wanneer en welke versie — of dat het nog gevraagd wordt. */}
+          <InfoRow label="Wandelreglement" value={regulationsStatusLabel(walker)} />
           <InfoRow label="Allergieën" value={walker.allergies || "Geen"} />
           <InfoRow label="Kinderen meewandelen" value={walker.childrenWalkAlong ? "Ja" : "Nee"} />
         </dl>

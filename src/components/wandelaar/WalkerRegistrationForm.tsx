@@ -4,30 +4,13 @@ import { useActionState, useState, useCallback } from "react";
 import { submitWalkerRegistration } from "@/lib/actions/walkers";
 import type { ActionResult } from "@/types";
 import type { Walker } from "@/types";
+import WalkRegulationsList, { WalkRegulationsVersion } from "./WalkRegulationsList";
 
 const initialState: ActionResult<Walker> = { success: false };
 
 interface Props {
   variant?: "light" | "dark";
 }
-
-const WALK_RULES = [
-  "Er kan gewandeld worden met de honden tijdens de openingsdagen van het asiel (maandag, woensdag, vrijdag en zaterdag). Dit tussen 10 en 12 uur. De wandelingen starten bij voorkeur tussen 10 en 11u30.",
-  "Bij vriestemperaturen of temperaturen boven de 23 graden bekijken we of de wandelingen door kunnen gaan. Wij dragen zorg voor onze dieren en willen niet dat hun kussentjes bevroren of verbrand raken.",
-  "De wandelaar dient ten minste 18 jaar oud te zijn of onder begeleiding van een volwassen persoon. De volwassen persoon is verantwoordelijk tijdens de wandeling.",
-  "De wandelaar zorgt ervoor dat zijn gegevens bekend zijn voordat de wandeling begint.",
-  "De wandelaar draagt tijdens de wandeling een fluo hesje van het dierenasiel.",
-  'De wandelaar dient tijdens de wandeling telefonisch bereikbaar te zijn via het nummer opgegeven op het "wandelreglement".',
-  "De keuze van de hond gebeurt in samenspraak met de wandelaar en de verantwoordelijke van het asiel. De toestemming tot wandelen kan men enkel verkrijgen van de verantwoordelijke.",
-  "De honden worden altijd aan de leiband gehouden en mogen in geen enkel geval loslopen! Er wordt afstand gehouden tussen de dieren. De honden worden niet doorgegeven aan andere wandelaars of aan onbekenden.",
-  "Tijdens de wandeling mogen de asielhonden niet vergezeld worden door eigen honden.",
-  "De private eigendommen dienen gerespecteerd te worden.",
-  "Iedere wandelaar is verplicht om poepzakjes bij te hebben. Deze kan je verkrijgen in het asiel. De uitwerpselen dienen onmiddellijk opgeruimd te worden in de mate van het mogelijke en kunnen gedeponeerd worden in de vuilbak aan het dierenasiel.",
-  "Het wandelen met onze dieren is op eigen verantwoordelijkheid/risico.",
-  "Dierenasiel Ninove vzw staat vrij om wandelaars te weigeren.",
-  "Bij het niet naleven van voorgenoemde voorwaarden kunnen wandelingen geweigerd worden.",
-  "De wandelaar dient zich akkoord te verklaren met het wandelreglement.",
-];
 
 const INPUT_LIGHT =
   "w-full px-4 py-3 border-2 border-gray-200 rounded-lg font-body text-sm text-text bg-bg focus:outline-none focus:border-primary transition-colors";
@@ -407,18 +390,13 @@ export default function WalkerRegistrationForm({ variant = "light" }: Props) {
               </svg>
             </button>
 
-            <h2 className="font-heading text-xl font-bold text-white mb-4">Wandelreglement</h2>
+            <h2 className="font-heading text-xl font-bold text-white">Wandelreglement</h2>
+            <WalkRegulationsVersion className="mb-4 text-xs text-white/60" />
 
-            <ol className="space-y-3 mb-6">
-              {WALK_RULES.map((rule, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="shrink-0 w-6 h-6 bg-white/10 text-white/80 text-xs font-bold rounded-full flex items-center justify-center mt-0.5">
-                    {i + 1}
-                  </span>
-                  <p className="text-sm text-white/80 leading-relaxed">{rule}</p>
-                </li>
-              ))}
-            </ol>
+            {/* Story 10.77: dezelfde tekst als de publieke pagina en de wandelaar-app. */}
+            <div className="mb-6">
+              <WalkRegulationsList tone="dark" />
+            </div>
 
             <div className="border-t border-white/10 pt-4">
               <h3 className="font-heading text-sm font-bold text-white mb-3">Wandeluren</h3>

@@ -102,6 +102,9 @@ const mockWalkerData = {
   allergies: "Pollen",
   childrenWalkAlong: true,
   regulationsRead: true,
+  // Story 10.77: bewijs van de aanvaarding van het wandelreglement.
+  regulationsAcceptedAt: new Date("2026-09-27T12:05:00Z"),
+  regulationsVersion: "2026-05-05",
   barcode: "WLK-5",
   photoUrl: "https://blob.vercel-storage.com/walkers/photos/marie.jpg",
   isApproved: true,
@@ -287,6 +290,8 @@ describe("formatWalkerExportJson", () => {
     expect(parsed.profiel.aantalWandelingen).toBe(12);
     expect(parsed.wandelingen).toHaveLength(1);
     expect(parsed.wandelingen[0].dier).toBe("Max");
+    // Story 10.77: welke versie van het wandelreglement, en wanneer.
+    expect(parsed.profiel.wandelreglement).toEqual({ versie: "2026-05-05", aanvaardOp: "2026-09-27T12:05:00.000Z" });
   });
 });
 
@@ -307,6 +312,8 @@ describe("formatWalkerExportCsv", () => {
     expect(csv).toContain("approved");
     expect(csv).toContain("# Wandelingen");
     expect(csv).toContain("Max");
+    expect(csv).toContain("Wandelreglement versie,2026-05-05");
+    expect(csv).toContain("Wandelreglement aanvaard op,2026-09-27T12:05:00.000Z");
   });
 
   it("handles empty walks in CSV", () => {

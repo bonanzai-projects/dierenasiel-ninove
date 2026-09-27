@@ -7,6 +7,8 @@ import { walkerStatusUpdateSchema } from "@/lib/validations/walker-status";
 import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { hashPassword } from "@/lib/auth/password";
+import { getSession } from "@/lib/auth/session";
+import { WALK_REGULATIONS_VERSION } from "@/lib/walkers/regulations";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import type { ActionResult } from "@/types";
@@ -63,7 +65,10 @@ export async function submitWalkerRegistration(
         address: parsed.data.address,
         allergies: parsed.data.allergies || null,
         childrenWalkAlong: parsed.data.childrenWalkAlong,
+        // Story 10.77: bewijs van de aanvaarding — wanneer en welke versie.
         regulationsRead: true,
+        regulationsAcceptedAt: new Date(),
+        regulationsVersion: WALK_REGULATIONS_VERSION,
         photoUrl: raw.photoUrl || null,
         status: "pending",
         isApproved: false,
@@ -224,7 +229,6 @@ export async function createWalkerManual(
   const address = (formData.get("address") as string)?.trim();
   const autoApprove = formData.get("autoApprove") === "true";
   // Story 10.14: expliciete keuzes uit de admin form ipv silent defaults.
-  const regulationsRead = formData.get("regulationsRead") === "true";
   const childrenWalkAlong = formData.get("childrenWalkAlong") === "true";
 
   if (!firstName || !lastName) {
@@ -242,10 +246,8 @@ export async function createWalkerManual(
   if (!address) {
     return { success: false, error: "Adres is verplicht." };
   }
-  // Story 10.14: reglement-aanvaarding is verplicht (analoog aan publieke flow).
-  if (!regulationsRead) {
-    return { success: false, error: "Het wandelreglement moet aanvaard zijn om de wandelaar aan te maken." };
-  }
+  // Story 10.77: een medewerker aanvaardt het reglement niet in naam van de wandelaar
+  // (was 10.14: een vinkje). De wandelaar aanvaardt zelf in de app, vóór zijn eerste wandeling.
 
   try {
     const existing = await db
@@ -269,7 +271,9 @@ export async function createWalkerManual(
         phone,
         dateOfBirth,
         address,
-        regulationsRead,
+        regulationsRead: false,
+        regulationsAcceptedAt: null,
+        regulationsVersion: null,
         childrenWalkAlong,
         status,
         isApproved: autoApprove,
@@ -323,4 +327,39 @@ export async function createWalkerManual(
       error: "Er ging iets mis bij het aanmaken. Probeer het later opnieuw.",
     };
   }
+}
+
+/**
+ * Story 10.77 (Sven, keuze Johan) — de wandelaar aanvaardt zelf de huidige versie
+ * van het wandelreglement, in de wandelaar-app, vóór hij kan boeken. Datum, uur en
+ * versie zijn het bewijs; de vorige versie komt in het logboek.
+ */
+export async function acceptWalkRegulations(): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Je bent niet ingelogd." };
+  if (session.role !== "wandelaar") {
+    return { success: false, error: "Enkel een wandelaar kan het wandelreglement aanvaarden." };
+  }
+
+  const [walker] = await db.select().from(walkers).where(eq(walkers.userId, session.userId)).limit(1);
+  if (!walker) return { success: false, error: "Wandelaar profiel niet gevonden." };
+
+  await db
+    .update(walkers)
+    .set({
+      regulationsRead: true,
+      regulationsAcceptedAt: new Date(),
+      regulationsVersion: WALK_REGULATIONS_VERSION,
+    })
+    .where(eq(walkers.id, walker.id));
+
+  await logAudit(
+    "walker.regulations_accepted",
+    "walker",
+    walker.id,
+    { version: walker.regulationsVersion },
+    { version: WALK_REGULATIONS_VERSION },
+  );
+  revalidatePath("/wandelaar");
+  return { success: true, data: undefined };
 }

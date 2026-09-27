@@ -514,6 +514,11 @@ export const walkers = pgTable("walkers", {
   allergies: text("allergies"),
   childrenWalkAlong: boolean("children_walk_along").default(false).notNull(),
   regulationsRead: boolean("regulations_read").default(false).notNull(),
+  // Story 10.77: bewijs van de digitale aanvaarding — wanneer en welke versie van
+  // het wandelreglement (`WALK_REGULATIONS_VERSION`). Is de versie niet de huidige,
+  // dan vraagt de wandelaar-app eerst opnieuw akkoord vóór er geboekt kan worden.
+  regulationsAcceptedAt: timestamp("regulations_accepted_at", { withTimezone: true }),
+  regulationsVersion: varchar("regulations_version", { length: 20 }),
   barcode: varchar("barcode", { length: 50 }),
   photoUrl: varchar("photo_url", { length: 500 }),
   isApproved: boolean("is_approved").default(false).notNull(),

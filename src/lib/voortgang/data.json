@@ -960,7 +960,21 @@
           "title": "Bijlage uit een zwerfkatten-mail met een naam buiten Latin-1 opent weer",
           "status": "done",
           "doneOn": "2026-09-27",
-          "doneAt": "2026-09-27T13:12:27.101Z"
+          "doneAt": "2026-09-27T13:21:03.543Z"
+        },
+        {
+          "id": "10.77",
+          "title": "Wandelreglement — nieuwe versie, digitaal aanvaarden vóór de eerste wandeling",
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T13:49:42.875Z"
+        },
+        {
+          "id": "10.76",
+          "title": "Adoptiecontract-PDF opent ook bij een naam buiten Latin-1",
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T13:31:40.876Z"
         }
       ]
     },

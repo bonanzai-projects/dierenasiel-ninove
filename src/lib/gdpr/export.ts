@@ -41,6 +41,9 @@ export interface WalkerExportData {
   email: string;
   allergies: string | null;
   childrenWalkAlong: boolean;
+  /** Story 10.77: welke versie van het wandelreglement, en wanneer aanvaard. */
+  regulationsVersion: string | null;
+  regulationsAcceptedAt: Date | null;
   barcode: string | null;
   photoUrl: string | null;
   isApproved: boolean;
@@ -181,6 +184,10 @@ export function formatWalkerExportJson(data: WalkerExportData): string {
       aantalWandelingen: data.walkCount,
       wandelclubLid: data.isWalkingClubMember,
       aangemaakt: str(data.createdAt),
+      wandelreglement: {
+        versie: data.regulationsVersion,
+        aanvaardOp: data.regulationsAcceptedAt ? str(data.regulationsAcceptedAt) : null,
+      },
     },
     wandelingen: data.walks.map((w) => ({
       datum: str(w.date),
@@ -283,6 +290,8 @@ export function formatWalkerExportCsv(data: WalkerExportData): string {
   lines.push(csvRow(["Aantal wandelingen", String(data.walkCount)]));
   lines.push(csvRow(["Wandelclub lid", data.isWalkingClubMember ? "Ja" : "Nee"]));
   lines.push(csvRow(["Aangemaakt", str(data.createdAt)]));
+  lines.push(csvRow(["Wandelreglement versie", str(data.regulationsVersion)]));
+  lines.push(csvRow(["Wandelreglement aanvaard op", str(data.regulationsAcceptedAt)]));
 
   lines.push("");
   lines.push("# Wandelingen");

@@ -170,20 +170,10 @@ export default function WalkerCreateForm({ onClose }: Props) {
         </div>
 
         <div className="space-y-2 rounded-md border border-gray-100 bg-gray-50 p-3">
-          <div className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              id="wc-regulationsRead"
-              name="regulationsRead"
-              value="true"
-              defaultChecked
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-            />
-            <label htmlFor="wc-regulationsRead" className="text-sm text-gray-700">
-              Wandelreglement is met de wandelaar besproken en aanvaard
-              <span className="text-red-500"> *</span>
-            </label>
-          </div>
+          {/* Story 10.77: geen vinkje meer — een medewerker aanvaardt niet in naam van de wandelaar. */}
+          <p className="text-xs text-gray-500">
+            De wandelaar aanvaardt het wandelreglement zelf in de wandelaar-app, vóór de eerste wandeling.
+          </p>
           <div className="flex items-start gap-2">
             <input
               type="checkbox"
