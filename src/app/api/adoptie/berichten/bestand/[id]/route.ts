@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdoptionUpdateFile } from "@/lib/queries/adoption-updates";
 import { getPrivateFile } from "@/lib/adoption-updates/storage";
-import { adoptionRouteAccess, contentDisposition } from "@/lib/adoption-updates/http";
+import { adoptionRouteAccess } from "@/lib/adoption-updates/http";
+import { contentDisposition } from "@/lib/http/content-disposition";
 import { wantsPdfDownload } from "@/lib/pdf/disposition";
 
 /**

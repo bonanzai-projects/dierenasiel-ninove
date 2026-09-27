@@ -65,8 +65,28 @@ describe("GET /api/zwerfkatten/email/[id]/attachment/[index]", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("application/pdf");
-    expect(res.headers.get("content-disposition")).toContain("plan.pdf");
+    expect(res.headers.get("content-disposition")).toBe(`inline; filename="plan.pdf"; filename*=UTF-8''plan.pdf`);
     expect(await res.arrayBuffer()).toHaveProperty("byteLength", 3);
+  });
+
+  it("kan een bijlage aan met een naam buiten Latin-1 (bv. een gekrulde apostrof)", async () => {
+    // Story 10.75 — gaf 502: de Headers-constructor weigert ’ in een rauwe header.
+    mockParse.mockResolvedValue({
+      attachments: [
+        {
+          filename: "Plan van de gemeente’s wijk.pdf",
+          mimeType: "application/pdf",
+          content: new Uint8Array([1, 2, 3]).buffer,
+        },
+      ],
+    });
+
+    const res = await GET(new Request("http://localhost"), createParams(7, 0));
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-disposition")).toBe(
+      `inline; filename="Plan van de gemeente_s wijk.pdf"; filename*=UTF-8''Plan%20van%20de%20gemeente%E2%80%99s%20wijk.pdf`,
+    );
   });
 
   it("geeft 404 bij een onbestaande bijlage-index", async () => {

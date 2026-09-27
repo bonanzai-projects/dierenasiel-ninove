@@ -5,6 +5,7 @@ import { strayCatCampaignAttachments } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 import { readEmlAttachment } from "@/lib/email/eml-read";
+import { contentDisposition } from "@/lib/http/content-disposition";
 
 /**
  * Story 10.41 — een bijlage die ín een geüploade .eml zit openen (bv. een foto of
@@ -55,7 +56,8 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": part.mimeType,
-        "Content-Disposition": `${part.disposition}; filename="${part.filename}"`,
+        // Een naam uit een mail kan tekens buiten Latin-1 bevatten (bv. ’); die mogen niet rauw in een header (10.75).
+        "Content-Disposition": contentDisposition(part.disposition, part.filename),
         // Bijlagen van een campagne zijn niet publiek: nooit in een gedeelde cache.
         "Cache-Control": "private, no-store",
       },

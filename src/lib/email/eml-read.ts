@@ -94,7 +94,7 @@ export async function readEmlView(raw: ArrayBuffer): Promise<EmlView> {
 export interface EmlAttachment {
   bytes: Buffer;
   mimeType: string;
-  /** Veilig voor een Content-Disposition-header. */
+  /** Zonder " en \; voor een header nog door `contentDisposition` (`@/lib/http/content-disposition`). */
   filename: string;
   disposition: "inline" | "attachment";
 }

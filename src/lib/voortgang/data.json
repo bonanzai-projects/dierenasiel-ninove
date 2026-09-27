@@ -953,7 +953,14 @@
           "title": "Berichten en foto's na adoptie bewaren — enkel voor wie bevoegd is",
           "status": "done",
           "doneOn": "2026-09-27",
-          "doneAt": "2026-09-27T13:07:10.361Z"
+          "doneAt": "2026-09-27T13:09:48.796Z"
+        },
+        {
+          "id": "10.75",
+          "title": "Bijlage uit een zwerfkatten-mail met een naam buiten Latin-1 opent weer",
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T13:12:27.101Z"
         }
       ]
     },
