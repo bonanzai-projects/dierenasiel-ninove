@@ -17,11 +17,12 @@ function invoer(over: Partial<KennelCardInput["animal"]> = {}, rest: Partial<Ken
       isNeutered: false,
       dateOfBirth: "2024-10-27",
       intakeDate: "2026-05-06",
+      intakeReason: "afstand",
       weightKg: null,
       ...over,
     },
     lastVaccination: null,
-    lastDeworming: null,
+    dewormings: [],
     ...rest,
   };
 }
@@ -91,13 +92,47 @@ describe("buildKennelCard", () => {
     expect(kaart.steriel.every((o) => !o.gemarkeerd)).toBe(true);
   });
 
-  it("vult de laatste vaccinatie en ontworming in", () => {
-    const kaart = buildKennelCard(
-      invoer({}, { lastVaccination: "2026-06-15", lastDeworming: "2026-07-01" }),
-    );
+  it("vult de laatste vaccinatie in", () => {
+    expect(buildKennelCard(invoer({}, { lastVaccination: "2026-06-15" })).gevaccineerd).toBe("15.06.2026");
+  });
 
-    expect(kaart.gevaccineerd).toBe("15.06.2026");
-    expect(kaart.ontworming).toBe("01.07.2026");
+  // Story 10.80 (Sven): "de ontworming zou een tabel moeten zijn … korte data met daarnaast ontwormingsproduct".
+  it("zet de ontwormingen in een tabel: korte datum en product, oudste bovenaan", () => {
+    const kaart = buildKennelCard(
+      invoer({}, {
+        dewormings: [
+          { date: "2026-07-01", type: "Canicantel" },
+          { date: "2026-04-15", type: "Milbemax" },
+        ],
+      }),
+    );
+    expect(kaart.ontwormingen).toEqual([
+      { datum: "15.04.26", product: "Milbemax" },
+      { datum: "01.07.26", product: "Canicantel" },
+    ]);
+  });
+
+  it("vult de tabel aan tot 6 regels om met de hand bij te schrijven", () => {
+    expect(buildKennelCard(invoer()).ontwormingLegeRegels).toBe(6);
+    expect(
+      buildKennelCard(invoer({}, { dewormings: [{ date: "2026-07-01", type: "Canicantel" }] })).ontwormingLegeRegels,
+    ).toBe(5);
+  });
+
+  it("houdt de laatste 6 ontwormingen als er meer zijn", () => {
+    const acht = Array.from({ length: 8 }, (_, i) => ({ date: `2026-0${i + 1}-10`, type: `Product ${i + 1}` }));
+    const kaart = buildKennelCard(invoer({}, { dewormings: acht }));
+    expect(kaart.ontwormingen.map((o) => o.product)).toEqual([
+      "Product 3", "Product 4", "Product 5", "Product 6", "Product 7", "Product 8",
+    ]);
+    expect(kaart.ontwormingLegeRegels).toBe(0);
+  });
+
+  // Story 10.80 (Sven): "bij in huis is eigenlijk de intake en mag ook miss naast reden van intake".
+  it("zet de reden van intake naast de datum waarop het dier binnenkwam", () => {
+    expect(buildKennelCard(invoer()).redenIntake).toBe("Afstand door eigenaar");
+    expect(buildKennelCard(invoer({ intakeReason: "ibn" })).redenIntake).toBe("Inbeslagname (IBN)");
+    expect(buildKennelCard(invoer({ intakeReason: null })).redenIntake).toBe("");
   });
 
   it("laat een veld leeg in plaats van een streepje — er wordt op geschreven", () => {

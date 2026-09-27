@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { dewormings, vaccinations } from "@/lib/db/schema";
 import { requirePermission } from "@/lib/permissions";
 import { getAnimalById } from "@/lib/queries/animals";
-import { buildKennelCard } from "@/lib/animals/kennel-card";
+import { buildKennelCard, MAX_ONTWORMINGEN } from "@/lib/animals/kennel-card";
 import { getLatestWeight } from "@/lib/queries/animal-weights";
 import { formatWeightValue } from "@/lib/animals/weight";
 import KennelCardPdf from "@/components/beheerder/rapporten/KennelCardPdf";
@@ -46,12 +46,13 @@ export async function GET(
     .orderBy(desc(vaccinations.date))
     .limit(1);
 
-  const [laatsteOntworming] = await db
-    .select({ date: dewormings.date })
+  // Story 10.80: de laatste ontwormingen met hun product, voor de tabel op de kaart.
+  const ontwormingen = await db
+    .select({ date: dewormings.date, type: dewormings.type })
     .from(dewormings)
     .where(and(eq(dewormings.animalId, animalId), eq(dewormings.category, "ontworming")))
     .orderBy(desc(dewormings.date))
-    .limit(1);
+    .limit(MAX_ONTWORMINGEN);
 
   // Story 10.55: het laatst gewogen gewicht vult het Kg-vakje.
   const laatsteWeging = await getLatestWeight(animalId);
@@ -66,13 +67,14 @@ export async function GET(
       isNeutered: animal.isNeutered,
       dateOfBirth: animal.dateOfBirth,
       intakeDate: animal.intakeDate,
+      intakeReason: animal.intakeReason,
       // Story 10.55: het Kg-vakje toont de laatste weging. Is er nog niet
       // gewogen, dan blijft het leeg om met de hand in te vullen — net als op
       // de papieren kaart.
       weightKg: formatWeightValue(laatsteWeging?.weightKg ?? null) || null,
     },
     lastVaccination: laatsteVaccinatie?.date ?? null,
-    lastDeworming: laatsteOntworming?.date ?? null,
+    dewormings: ontwormingen,
   });
 
   const element = createElement(KennelCardPdf, { kaart });

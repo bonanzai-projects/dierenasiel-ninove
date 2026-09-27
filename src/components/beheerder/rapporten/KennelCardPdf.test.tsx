@@ -20,10 +20,14 @@ const volledig = buildKennelCard({
     isNeutered: false,
     dateOfBirth: "2024-10-27",
     intakeDate: "2026-05-06",
+    intakeReason: "afstand",
     weightKg: "24,5",
   },
   lastVaccination: "2026-06-15",
-  lastDeworming: "2026-07-01",
+  dewormings: [
+    { date: "2026-04-15", type: "Milbemax" },
+    { date: "2026-07-01", type: "Canicantel" },
+  ],
 });
 
 const leeg = buildKennelCard({
@@ -36,10 +40,11 @@ const leeg = buildKennelCard({
     isNeutered: null,
     dateOfBirth: null,
     intakeDate: null,
+    intakeReason: null,
     weightKg: null,
   },
   lastVaccination: null,
-  lastDeworming: null,
+  dewormings: [],
 });
 
 /**
@@ -103,5 +108,54 @@ describe("KennelCardPdf", () => {
       createElement(KennelCardPdf, { kaart: leeg }) as any,
     );
     expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
+  });
+});
+
+// Story 10.80 (Sven): naam groter dan ras, ontworming als tabel, reden van intake.
+type Stijl = { fontSize?: number };
+
+/** Alle teksten in de boom, met hun (samengevoegde) lettergrootte. */
+function teksten(kaart: Parameters<typeof KennelCardPdf>[0]["kaart"]): { tekst: string; grootte?: number }[] {
+  const uit: { tekst: string; grootte?: number }[] = [];
+  const loop = (node: ReactNode): void => {
+    if (Array.isArray(node)) { node.forEach(loop); return; }
+    if (!isValidElement(node)) return;
+    if (typeof node.type === "function") { loop((node.type as (p: unknown) => ReactNode)(node.props)); return; }
+    const props = node.props as { children?: ReactNode; style?: Stijl | Stijl[] };
+    const kinderen = props.children;
+    if (typeof kinderen === "string" || typeof kinderen === "number") {
+      const stijlen = ([] as Stijl[]).concat(props.style ?? []);
+      const grootte = stijlen.reduce<number | undefined>((g, s) => s?.fontSize ?? g, undefined);
+      uit.push({ tekst: String(kinderen), grootte });
+      return;
+    }
+    if (kinderen !== undefined) loop(kinderen);
+  };
+  loop(KennelCardPdf({ kaart }));
+  return uit;
+}
+
+describe("KennelCardPdf — story 10.80", () => {
+  it("zet de naam groter dan het ras", () => {
+    const alles = teksten(volledig);
+    const naam = alles.find((t) => t.tekst === "Bo");
+    const ras = alles.find((t) => t.tekst === "Chow Chow");
+    expect(naam?.grootte).toBeDefined();
+    expect(ras?.grootte).toBeDefined();
+    expect(naam!.grootte!).toBeGreaterThan(ras!.grootte!);
+  });
+
+  it("toont de ontwormingen als tabel met korte datum en product, oudste bovenaan", () => {
+    const woorden = teksten(volledig).map((t) => t.tekst);
+    expect(woorden).toContain("Datum");
+    expect(woorden).toContain("Product");
+    const i = woorden.indexOf("15.04.26");
+    expect(i).toBeGreaterThan(-1);
+    expect(woorden[i + 1]).toBe("Milbemax");
+    expect(woorden.indexOf("01.07.26")).toBeGreaterThan(i);
+  });
+
+  it("zet de reden van intake naast 'In huis sinds'", () => {
+    expect(teksten(volledig).map((t) => t.tekst)).toContain("06.05.2026 · Afstand door eigenaar");
   });
 });
