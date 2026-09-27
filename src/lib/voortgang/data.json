@@ -967,7 +967,14 @@
           "title": "Wandelreglement — nieuwe versie, digitaal aanvaarden vóór de eerste wandeling",
           "status": "done",
           "doneOn": "2026-09-27",
-          "doneAt": "2026-09-27T13:49:42.875Z"
+          "doneAt": "2026-09-27T13:52:15.569Z"
+        },
+        {
+          "id": "10.78",
+          "title": "Gebruikers — filter op rol, per rol samen in de lijst",
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T14:25:32.361Z"
         },
         {
           "id": "10.76",

@@ -1,12 +1,6 @@
 "use client";
 
-const ROLE_LABELS: Record<string, string> = {
-  beheerder: "Beheerder",
-  medewerker: "Medewerker",
-  dierenarts: "Dierenarts",
-  adoptieconsulent: "Adoptieconsulent",
-  "coördinator": "Coördinator",
-};
+import { userRoleLabel } from "@/lib/users/role-list";
 
 interface User {
   id: number;
@@ -51,7 +45,7 @@ export default function UserTable({ users, onEdit }: Props) {
               <td className="px-4 py-3 font-medium text-gray-800">{user.name}</td>
               <td className="px-4 py-3 text-gray-600">{user.email}</td>
               <td className="px-4 py-3 text-gray-600">
-                {ROLE_LABELS[user.role] ?? user.role}
+                {userRoleLabel(user.role)}
               </td>
               <td className="px-4 py-3">
                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
