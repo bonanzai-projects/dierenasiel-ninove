@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { createVetInspectionReportSchema, signReportSchema } from "@/lib/validations/vet-inspection-reports";
 import { getSession } from "@/lib/auth/session";
+import { getVeterinarianById } from "@/lib/queries/veterinarians";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, VetInspectionReport } from "@/types";
 
@@ -39,12 +40,22 @@ export async function createVetInspectionReport(
   const session = await getSession();
 
   try {
+    // Story 10.81 — bij een dierenarts uit de lijst bepaalt de fiche de naam op het rapport.
+    let vetName = parsed.data.vetName;
+    const veterinarianId = parsed.data.veterinarianId ?? null;
+    if (veterinarianId !== null) {
+      const vet = await getVeterinarianById(veterinarianId);
+      if (!vet) return { success: false, fieldErrors: { vetName: ["Dierenarts niet gevonden in de lijst"] } };
+      vetName = vet.name;
+    }
+
     const [record] = await db
       .insert(vetInspectionReports)
       .values({
         visitDate: parsed.data.visitDate,
         vetUserId: session?.userId ?? null,
-        vetName: parsed.data.vetName,
+        vetName,
+        veterinarianId,
         animalsTreated: parsed.data.animalsTreated,
         animalsEuthanized: parsed.data.animalsEuthanized,
         abnormalBehavior: parsed.data.abnormalBehavior,

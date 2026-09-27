@@ -988,7 +988,12 @@
           "title": "Kennelkaart — naam groter dan ras, ontworming als tabel, reden van intake",
           "status": "done",
           "doneOn": "2026-09-27",
-          "doneAt": "2026-09-27T17:52:16.477Z"
+          "doneAt": "2026-09-27T17:54:22.834Z"
+        },
+        {
+          "id": "10.81",
+          "title": "Dierenartsenlijst — fiches bijhouden, kiezen in het R11-bezoekrapport met volledige gegevens",
+          "status": "review"
         },
         {
           "id": "10.76",

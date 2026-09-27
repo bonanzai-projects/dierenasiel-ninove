@@ -44,3 +44,30 @@ describe("InspectionReportView — PDF (Story 10.71)", () => {
     );
   });
 });
+
+// Story 10.81 — de volledige gegevens van de dierenarts uit de lijst.
+describe("InspectionReportView — dierenarts (Story 10.81)", () => {
+  const fiche = {
+    name: "Dr. Peeters", practice: "Dierenkliniek De Dender", street: "Kerkstraat", houseNumber: "12",
+    postalCode: "9400", city: "Ninove", phone: "054 12 34 56", mobile: null, email: "info@dedender.be",
+    orderNumber: "N1234", notes: "komt op dinsdag",
+  };
+
+  it("toont praktijk, adres, telefoon, e-mail en ordenummer onder de naam", () => {
+    render(<InspectionReportView report={rapport} veterinarian={fiche} />);
+    const blok = screen.getByText("Dierenarts").parentElement!;
+    expect(blok).toHaveTextContent("Dr. Peeters");
+    expect(blok).toHaveTextContent("Dierenkliniek De Dender");
+    expect(blok).toHaveTextContent("Kerkstraat 12, 9400 Ninove");
+    expect(blok).toHaveTextContent("054 12 34 56");
+    expect(blok).toHaveTextContent("info@dedender.be");
+    expect(blok).toHaveTextContent("Ordenummer: N1234");
+    expect(blok).not.toHaveTextContent("komt op dinsdag");
+  });
+
+  it("toont enkel de naam bij een getypte dierenarts", () => {
+    render(<InspectionReportView report={rapport} veterinarian={null} />);
+    const blok = screen.getByText("Dierenarts").parentElement!;
+    expect(blok).toHaveTextContent(/^DierenartsDr\. Peeters$/);
+  });
+});

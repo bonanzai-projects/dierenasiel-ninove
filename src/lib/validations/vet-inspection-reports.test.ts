@@ -167,6 +167,23 @@ describe("createVetInspectionReportSchema", () => {
       expect(result.data.abnormalBehavior).toEqual([]);
     }
   });
+
+  // Story 10.81 — dierenarts uit de lijst (of "Andere": geen id, enkel naam).
+  it("aanvaardt een dierenarts uit de lijst", () => {
+    const result = createVetInspectionReportSchema.safeParse({ ...validMinimal, veterinarianId: 3 });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.veterinarianId).toBe(3);
+  });
+
+  it("aanvaardt geen dierenarts uit de lijst (null of weggelaten)", () => {
+    expect(createVetInspectionReportSchema.safeParse({ ...validMinimal, veterinarianId: null }).success).toBe(true);
+    expect(createVetInspectionReportSchema.safeParse(validMinimal).success).toBe(true);
+  });
+
+  it("weigert een ongeldig dierenarts-id", () => {
+    expect(createVetInspectionReportSchema.safeParse({ ...validMinimal, veterinarianId: 0 }).success).toBe(false);
+    expect(createVetInspectionReportSchema.safeParse({ ...validMinimal, veterinarianId: 1.5 }).success).toBe(false);
+  });
 });
 
 describe("treatedAnimalSchema", () => {

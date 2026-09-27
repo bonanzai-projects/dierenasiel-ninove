@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getVetInspectionReportById } from "@/lib/queries/vet-inspection-reports";
+import { getVeterinarianById } from "@/lib/queries/veterinarians";
 import InspectionReportView from "@/components/beheerder/medisch/InspectionReportView";
 
 interface Props {
@@ -15,6 +16,8 @@ export default async function BezoekrapportDetailPage({ params }: Props) {
 
   const report = await getVetInspectionReportById(reportId);
   if (!report) notFound();
+  // Story 10.81 — de fiche uit de dierenartsenlijst (weg als die intussen verwijderd werd).
+  const veterinarian = report.veterinarianId ? await getVeterinarianById(report.veterinarianId) : null;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -35,7 +38,7 @@ export default async function BezoekrapportDetailPage({ params }: Props) {
       </p>
 
       <div className="mt-6">
-        <InspectionReportView report={report} />
+        <InspectionReportView report={report} veterinarian={veterinarian} />
       </div>
     </div>
   );

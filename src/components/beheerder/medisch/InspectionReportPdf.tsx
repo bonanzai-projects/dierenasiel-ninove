@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import "@/lib/pdf/setup";
 import { PDF_LETTERHEAD } from "@/lib/constants";
+import { vetDetailLines, type VeterinarianDetails } from "@/lib/veterinarians/format";
 import type { VetInspectionReport, TreatedAnimalEntry, EuthanizedAnimalEntry, AbnormalBehaviorEntry } from "@/types";
 
 const styles = StyleSheet.create({
@@ -12,6 +13,8 @@ const styles = StyleSheet.create({
   meta: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16, paddingBottom: 8, borderBottom: "1 solid #ccc" },
   metaItem: { fontSize: 10 },
   metaLabel: { fontFamily: "Helvetica-Bold", color: "#555" },
+  vetBlock: { alignItems: "flex-end", maxWidth: "60%" },
+  vetDetail: { fontSize: 9, color: "#444", marginTop: 1.5, textAlign: "right" },
   section: { marginBottom: 14 },
   sectionTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", marginBottom: 6, color: "#1b4332", borderBottom: "0.5 solid #1b4332", paddingBottom: 3 },
   table: { marginBottom: 4 },
@@ -33,9 +36,11 @@ const styles = StyleSheet.create({
 
 interface Props {
   report: VetInspectionReport;
+  /** Story 10.81 — de fiche uit de dierenartsenlijst; null bij een getypte naam. */
+  veterinarian?: VeterinarianDetails | null;
 }
 
-export default function InspectionReportPdf({ report }: Props) {
+export default function InspectionReportPdf({ report, veterinarian = null }: Props) {
   const treated = (report.animalsTreated ?? []) as TreatedAnimalEntry[];
   const euthanized = (report.animalsEuthanized ?? []) as EuthanizedAnimalEntry[];
   const abnormal = (report.abnormalBehavior ?? []) as AbnormalBehaviorEntry[];
@@ -57,11 +62,17 @@ export default function InspectionReportPdf({ report }: Props) {
               {report.visitDate}
             </Text>
           </View>
-          <View>
+          <View style={styles.vetBlock}>
             <Text style={styles.metaItem}>
               <Text style={styles.metaLabel}>Dierenarts: </Text>
               {report.vetName}
             </Text>
+            {veterinarian &&
+              vetDetailLines(veterinarian).map((regel) => (
+                <Text key={regel} style={styles.vetDetail}>
+                  {regel}
+                </Text>
+              ))}
           </View>
         </View>
 

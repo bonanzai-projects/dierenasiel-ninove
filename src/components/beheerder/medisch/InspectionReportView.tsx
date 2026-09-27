@@ -4,13 +4,16 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PdfViewerButton from "@/components/beheerder/shared/PdfViewer";
 import { signVetInspectionReport, deleteVetInspectionReport } from "@/lib/actions/vet-inspection-reports";
+import { vetDetailLines, type VeterinarianDetails } from "@/lib/veterinarians/format";
 import type { VetInspectionReport, TreatedAnimalEntry, EuthanizedAnimalEntry, AbnormalBehaviorEntry } from "@/types";
 
 interface Props {
   report: VetInspectionReport;
+  /** Story 10.81 — de fiche uit de dierenartsenlijst; null bij een getypte naam. */
+  veterinarian?: VeterinarianDetails | null;
 }
 
-export default function InspectionReportView({ report }: Props) {
+export default function InspectionReportView({ report, veterinarian = null }: Props) {
   const router = useRouter();
   const [signState, signAction, signPending] = useActionState(signVetInspectionReport, null);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteVetInspectionReport, null);
@@ -106,6 +109,12 @@ export default function InspectionReportView({ report }: Props) {
           <div>
             <p className="text-xs font-medium text-gray-500">Dierenarts</p>
             <p className="text-sm font-semibold text-gray-800">{report.vetName}</p>
+            {veterinarian &&
+              vetDetailLines(veterinarian).map((regel) => (
+                <p key={regel} className="text-xs text-gray-600">
+                  {regel}
+                </p>
+              ))}
           </div>
         </div>
       </div>

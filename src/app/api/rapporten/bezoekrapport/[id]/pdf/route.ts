@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { requirePermission } from "@/lib/permissions";
 import { getVetInspectionReportById } from "@/lib/queries/vet-inspection-reports";
+import { getVeterinarianById } from "@/lib/queries/veterinarians";
 import InspectionReportPdf from "@/components/beheerder/medisch/InspectionReportPdf";
 import { pdfContentDisposition, wantsPdfDownload } from "@/lib/pdf/disposition";
 import { createElement } from "react";
@@ -26,8 +27,11 @@ export async function GET(
     return new Response("Rapport niet gevonden", { status: 404 });
   }
 
+  // Story 10.81 — de huidige gegevens van de fiche uit de dierenartsenlijst.
+  const veterinarian = report.veterinarianId ? await getVeterinarianById(report.veterinarianId) : null;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const element = createElement(InspectionReportPdf, { report }) as any;
+  const element = createElement(InspectionReportPdf, { report, veterinarian }) as any;
   const buffer = await renderToBuffer(element);
 
   const safeName = report.vetName.replace(/[^a-zA-Z0-9\-_\s]/g, "").replace(/\s+/g, "_");

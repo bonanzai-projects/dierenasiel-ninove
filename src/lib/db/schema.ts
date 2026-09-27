@@ -335,11 +335,33 @@ export const animalTodos = pgTable("animal_todos", {
   index("idx_animal_todos_due_date").on(table.dueDate),
 ]);
 
+// Story 10.81 (Sven): een fiche per dierenarts, om uit een lijst te kiezen. Zelfde
+// adresvelden als de leveranciers (13.18). Eerst gebruikt in het R11-bezoekrapport.
+export const veterinarians = pgTable("veterinarians", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  practice: varchar("practice", { length: 120 }),
+  street: varchar("street", { length: 120 }),
+  houseNumber: varchar("house_number", { length: 20 }),
+  postalCode: varchar("postal_code", { length: 10 }),
+  city: varchar("city", { length: 80 }),
+  phone: varchar("phone", { length: 30 }),
+  mobile: varchar("mobile", { length: 30 }),
+  email: varchar("email", { length: 200 }),
+  orderNumber: varchar("order_number", { length: 30 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const vetInspectionReports = pgTable("vet_inspection_reports", {
   id: serial("id").primaryKey(),
   visitDate: date("visit_date").notNull(),
   vetUserId: integer("vet_user_id").references(() => users.id),
   vetName: varchar("vet_name", { length: 200 }).notNull(),
+  // Story 10.81: de fiche uit de dierenartsenlijst (volledige gegevens op het rapport).
+  // De naam hierboven blijft altijd staan, ook als de fiche verwijderd wordt.
+  veterinarianId: integer("veterinarian_id").references(() => veterinarians.id, { onDelete: "set null" }),
   vetSignature: boolean("vet_signature").default(false).notNull(),
   signedAt: timestamp("signed_at", { withTimezone: true }),
   animalsTreated: jsonb("animals_treated").default([]),
