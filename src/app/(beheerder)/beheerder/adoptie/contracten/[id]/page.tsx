@@ -3,11 +3,15 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { adoptionCandidates, animals } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/permissions";
+import { hasPermission, requirePermission } from "@/lib/permissions";
+import { getSession } from "@/lib/auth/session";
 import { getContractById } from "@/lib/queries/adoption-contracts";
+import { getAdoptionUpdatesByAnimalId } from "@/lib/queries/adoption-updates";
+import { todayInBrussels } from "@/lib/validations/animal-weights";
 import AdoptionContractStatusBadge from "@/components/beheerder/adoptie/AdoptionContractStatusBadge";
 import AdoptionContractActions from "@/components/beheerder/adoptie/AdoptionContractActions";
 import SignedDocumentUpload from "@/components/beheerder/adoptie/SignedDocumentUpload";
+import AdoptionUpdatesSection from "@/components/beheerder/adoptie/AdoptionUpdatesSection";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -40,6 +44,10 @@ export default async function ContractDetailPage({ params }: Props) {
     .limit(1);
 
   if (!animal) notFound();
+
+  // Story 10.74: berichten en foto's na adoptie van dit dier (bekijken = adoption:read, al gecontroleerd).
+  const [session, adoptieBerichten] = await Promise.all([getSession(), getAdoptionUpdatesByAnimalId(animal.id)]);
+  const magAdoptieSchrijven = session ? hasPermission(session.role, "adoption:write") : false;
 
   // Story 10.20+: snapshot eerst, fallback op candidate/animal voor displaymet.
   const adoptantFirstName = contract.snapshotAdoptantFirstName ?? candidate?.firstName ?? "";
@@ -119,6 +127,16 @@ export default async function ContractDetailPage({ params }: Props) {
             hasExisting={Boolean(contract.signedDocumentUrl)}
           />
         </div>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-3 text-sm font-bold text-[#1b4332]">Berichten na adoptie</h2>
+        <AdoptionUpdatesSection
+          animalId={animal.id}
+          canWrite={magAdoptieSchrijven}
+          updates={adoptieBerichten}
+          today={todayInBrussels()}
+        />
       </div>
     </div>
   );

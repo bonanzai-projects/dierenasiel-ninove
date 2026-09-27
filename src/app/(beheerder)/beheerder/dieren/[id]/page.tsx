@@ -43,6 +43,10 @@ import { getOwnerReturnFormsByAnimalId } from "@/lib/queries/owner-return";
 import OwnerReturnFormList from "@/components/beheerder/dieren/OwnerReturnFormList";
 import { getIbnDossierMailings } from "@/lib/queries/ibn-dossier";
 import IbnDossierActions from "@/components/beheerder/dieren/IbnDossierActions";
+import { getAdoptionUpdatesByAnimalId } from "@/lib/queries/adoption-updates";
+import { shouldShowAdoptionUpdates } from "@/lib/adoption-updates/rules";
+import AdoptionUpdatesSection from "@/components/beheerder/adoptie/AdoptionUpdatesSection";
+import { todayInBrussels } from "@/lib/validations/animal-weights";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 
@@ -94,6 +98,12 @@ export default async function DierDetailPage({ params }: Props) {
 
   if (!animal) notFound();
   const magSchrijven = session ? hasPermission(session.role, "animal:write") : false;
+
+  // Story 10.74: berichten na adoptie enkel voor wie adopties mag zien (niet bv. de dierenarts).
+  const magAdoptieZien = session ? hasPermission(session.role, "adoption:read") : false;
+  const magAdoptieSchrijven = session ? hasPermission(session.role, "adoption:write") : false;
+  const adoptieBerichten = magAdoptieZien ? await getAdoptionUpdatesByAnimalId(animalId) : [];
+  const toonAdoptieBerichten = magAdoptieZien && shouldShowAdoptionUpdates(animal, adoptieBerichten.length);
 
   return (
     <div className="space-y-4">
@@ -177,6 +187,18 @@ export default async function DierDetailPage({ params }: Props) {
                     mailings={ibnMailings}
                   />
                   <NeglectReportSection animalId={animalId} report={neglectReport} />
+                </div>
+              )}
+
+              {toonAdoptieBerichten && (
+                <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
+                  <h3 className="mb-3 text-sm font-bold text-[#1b4332]">Berichten na adoptie</h3>
+                  <AdoptionUpdatesSection
+                    animalId={animalId}
+                    canWrite={magAdoptieSchrijven}
+                    updates={adoptieBerichten}
+                    today={todayInBrussels()}
+                  />
                 </div>
               )}
 

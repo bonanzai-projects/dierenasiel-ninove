@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import PostalMime from "postal-mime";
 import { db } from "@/lib/db";
 import { strayCatCampaignAttachments } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
+import { readEmlAttachment } from "@/lib/email/eml-read";
 
 /**
  * Story 10.41 — een bijlage die ín een geüploade .eml zit openen (bv. een foto of
- * plan van de gemeente), zonder de mail eerst te moeten downloaden.
+ * plan van de gemeente), zonder de mail eerst te moeten downloaden. Het lezen zelf
+ * zit sinds story 10.74 in `@/lib/email/eml-read` (gedeeld met adoptie).
  */
-
-/** Alleen inline tonen wat een browser veilig kan renderen; de rest downloadt. */
-const INLINE_TYPES = /^(image\/|application\/pdf$|text\/plain$)/i;
 
 export async function GET(
   _request: Request,
@@ -48,27 +46,16 @@ export async function GET(
     const response = await fetch(record.blobUrl);
     if (!response.ok) throw new Error(`blob fetch ${response.status}`);
 
-    const parsed = await new PostalMime().parse(await response.arrayBuffer());
-    const part = parsed.attachments?.[partIndex];
+    const part = await readEmlAttachment(await response.arrayBuffer(), partIndex);
     if (!part) {
       return NextResponse.json({ error: "Bijlage niet gevonden" }, { status: 404 });
     }
 
-    const content = part.content;
-    const bytes =
-      typeof content === "string"
-        ? Buffer.from(content, "binary")
-        : Buffer.from(content instanceof Uint8Array ? content : new Uint8Array(content ?? 0));
-
-    const mimeType = part.mimeType || "application/octet-stream";
-    const filename = (part.filename || `bijlage-${partIndex + 1}`).replace(/["\\]/g, "_");
-    const disposition = INLINE_TYPES.test(mimeType) ? "inline" : "attachment";
-
-    return new NextResponse(new Uint8Array(bytes), {
+    return new NextResponse(new Uint8Array(part.bytes), {
       status: 200,
       headers: {
-        "Content-Type": mimeType,
-        "Content-Disposition": `${disposition}; filename="${filename}"`,
+        "Content-Type": part.mimeType,
+        "Content-Disposition": `${part.disposition}; filename="${part.filename}"`,
         // Bijlagen van een campagne zijn niet publiek: nooit in een gedeelde cache.
         "Cache-Control": "private, no-store",
       },

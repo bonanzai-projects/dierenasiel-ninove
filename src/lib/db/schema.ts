@@ -456,6 +456,37 @@ export const postAdoptionFollowups = pgTable("post_adoption_followups", {
   index("idx_post_adoption_followups_status_date").on(table.status, table.date),
 ]);
 
+// Story 10.74 (Sven): berichten en foto's die adoptanten na de adoptie sturen, ter
+// opvolging. Hangt aan het dier — niet elke adoptie heeft een contract in het
+// programma — met het contract erbij als dat er is.
+export const adoptionUpdates = pgTable("adoption_updates", {
+  id: serial("id").primaryKey(),
+  animalId: integer("animal_id").notNull().references(() => animals.id, { onDelete: "cascade" }),
+  contractId: integer("contract_id").references(() => adoptionContracts.id, { onDelete: "set null" }),
+  receivedOn: date("received_on").notNull(),
+  channel: varchar("channel", { length: 20 }).notNull(), // whatsapp | mail | telefoon | bezoek | andere
+  sender: varchar("sender", { length: 200 }),
+  message: text("message"),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_adoption_updates_animal_id").on(table.animalId),
+]);
+
+export const adoptionUpdateFiles = pgTable("adoption_update_files", {
+  id: serial("id").primaryKey(),
+  updateId: integer("update_id").notNull().references(() => adoptionUpdates.id, { onDelete: "cascade" }),
+  // Pathname in de PRIVATE Blob-opslag (PRIVATE_BLOB_READ_WRITE_TOKEN), nooit een
+  // publieke URL: openen kan enkel via /api/adoptie/berichten/bestand/[id].
+  pathname: varchar("pathname", { length: 500 }).notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }).notNull(),
+  fileSize: integer("file_size").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_adoption_update_files_update_id").on(table.updateId),
+]);
+
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),

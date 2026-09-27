@@ -1,55 +1,19 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import PostalMime from "postal-mime";
 import { db } from "@/lib/db";
 import { strayCatCampaignAttachments } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
-import {
-  buildEmailDocument,
-  formatAddresses,
-  type EmailAddressLike,
-  type InlineAttachment,
-} from "@/lib/email/eml-view";
+import { readEmlView } from "@/lib/email/eml-read";
 
 /**
  * Story 10.41 — een geüploade .eml leesbaar maken in de applicatie i.p.v. hem
  * te moeten downloaden en in een mailclient te openen (Sven-feedback 2026-07-26).
  *
  * Levert de kopgegevens los (zodat de UI ze in de huisstijl toont) en de body als
- * één kant-en-klaar HTML-document voor een `<iframe sandbox srcdoc>`.
+ * één kant-en-klaar HTML-document voor een `<iframe sandbox srcdoc>`. Het lezen
+ * zelf zit sinds story 10.74 in `@/lib/email/eml-read` (gedeeld met adoptie).
  */
-
-/** Ingesloten beelden (handtekening, logo) komen als data-URL mee in het document. */
-const MAX_INLINE_IMAGE_BYTES = 2 * 1024 * 1024;
-
-interface ParsedAttachment {
-  filename?: string | null;
-  mimeType?: string | null;
-  contentId?: string | null;
-  disposition?: string | null;
-  content?: ArrayBuffer | Uint8Array | string | null;
-}
-
-function byteLength(content: ParsedAttachment["content"]): number {
-  if (!content) return 0;
-  if (typeof content === "string") return content.length;
-  if (content instanceof Uint8Array) return content.byteLength;
-  return content.byteLength;
-}
-
-function toBase64(content: ParsedAttachment["content"]): string {
-  if (!content) return "";
-  if (typeof content === "string") return Buffer.from(content, "binary").toString("base64");
-  const view = content instanceof Uint8Array ? content : new Uint8Array(content);
-  return Buffer.from(view).toString("base64");
-}
-
-/** postal-mime geeft `from` als één adres en `to`/`cc` als lijst. */
-function asList(value: EmailAddressLike | EmailAddressLike[] | null | undefined): EmailAddressLike[] {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
-}
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -91,41 +55,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    const parsed = await new PostalMime().parse(raw);
-    const allAttachments: ParsedAttachment[] = parsed.attachments ?? [];
-
-    // Ingesloten beelden (cid:) horen bij de body; echte bijlagen komen apart in de lijst.
-    const inline: InlineAttachment[] = allAttachments
-      .filter((a) => a.contentId && byteLength(a.content) <= MAX_INLINE_IMAGE_BYTES)
-      .map((a) => ({
-        contentId: a.contentId,
-        mimeType: a.mimeType,
-        contentBase64: toBase64(a.content),
-      }));
-
-    const visibleAttachments = allAttachments
-      .map((a, index) => ({ a, index }))
-      .filter(({ a }) => !a.contentId || a.disposition === "attachment")
-      .map(({ a, index }) => ({
-        index,
-        filename: a.filename || `bijlage-${index + 1}`,
-        mimeType: a.mimeType || "application/octet-stream",
-        size: byteLength(a.content),
-      }));
-
-    return NextResponse.json({
-      subject: parsed.subject || "(geen onderwerp)",
-      from: formatAddresses(asList(parsed.from as EmailAddressLike | undefined)),
-      to: formatAddresses(parsed.to as EmailAddressLike[] | undefined),
-      cc: formatAddresses(parsed.cc as EmailAddressLike[] | undefined),
-      date: parsed.date ?? null,
-      document: buildEmailDocument({
-        html: parsed.html,
-        text: parsed.text,
-        attachments: inline,
-      }),
-      attachments: visibleAttachments,
-    });
+    return NextResponse.json(await readEmlView(raw));
   } catch (err) {
     console.error("eml view: parsen mislukt:", err);
     return NextResponse.json(
