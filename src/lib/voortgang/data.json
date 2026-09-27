@@ -1244,7 +1244,9 @@
         {
           "id": "13.19",
           "title": "Volgorde van draaiboektaken zelf aanpassen (de datum gaat voor)",
-          "status": "review"
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T20:16:46.408Z"
         }
       ]
     },
@@ -1302,7 +1304,12 @@
         },
         {
           "id": "14.8",
-          "title": "Weekpatroon en verlof",
+          "title": "Vast weekpatroon — wie elke week op dezelfde dag komt",
+          "status": "review"
+        },
+        {
+          "id": "14.10",
+          "title": "Verlof met goedkeuring",
           "status": "backlog"
         },
         {

@@ -1,17 +1,19 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission, requirePermission } from "@/lib/permissions";
+import { getRecentAttendanceTasks, getVolunteerOptions } from "@/lib/queries/staff-attendance";
 import {
-  getAttendanceForWeek,
-  getRecentAttendanceTasks,
-  getVolunteerOptions,
-} from "@/lib/queries/staff-attendance";
+  getCurrentPatterns,
+  getPatternPeopleOptions,
+  getPlannedAttendanceBetween,
+} from "@/lib/queries/staff-patterns";
 import { getSlotsBetween } from "@/lib/queries/staff-slots";
 import { buildAttendanceWeek, weekStartFor } from "@/lib/staff/attendance";
 import { taskSuggestions } from "@/lib/staff/tasks";
 import { addDays } from "@/lib/calendar/events";
-import { getBelgianDayBounds } from "@/lib/utils/date";
+import { todayInBrussels } from "@/lib/validations/animal-weights";
 import AttendanceWeek from "@/components/beheerder/personeel/AttendanceWeek";
+import StaffPatternsPanel from "@/components/beheerder/personeel/StaffPatternsPanel";
 
 interface Props {
   searchParams: Promise<{ week?: string }>;
@@ -28,17 +30,22 @@ export default async function PersoneelPage({ searchParams }: Props) {
   const mayManageOthers = !!session && hasPermission(session.role, "staff:write");
 
   // Vandaag in Brusselse tijd — een server in UTC mag de weekgrens niet verschuiven.
-  const today = getBelgianDayBounds().start.toISOString().slice(0, 10);
+  // (Story 14.8: `getBelgianDayBounds().start.toISOString()` gaf hier gisteren — middernacht
+  // in Brussel is in UTC nog de avond ervoor.)
+  const today = todayInBrussels();
   const weekStart = weekStartFor(/^\d{4}-\d{2}-\d{2}$/.test(week ?? "") ? week! : today);
 
   // Story 14.2 — de taken van het voorbije halfjaar komen mee in de voorstellen.
   // Story 14.4 — de wandelaars enkel voor wie anderen mag inschrijven.
   // Story 14.3 — de plaatsjes van deze week.
-  const [entries, eerdereTaken, volunteers, slots] = await Promise.all([
-    getAttendanceForWeek(weekStart),
+  // Story 14.8 — de inschrijvingen samen met het vaste weekrooster, en dat rooster zelf.
+  const [entries, eerdereTaken, volunteers, slots, patterns, people] = await Promise.all([
+    getPlannedAttendanceBetween(weekStart, addDays(weekStart, 6)),
     getRecentAttendanceTasks(addDays(today, -183)),
     mayManageOthers ? getVolunteerOptions() : Promise.resolve([]),
     getSlotsBetween(weekStart, addDays(weekStart, 6)),
+    getCurrentPatterns(today),
+    mayManageOthers ? getPatternPeopleOptions() : Promise.resolve([]),
   ]);
   const days = buildAttendanceWeek(weekStart, entries);
 
@@ -65,6 +72,16 @@ export default async function PersoneelPage({ searchParams }: Props) {
           taskSuggestions={taskSuggestions(eerdereTaken)}
           volunteers={volunteers}
           slots={slots}
+        />
+      </div>
+
+      <div className="mt-6">
+        <StaffPatternsPanel
+          patterns={patterns}
+          today={today}
+          currentUserId={session?.userId ?? null}
+          mayManageOthers={mayManageOthers}
+          people={people}
         />
       </div>
     </div>

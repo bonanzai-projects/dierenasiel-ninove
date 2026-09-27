@@ -244,4 +244,10 @@ describe("canRemove", () => {
     expect(canRemove(gast, 7, false)).toBe(false);
     expect(canRemove(gast, 7, true)).toBe(true);
   });
+  // Story 14.8 — een vast moment is geen rij om weg te halen: stoppen gebeurt in het weekrooster.
+  it("biedt bij een vast moment uit het weekrooster geen uitschrijven aan", () => {
+    const vast = entry({ id: -3, userId: 7, patternId: 3 });
+    expect(canRemove(vast, 7, false)).toBe(false);
+    expect(canRemove(vast, 7, true)).toBe(false);
+  });
 });

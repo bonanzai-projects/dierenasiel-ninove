@@ -401,6 +401,15 @@ export default function AttendanceWeek({
                           <span className="text-gray-700">
                             {displayName(entry)}
                             {label && <span className="ml-1 text-xs text-gray-400">({label})</span>}
+                            {/* Story 14.8 — uit het vaste weekrooster; stoppen gebeurt daar, niet hier. */}
+                            {entry.patternId != null && (
+                              <span
+                                title="Uit het vaste weekrooster"
+                                className="ml-1.5 rounded bg-sky-50 px-1 py-0.5 text-[10px] font-semibold uppercase text-sky-700"
+                              >
+                                vast
+                              </span>
+                            )}
                             <span className="block text-xs tabular-nums text-gray-500">
                               {formatTimeRange(entry)}
                               {entry.note && <> · {entry.note}</>}

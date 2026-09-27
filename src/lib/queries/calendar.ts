@@ -17,7 +17,7 @@ import { expandEventDates } from "@/lib/calendar/events";
 import { eventsToCalendar } from "@/lib/calendar/from-events";
 import { attendanceToCalendar } from "@/lib/calendar/from-attendance";
 import type { CalendarCategoryKey } from "@/lib/calendar/categories";
-import { getAttendanceBetween } from "@/lib/queries/staff-attendance";
+import { getPlannedAttendanceBetween } from "@/lib/queries/staff-patterns";
 
 interface Range {
   /** YYYY-MM-DD, inclusief. */
@@ -371,10 +371,10 @@ export async function getCalendarEvents(
     console.error("calendar: shelter events failed", err);
   }
 
-  // — Personeel uit de personeelsplanning (Epic 14, story 14.5) —
-  // `getAttendanceBetween` vangt zijn eigen fouten op en geeft dan een lege lijst.
+  // — Personeel uit de personeelsplanning (Epic 14, story 14.5), sinds 14.8 met het vaste
+  // weekrooster erbij. Beide query's vangen hun eigen fouten op en geven dan een lege lijst.
   if (opties.staff) {
-    events.push(...attendanceToCalendar(await getAttendanceBetween(start, end)));
+    events.push(...attendanceToCalendar(await getPlannedAttendanceBetween(start, end)));
   }
 
   return events;

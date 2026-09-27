@@ -1036,6 +1036,30 @@ export const staffAttendance = pgTable("staff_attendance", {
   unique("uq_staff_attendance_block").on(table.date, table.userId, table.guestName, table.startTime),
 ]);
 
+/**
+ * Epic 14, story 14.8 — het vaste weekrooster. Sven: "ja dat herhaalt zich maar soms ook
+ * niet (verlof)". Eén rij = één persoon, elke week op dezelfde weekdag, van `validFrom`
+ * tot en met `validUntil` (leeg = geen einde). De weken worden niet op voorhand gevuld
+ * (`patternEntriesBetween` in `src/lib/staff/patterns.ts`); stoppen sluit de periode af,
+ * zodat het verleden blijft kloppen. Enkel voor wie een account heeft (keuze Johan).
+ */
+export const staffPatterns = pgTable("staff_patterns", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  /** 1 = maandag … 7 = zondag. */
+  weekday: integer("weekday").notNull(),
+  // "HH:MM", zoals `staff_attendance`. Leeg = hele dag.
+  startTime: varchar("start_time", { length: 5 }),
+  endTime: varchar("end_time", { length: 5 }),
+  task: varchar("task", { length: 120 }),
+  validFrom: date("valid_from").notNull(),
+  validUntil: date("valid_until"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_staff_patterns_user").on(table.userId),
+]);
+
 export const blacklistEntries = pgTable("blacklist_entries", {
   id: serial("id").primaryKey(),
   firstName: varchar("first_name", { length: 100 }).notNull(),

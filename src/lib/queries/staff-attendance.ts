@@ -1,14 +1,8 @@
 import { and, asc, eq, gte, isNotNull, isNull, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { staffAttendance, users, walkers } from "@/lib/db/schema";
-import { addDays } from "@/lib/calendar/events";
 import type { AttendanceEntry } from "@/lib/staff/attendance";
 import { sortVolunteers, type VolunteerOption } from "@/lib/staff/volunteers";
-
-/** Alle inschrijvingen van één week (maandag t/m zondag). */
-export async function getAttendanceForWeek(weekStart: string): Promise<AttendanceEntry[]> {
-  return getAttendanceBetween(weekStart, addDays(weekStart, 6));
-}
 
 /**
  * Alle inschrijvingen tussen twee datums (inclusief) — voor het personeelsscherm en, sinds
@@ -43,7 +37,7 @@ export async function getAttendanceBetween(start: string, end: string): Promise<
       userRole: row.userRole ?? null,
     }));
   } catch (err) {
-    console.error("getAttendanceForWeek query failed:", err);
+    console.error("getAttendanceBetween query failed:", err);
     return [];
   }
 }

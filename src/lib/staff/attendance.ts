@@ -36,6 +36,11 @@ export interface AttendanceEntry extends TimeBlock, Person {
   /** Story 14.3 — het plaatsje dat deze inschrijving inneemt, of null voor een gewoon blok. */
   slotId: number | null;
   note: string | null;
+  /**
+   * Story 14.8 — gevuld als deze aanwezigheid uit het vaste weekrooster komt (dan is `id`
+   * negatief en bestaat er geen rij in `staff_attendance`).
+   */
+  patternId?: number | null;
 }
 
 export interface TimeRangeIssue {
@@ -174,13 +179,15 @@ export function isSignedUp(day: AttendanceDay, userId: number | null): boolean {
 
 /**
  * Je eigen inschrijving mag je altijd weghalen; die van iemand anders — en die
- * van een vrijwilliger zonder login — enkel met schrijfrecht.
+ * van een vrijwilliger zonder login — enkel met schrijfrecht. Een vast moment uit het
+ * weekrooster (story 14.8) is geen rij: dat stop je in het weekrooster zelf.
  */
 export function canRemove(
   entry: AttendanceEntry,
   userId: number | null,
   mayManageOthers: boolean,
 ): boolean {
+  if (entry.patternId != null) return false;
   if (mayManageOthers) return true;
   if (userId === null) return false;
   return entry.userId === userId;
