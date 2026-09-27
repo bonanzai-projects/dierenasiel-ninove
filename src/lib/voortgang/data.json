@@ -1219,8 +1219,8 @@
         },
         {
           "id": "13.15",
-          "title": "Genummerde steunkaarten",
-          "status": "backlog"
+          "title": "Genummerde steunkaarten — reeksen per verkoper, afrekenen, trekking",
+          "status": "review"
         },
         {
           "id": "13.16",
@@ -1305,7 +1305,9 @@
         {
           "id": "14.8",
           "title": "Vast weekpatroon — wie elke week op dezelfde dag komt",
-          "status": "review"
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T20:47:54.676Z"
         },
         {
           "id": "14.10",

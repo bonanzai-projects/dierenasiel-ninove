@@ -673,11 +673,53 @@ export const eventCosts = pgTable("event_costs", {
   paid: boolean("paid").notNull().default(false),
   notes: text("notes"),
   sortOrder: integer("sort_order").notNull().default(0),
+  // Story 13.15 — "steunkaarten" voor de opbrengstlijn die de app zelf bijhoudt uit de
+  // afgerekende steunkaarten; leeg voor een gewone lijn.
+  source: varchar("source", { length: 30 }),
   createdByUserId: integer("created_by_user_id").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   index("idx_event_costs_event_id").on(table.eventId),
+]);
+
+/**
+ * Epic 13, story 13.15 — genummerde steunkaarten. Sven (12 sep 2026): nummers per verkoper,
+ * "5 euro (normaal altijd zelfde prijs)", en bij terugkomst "welke nummers er niet verkocht
+ * zijn". Eén rij = één reeks bij één verkoper. Verkocht = reeks − onverkocht, pas na het
+ * afrekenen (`settled_at`). Logica in `src/lib/events/support-cards.ts`.
+ */
+export const eventCardSeries = pgTable("event_card_series", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .references(() => events.id, { onDelete: "cascade" })
+    .notNull(),
+  seller: varchar("seller", { length: 120 }).notNull(),
+  numberFrom: integer("number_from").notNull(),
+  numberTo: integer("number_to").notNull(),
+  price: numeric("price", { precision: 8, scale: 2 }).notNull().default("5"),
+  unsoldNumbers: integer("unsold_numbers").array().notNull().default([]),
+  settledAt: timestamp("settled_at", { withTimezone: true }),
+  settledByUserId: integer("settled_by_user_id").references(() => users.id),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_event_card_series_event_id").on(table.eventId),
+]);
+
+/** Story 13.15 — de winnende nummers. Zelf ingetikt, of door de app getrokken uit de verkochte. */
+export const eventCardDraws = pgTable("event_card_draws", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id")
+    .references(() => events.id, { onDelete: "cascade" })
+    .notNull(),
+  number: integer("number").notNull(),
+  prize: varchar("prize", { length: 200 }),
+  drawnByApp: boolean("drawn_by_app").notNull().default(false),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  unique("uq_event_card_draws_number").on(table.eventId, table.number),
 ]);
 
 // Epic 13, story 13.6 — wie staat waar en wanneer (Sven, vraag 10). Bewust plat:

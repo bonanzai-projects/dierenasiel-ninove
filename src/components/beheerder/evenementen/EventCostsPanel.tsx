@@ -111,6 +111,15 @@ export default function EventCostsPanel({ eventId, lines, canWrite, suppliers = 
                 <tr key={line.id} className="border-b border-gray-100 align-top">
                   <td className="py-1.5 pr-2">
                     <span className="text-gray-900">{line.description}</span>
+                    {/* Story 13.15 — het werkelijke bedrag volgt de afgerekende steunkaarten. */}
+                    {line.source === "steunkaarten" && (
+                      <span
+                        title="Het werkelijke bedrag wordt bijgewerkt bij elke afrekening in het blok Steunkaarten."
+                        className="ml-1.5 rounded bg-sky-50 px-1 py-0.5 text-[10px] font-semibold text-sky-700"
+                      >
+                        automatisch uit de steunkaarten
+                      </span>
+                    )}
                     <span className="block text-xs text-gray-500">
                       {[
                         categoryLabel(line.kind as CostKind, line.category),

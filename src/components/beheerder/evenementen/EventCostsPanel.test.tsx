@@ -127,3 +127,13 @@ describe("EventCostsPanel", () => {
     expect(screen.getByRole("button", { name: /opbrengst toevoegen/i })).toBeInTheDocument();
   });
 });
+
+// Story 13.15 — de opbrengst van de steunkaarten houdt de app zelf bij.
+describe("EventCostsPanel — steunkaarten (Story 13.15)", () => {
+  it("toont bij de automatische lijn dat het bedrag uit de steunkaarten komt", () => {
+    const kaarten = lijn({ id: 9, kind: "opbrengst", category: "tombola", description: "Steunkaarten", actualAmount: "235", source: "steunkaarten" });
+    render(<EventCostsPanel eventId={4} lines={[...lijnen, kaarten]} canWrite />);
+    expect(screen.getByRole("row", { name: /Steunkaarten/ })).toHaveTextContent("automatisch uit de steunkaarten");
+    expect(screen.getByRole("row", { name: /Eten/ })).not.toHaveTextContent("automatisch");
+  });
+});

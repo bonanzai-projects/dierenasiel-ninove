@@ -102,6 +102,8 @@ export interface CopySource {
     actualAmount: string | null;
     supplier: string | null;
     sortOrder: number;
+    /** Story 13.15 — "steunkaarten" voor de lijn die de app zelf bijhoudt; anders leeg. */
+    source?: string | null;
   }[];
   shifts: readonly {
     date: string;
@@ -175,6 +177,7 @@ export function buildNextEdition(bron: CopySource, opties: CopyOptions) {
           supplier: c.supplier,
           paid: false,
           sortOrder: c.sortOrder,
+          source: c.source ?? null,
         }))
       : [],
     shifts: opties.include.shifts

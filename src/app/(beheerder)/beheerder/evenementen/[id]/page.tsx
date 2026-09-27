@@ -11,6 +11,7 @@ import {
   getEventMaterials,
 } from "@/lib/queries/events";
 import { getSuppliers } from "@/lib/queries/suppliers";
+import { getEventCardDraws, getEventCardSeries } from "@/lib/queries/event-cards";
 import { eventRights } from "@/lib/events/access";
 import { draaiboekProgress } from "@/lib/events/draaiboek";
 import { formatEventPeriod } from "@/lib/events/list";
@@ -21,6 +22,7 @@ import EventCostsPanel from "@/components/beheerder/evenementen/EventCostsPanel"
 import EventShiftsPanel from "@/components/beheerder/evenementen/EventShiftsPanel";
 import EventEvaluationPanel from "@/components/beheerder/evenementen/EventEvaluationPanel";
 import EventMaterialsPanel from "@/components/beheerder/evenementen/EventMaterialsPanel";
+import EventCardsPanel from "@/components/beheerder/evenementen/EventCardsPanel";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -53,7 +55,8 @@ export default async function EvenementFichePage({ params }: Props) {
 
   // Geld blijft bij de beheerder: voor een trekker worden kosten en evaluatie
   // niet eens opgehaald.
-  const [tasks, costs, shifts, evaluation, materials, vorigeEditie, leveranciersLijst] =
+  // Story 13.15 — de steunkaarten zijn ook geld: enkel voor wie de kosten mag zien.
+  const [tasks, costs, shifts, evaluation, materials, vorigeEditie, leveranciersLijst, kaartreeksen, trekkingen] =
     await Promise.all([
       getEventTasks(eventId),
       rechten.geld ? getEventCosts(eventId) : Promise.resolve([]),
@@ -62,6 +65,8 @@ export default async function EvenementFichePage({ params }: Props) {
       getEventMaterials(eventId),
       getPreviousEditionLessons(event.copiedFromEventId),
       getSuppliers(),
+      rechten.geld ? getEventCardSeries(eventId) : Promise.resolve([]),
+      rechten.geld ? getEventCardDraws(eventId) : Promise.resolve([]),
     ]);
 
   // Story 13.16 — enkel wat de regels tonen: naam en contactgegevens.
@@ -206,6 +211,13 @@ export default async function EvenementFichePage({ params }: Props) {
             lines={costs}
             canWrite={rechten.beheer}
             suppliers={leveranciers}
+          />
+
+          <EventCardsPanel
+            eventId={event.id}
+            series={kaartreeksen}
+            draws={trekkingen}
+            canWrite={rechten.beheer}
           />
 
           <EventEvaluationPanel

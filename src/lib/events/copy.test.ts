@@ -160,6 +160,21 @@ describe("buildNextEdition", () => {
     expect(buildNextEdition(bron, opties).costs[2].budgetAmount).toBe("250");
   });
 
+  // Story 13.15 — de automatische opbrengstlijn van de steunkaarten blijft herkenbaar, anders
+  // maakt het afrekenen in de nieuwe editie er een tweede bij.
+  it("houdt de herkomst van een automatische lijn (steunkaarten) bij", () => {
+    const metKaarten = {
+      ...bron,
+      costs: [
+        ...bron.costs,
+        { kind: "opbrengst", category: "tombola", description: "Steunkaarten", budgetAmount: null, actualAmount: "1900", supplier: null, sortOrder: 3, source: "steunkaarten" },
+      ],
+    };
+    const { costs } = buildNextEdition(metKaarten, opties);
+    expect(costs[3]).toMatchObject({ source: "steunkaarten", budgetAmount: "1900", actualAmount: null });
+    expect(costs[0].source).toBeNull();
+  });
+
   it("kopieert de shiften met dezelfde verschuiving", () => {
     const { shifts } = buildNextEdition(bron, opties);
     expect(shifts).toHaveLength(2);
