@@ -41,6 +41,8 @@ import AnimalTraitsSection from "@/components/beheerder/dieren/AnimalTraitsSecti
 import { getAnimalTraits } from "@/lib/queries/animal-traits";
 import { getOwnerReturnFormsByAnimalId } from "@/lib/queries/owner-return";
 import OwnerReturnFormList from "@/components/beheerder/dieren/OwnerReturnFormList";
+import { getIbnDossierMailings } from "@/lib/queries/ibn-dossier";
+import IbnDossierActions from "@/components/beheerder/dieren/IbnDossierActions";
 import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 
@@ -64,7 +66,7 @@ export default async function DierDetailPage({ params }: Props) {
   const animalId = Number(id);
   if (isNaN(animalId)) notFound();
 
-  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings, workflowHistory, animalTraitsValues, weighings, ownerReturnForms, session] = await Promise.all([
+  const [animal, attachments, kennelsList, neglectReport, behaviorRecords, behaviorRecordCount, feedingPlan, vaccinationsList, dewormingsList, vetVisitsList, operationsList, medicationsList, todayMedicationLogs, todosList, openTodoCount, walkHistory, workflowSettings, workflowHistory, animalTraitsValues, weighings, ownerReturnForms, ibnMailings, session] = await Promise.all([
     getAnimalById(animalId),
     getAttachmentsByAnimalId(animalId),
     getKennels(),
@@ -86,6 +88,7 @@ export default async function DierDetailPage({ params }: Props) {
     getAnimalTraits(animalId),
     getWeightsByAnimalId(animalId),
     getOwnerReturnFormsByAnimalId(animalId),
+    getIbnDossierMailings(animalId),
     getSession(),
   ]);
 
@@ -165,7 +168,14 @@ export default async function DierDetailPage({ params }: Props) {
                   zijn bewerkbaar in het formulier hierboven (story 10.36). */}
               {animal.intakeReason === "ibn" && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                  <h3 className="text-sm font-bold text-red-700">Inbeslagname — verwaarlozing-rapport</h3>
+                  <h3 className="mb-3 text-sm font-bold text-red-700">Inbeslagname — verwaarlozing-rapport</h3>
+                  {/* Story 10.72: het volledige dossier bekijken of mailen naar politie/Dierenwelzijn. */}
+                  <IbnDossierActions
+                    animalId={animalId}
+                    animalName={animal.name}
+                    canMail={magSchrijven}
+                    mailings={ibnMailings}
+                  />
                   <NeglectReportSection animalId={animalId} report={neglectReport} />
                 </div>
               )}

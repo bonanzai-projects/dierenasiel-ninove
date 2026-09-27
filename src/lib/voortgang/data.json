@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-13",
+  "generatedAt": "2026-09-27",
   "epics": [
     {
       "id": 1,
@@ -932,7 +932,14 @@
           "title": "R11-bezoekrapporten bekijken in het programma i.p.v. downloaden",
           "status": "done",
           "doneOn": "2026-09-13",
-          "doneAt": "2026-09-13T15:46:28.475Z"
+          "doneAt": "2026-09-13T15:48:03.715Z"
+        },
+        {
+          "id": "10.72",
+          "title": "Volledig IBN-dossier per dier — bekijken en mailen naar politie of Dierenwelzijn",
+          "status": "done",
+          "doneOn": "2026-09-27",
+          "doneAt": "2026-09-27T09:19:15.870Z"
         }
       ]
     },
